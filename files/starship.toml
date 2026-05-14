@@ -1,0 +1,115 @@
+# Main prompt format
+format = """
+$os$username$directory$git_branch$git_status$fill$nodejs$python$rust$golang
+$character
+"""
+
+right_format = """$cmd_duration$time"""
+
+# Catppuccin Mocha colors
+palette = "catppuccin_mocha"
+
+[palettes.catppuccin_mocha]
+rosewater = "#f5e0dc"
+flamingo = "#f2cdcd"
+pink = "#f5c2e7"
+mauve = "#cba6f7"
+red = "#f38ba8"
+maroon = "#eba0ac"
+peach = "#fab387"
+yellow = "#f9e2af"
+green = "#a6e3a1"
+teal = "#94e2d5"
+sky = "#89dceb"
+sapphire = "#74c7ec"
+blue = "#89b4fa"
+lavender = "#b4befe"
+text = "#cdd6f4"
+subtext1 = "#bac2de"
+subtext0 = "#a6adc8"
+overlay2 = "#9399b2"
+overlay1 = "#7f849c"
+overlay0 = "#6c7086"
+surface2 = "#585b70"
+surface1 = "#45475a"
+surface0 = "#313244"
+base = "#1e1e2e"
+mantle = "#181825"
+crust = "#11111b"
+
+[os]
+disabled = false
+symbols.Macos = "󰀵 "
+symbols.Linux = " "
+symbols.Windows = "󰍲 "
+style = "bold blue"
+
+[username]
+format = "[$user]($style) "
+show_always = true
+style_user = "bold lavender"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+style = "bold sapphire"
+format = "[$path]($style) "
+read_only = " 󰌾"
+
+[git_branch]
+symbol = " "
+format = "[$symbol$branch]($style) "
+style = "bold mauve"
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+style = "bold red"
+ahead = "⇡"
+behind = "⇣"
+modified = "!"
+untracked = "?"
+stashed = "≡"
+renamed = "r"
+deleted = "✘"
+
+[fill]
+symbol = " "
+
+[nodejs]
+symbol = " "
+format = "[$symbol($version )]($style)"
+style = "bold green"
+
+[python]
+format = "[$symbol($version )($virtualenv)]($style)"
+style = "bold yellow"
+
+[rust]
+symbol = " "
+format = "[$symbol($version )]($style)"
+style = "bold peach"
+
+[golang]
+symbol = " "
+format = "[$symbol($version )]($style)"
+style = "bold sapphire"
+
+[time]
+disabled = false
+format = "[$time]($style)"
+time_format = "%R"
+style = "bold overlay2"
+
+[character]
+success_symbol = "[∙](green)"
+error_symbol = "[∙](red)"
+vimcmd_symbol = "[∙](blue)"
+vimcmd_visual_symbol = "[∙](yellow)"
+vimcmd_replace_symbol = "[∙](red)"
+vimcmd_replace_one_symbol = "[∙](red)"
+
+[cmd_duration]
+min_time = 1
+format = "took [$duration]($style) "
+style = "bold overlay2"
+
