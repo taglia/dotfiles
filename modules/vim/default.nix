@@ -1,6 +1,4 @@
-{ pkgs, config, ... }:
 {
-
   programs.nixvim = {
     enable = true;
 
@@ -18,6 +16,7 @@
       ./plugins/lsp/lsp.nix
       ./plugins/lsp/fidget.nix
       ./plugins/lsp/conform.nix
+      ./plugins/lsp/diagnostics.nix
 
       # Completion
       ./plugins/cmp/cmp.nix
