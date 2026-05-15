@@ -1,9 +1,9 @@
-{ pkgs, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 {
   home.packages = with pkgs; [
     claude-code
-    codex
+    pkgs-unstable.codex
     opencode
     ollama
   ];
