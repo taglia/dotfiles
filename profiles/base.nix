@@ -1,11 +1,15 @@
-{ config, pkgs, lib, ... }:
-
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   imports = [
     ../modules/shells.nix
     ../modules/tmux.nix
-    ../modules/vim.nix
+    ../modules/vim/default.nix
   ];
 
   programs.mise = {
@@ -19,6 +23,8 @@
     settings.user.name = "taglia";
     settings.user.email = "taglia@example.com";
   };
+
+  programs.yazi.enable = true;
 
   programs.atuin = {
     enable = true;
@@ -60,6 +66,12 @@
     fastfetch
 
     magic-wormhole
+
+    # Rust
+    rustc
+    cargo
+    rustfmt
+    clippy
+    rust-analyzer
   ];
 }
-
