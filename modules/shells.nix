@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   shellAliases = {
@@ -97,10 +97,18 @@ in
     enable = true;
 
     settings = {
-      auto_sync = false;
+      auto_sync = lib.mkDefault false;
       update_check = false;
       enter_accept = true;
       # sync_frequency = "5m";
     };
+  };
+
+  programs.mise = {
+    enable = true;
+
+    enableFishIntegration = true;
+    enableBashIntegration = true;
+    enableZshIntegration = true;
   };
 }

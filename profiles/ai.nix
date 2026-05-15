@@ -1,4 +1,10 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
+  home.packages = with pkgs; [
+    claude-code
+    codex
+    opencode
+    ollama
+  ];
 }

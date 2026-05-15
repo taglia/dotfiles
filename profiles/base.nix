@@ -1,7 +1,6 @@
 {
-  config,
   pkgs,
-  lib,
+  agenix,
   ...
 }:
 
@@ -26,52 +25,59 @@
 
   programs.yazi.enable = true;
 
-  programs.atuin = {
-    enable = true;
-
-    settings = {
-      auto_sync = false;
-      update_check = false;
-      enter_accept = true;
-      # sync_frequency = "5m";
-    };
-  };
-
   xdg.configFile."starship.toml".source = ../files/starship.toml;
 
-  home.packages = with pkgs; [
-    ripgrep
-    fd
-    fzf
+  home.packages =
+    (with pkgs; [
+      # Generic CLI
+      ripgrep
+      fd
+      fzf
 
-    git
-    curl
-    wget
-    unzip
-    zip
+      git
+      curl
+      wget
+      unzip
+      zip
 
-    gcc
-    gnumake
+      gcc
+      gnumake
 
-    nodejs
-    python3
-    lua-language-server
-    stylua
+      fastfetch
+      magic-wormhole
 
-    nil
-    nixfmt-rfc-style
+      # Nix tooling
+      nil
+      nixfmt-rfc-style
 
-    tmux
-    atuin
-    fastfetch
+      # Lua / Neovim
+      lua-language-server
+      stylua
 
-    magic-wormhole
+      # JS / TS tooling
+      typescript-language-server
+      eslint
+      prettierd
 
-    # Rust
-    rustc
-    cargo
-    rustfmt
-    clippy
-    rust-analyzer
-  ];
+      # Python tooling
+      pyright
+      ruff
+      black
+      uv
+
+      # Go tooling
+      gopls
+      golangci-lint
+
+      # Rust tooling
+      rust-analyzer
+      rustfmt
+      clippy
+
+      # Encryption
+      age
+    ])
+    ++ [
+      agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
+    ];
 }
