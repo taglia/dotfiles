@@ -5,6 +5,7 @@
   imports = [
     ../modules/shells.nix
     ../modules/tmux.nix
+    ../modules/vim.nix
   ];
 
   programs.mise = {
@@ -28,11 +29,6 @@
       enter_accept = true;
       # sync_frequency = "5m";
     };
-  };
-
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
   };
 
   xdg.configFile."starship.toml".source = ../files/starship.toml;

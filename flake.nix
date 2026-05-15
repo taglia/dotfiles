@@ -8,9 +8,13 @@
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixvim = {
+      url = "github:nix-community/nixvim/nixos-25.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { nixpkgs, home-manager, ... }:
+  outputs = { nixpkgs, home-manager, nixvim, ... }:
     let
       username = "taglia";
 
@@ -23,6 +27,8 @@
 
           modules =
             [
+	      nixvim.homeModules.nixvim
+
               {
                 home.username = username;
 
@@ -31,7 +37,7 @@
                   then "/Users/${username}"
                   else "/home/${username}";
 
-                home.stateVersion = "24.11";
+                home.stateVersion = "25.11";
               }
             ]
             ++ modules;
