@@ -78,6 +78,7 @@
         linux-x86-private = mkHome "x86_64-linux" [
           ./profiles/base.nix
           ./profiles/linux.nix
+          ./profiles/ai.nix
           ./profiles/private.nix
         ];
 
@@ -89,6 +90,7 @@
         linux-arm-private = mkHome "aarch64-linux" [
           ./profiles/base.nix
           ./profiles/linux-arm.nix
+          ./profiles/ai.nix
           ./profiles/private.nix
         ];
 
@@ -101,14 +103,9 @@
           ./profiles/base.nix
           ./profiles/apple.nix
           ./profiles/private.nix
-        ];
-
-        apple-private-ai = mkHome "aarch64-darwin" [
-          ./profiles/base.nix
-          ./profiles/apple.nix
-          ./profiles/private.nix
           ./profiles/ai.nix
         ];
+
       };
     };
 }
