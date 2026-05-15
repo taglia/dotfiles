@@ -90,10 +90,11 @@ This repo enables `bash`, `zsh`, and `fish` via Home Manager. If you want to mak
 command -v fish
 ```
 
-2) Add that path to `/etc/shells` (required by `chsh`):
+2) Add that path to `/etc/shells` if it is not already present (required by `chsh`):
 
 ```bash
-command -v fish | sudo tee -a /etc/shells
+fish_path="$(command -v fish)"
+grep -qxF "$fish_path" /etc/shells || echo "$fish_path" | sudo tee -a /etc/shells
 ```
 
 3) Change your login shell:
@@ -106,7 +107,7 @@ Log out and back in (or restart your terminal) to fully apply.
 
 ## Automation scripts
 
-These scripts are meant to be run from the repo root (`flake.nix` next to them):
+These scripts can be run from anywhere, but expect to live inside this repo (`flake.nix` next to `scripts/`):
 
 - `scripts/bootstrap.sh`: enable flakes (if needed) and run `home-manager switch`
 - `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it
@@ -118,4 +119,3 @@ Examples:
 ./scripts/bootstrap.sh --target apple-private
 ./scripts/set-default-shell.sh
 ```
-

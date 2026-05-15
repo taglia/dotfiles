@@ -25,6 +25,11 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target)
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        echo "error: --target requires a value" >&2
+        usage >&2
+        exit 2
+      fi
       target="${2:-}"
       shift 2
       ;;
@@ -53,7 +58,13 @@ fi
 ensure_flakes_enabled() {
   # Prefer /etc/nix/nix.conf when it exists (common for multi-user installs).
   # Fall back to ~/.config/nix/nix.conf for single-user setups.
-  local desired="experimental-features = nix-command flakes"
+  local desired="extra-experimental-features = nix-command flakes"
+
+  has_required_features() {
+    local file="$1"
+    grep -qE '^\s*(extra-)?experimental-features\s*=.*\bnix-command\b' "$file" \
+      && grep -qE '^\s*(extra-)?experimental-features\s*=.*\bflakes\b' "$file"
+  }
 
   if [[ -f /etc/nix/nix.conf ]] || [[ -d /etc/nix ]]; then
     if [[ ! -f /etc/nix/nix.conf ]]; then
@@ -63,7 +74,7 @@ ensure_flakes_enabled() {
       return 0
     fi
 
-    if ! sudo grep -qE '^\s*experimental-features\s*=.*\bflakes\b' /etc/nix/nix.conf; then
+    if ! sudo bash -c "$(declare -f has_required_features); has_required_features /etc/nix/nix.conf"; then
       echo "info: enabling flakes in /etc/nix/nix.conf (requires sudo)"
       echo "$desired" | sudo tee -a /etc/nix/nix.conf >/dev/null
     fi
@@ -76,7 +87,7 @@ ensure_flakes_enabled() {
     return 0
   fi
 
-  if ! grep -qE '^\s*experimental-features\s*=.*\bflakes\b' "$HOME/.config/nix/nix.conf"; then
+  if ! has_required_features "$HOME/.config/nix/nix.conf"; then
     echo "$desired" >>"$HOME/.config/nix/nix.conf"
   fi
 }
@@ -126,4 +137,3 @@ done.
 Next (optional):
   ./scripts/set-default-shell.sh
 EOF
-

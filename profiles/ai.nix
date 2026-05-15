@@ -1,10 +1,10 @@
-{ pkgs, pkgs-unstable, ... }:
+{ pkgs-unstable, ... }:
 
 {
-  home.packages = with pkgs; [
-    claude-code
+  home.packages = [
+    pkgs-unstable.claude-code
     pkgs-unstable.codex
-    opencode
-    ollama
+    pkgs-unstable.opencode
+    pkgs-unstable.ollama
   ];
 }

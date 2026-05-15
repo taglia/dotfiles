@@ -8,6 +8,7 @@
       vim.fn.sign_define("diagnosticsigninfo", { text = " ", texthl = "diagnosticinfo", linehl = "", numhl = "" })
     '';
   extraConfigLua = ''
+    vim.opt.undodir = vim.fn.stdpath("state") .. "/undo"
     vim.g.clipboard = {
       name = 'OSC 52',
       copy = {
@@ -101,5 +102,10 @@
     fillchars = {
       eob = " ";
     };
+
+    # Persistent undo
+    undofile = true;
+    undolevels = 100000;
+    undoreload = 100000;
   };
 }
