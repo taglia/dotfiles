@@ -3,31 +3,26 @@
     enable = true;
 
     settings = {
-      preset = "simple";
-
+      preset = "modern";
       options = {
-        show_source = {
-          enabled = false;
-        };
-
-        use_icons_from_diagnostic = true;
-
-        add_messages = true;
-
         multilines = {
-          enabled = false;
+          enabled = true;
+          always_show = false;
         };
-
-        show_all_diags_on_cursorline = false;
-
-        enable_on_insert = false;
-
-        break_line = {
-          enabled = false;
+        options = {
+          use_icons_from_diagnostic = true;
         };
-
+        virt_texts = {
+          priority = 2048;
+        };
+        # Display related diagnostics from LSP relatedInformation
+        show_related = {
+          enabled = true;
+          max_count = 3;
+        };
         overflow = {
           mode = "wrap";
+          padding = 0;
         };
       };
     };
