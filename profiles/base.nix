@@ -33,12 +33,16 @@
       ripgrep
       fd
       fzf
+      jq
+      gnupg
+      tree
 
       git
       curl
       wget
       unzip
       zip
+      openssl_3
 
       gcc
       gnumake
