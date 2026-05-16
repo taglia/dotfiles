@@ -12,15 +12,33 @@ fi
 target=""
 backup_mode="prompt"
 backup_extension=""
+username=""
+github_username=""
+email=""
+bootstrap_flake_dir="$repo_root"
+bootstrap_temp_dir=""
+
+cleanup() {
+  if [[ -n "$bootstrap_temp_dir" && -d "$bootstrap_temp_dir" ]]; then
+    rm -rf "$bootstrap_temp_dir"
+  fi
+}
+trap cleanup EXIT
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/bootstrap.sh [--target <name>] [--backup[ <extension>] | --backup-extension <extension> | --no-backup]
+Usage: ./scripts/bootstrap.sh [--target <name>] [--username <name>] [--github-username <name>] [--email <address>] [--backup[ <extension>] | --backup-extension <extension> | --no-backup]
 
 Runs Home Manager from a flake in this repo.
 
 --target  Home Manager configuration name from flake.nix (homeConfigurations.*)
           If omitted, auto-detects based on OS + arch.
+--username <name>
+          Local account username to use for home.username and home.homeDirectory.
+--github-username <name>
+          GitHub username to use for programs.git.settings.user.name.
+--email <address>
+          Email address to use for programs.git.settings.user.email.
 --backup  Back up conflicting files during Home Manager activation.
           If no extension is provided, uses a timestamped backup extension.
 --backup-extension <extension>
@@ -48,6 +66,114 @@ validate_backup_extension() {
   fi
 }
 
+validate_nix_string_value() {
+  local name="$1"
+  local value="$2"
+
+  if [[ -z "$value" ]]; then
+    echo "error: $name cannot be empty" >&2
+    exit 2
+  fi
+
+  if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *'"'* || "$value" == *'\'* ]]; then
+    echo "error: $name must not contain newlines, double quotes, or backslashes" >&2
+    exit 2
+  fi
+}
+
+prompt_identity_value() {
+  local prompt="$1"
+  local default_value="$2"
+  local value
+
+  if [[ -n "$default_value" ]]; then
+    printf "%s [%s]: " "$prompt" "$default_value" >&2
+  else
+    printf "%s: " "$prompt" >&2
+  fi
+
+  read -r value
+  if [[ -z "$value" ]]; then
+    value="$default_value"
+  fi
+
+  printf "%s" "$value"
+}
+
+current_flake_user_value() {
+  local attr="$1"
+  perl -0ne 'print "$1\n" if /'"$attr"'\s*=\s*"([^"]*)"/' flake.nix | head -n 1
+}
+
+configure_identity() {
+  local default_username default_github_username default_email
+
+  default_username="$(current_flake_user_value "username")"
+  default_github_username="$(current_flake_user_value "githubUsername")"
+  default_email="$(current_flake_user_value "email")"
+
+  if [[ -z "$default_username" ]]; then
+    default_username="$(id -un)"
+  fi
+
+  if [[ -z "$default_github_username" ]]; then
+    default_github_username="$default_username"
+  fi
+
+  if [[ -z "$default_email" ]]; then
+    default_email="${default_github_username}@example.com"
+  fi
+
+  if [[ -z "$username" || -z "$github_username" || -z "$email" ]]; then
+    if [[ ! -t 0 || ! -t 1 ]]; then
+      cat >&2 <<'EOF'
+error: bootstrap needs identity values before installing.
+
+Pass --username, --github-username, and --email when running non-interactively.
+EOF
+      exit 2
+    fi
+
+    echo "info: configuring local identity before Home Manager activation"
+
+    if [[ -z "$username" ]]; then
+      username="$(prompt_identity_value "Local username" "$default_username")"
+    fi
+
+    if [[ -z "$github_username" ]]; then
+      github_username="$(prompt_identity_value "GitHub username" "$default_github_username")"
+    fi
+
+    if [[ -z "$email" ]]; then
+      email="$(prompt_identity_value "Git email" "$default_email")"
+    fi
+  fi
+
+  validate_nix_string_value "username" "$username"
+  validate_nix_string_value "github username" "$github_username"
+  validate_nix_string_value "email" "$email"
+
+  bootstrap_temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-bootstrap.XXXXXX")"
+  bootstrap_flake_dir="$bootstrap_temp_dir/repo"
+  mkdir -p "$bootstrap_flake_dir"
+  cp -R "$repo_root/." "$bootstrap_flake_dir/"
+  rm -rf "$bootstrap_flake_dir/.git"
+
+  DOTFILES_BOOTSTRAP_USERNAME="$username" \
+  DOTFILES_BOOTSTRAP_GITHUB_USERNAME="$github_username" \
+  DOTFILES_BOOTSTRAP_EMAIL="$email" \
+    perl -0pi -e '
+      my $username = $ENV{"DOTFILES_BOOTSTRAP_USERNAME"};
+      my $github_username = $ENV{"DOTFILES_BOOTSTRAP_GITHUB_USERNAME"};
+      my $email = $ENV{"DOTFILES_BOOTSTRAP_EMAIL"};
+
+      s/(user\s*=\s*\{\s*username\s*=\s*")[^"]*(";\s*githubUsername\s*=\s*")[^"]*(";\s*email\s*=\s*")[^"]*(";\s*\};)/$1$username$2$github_username$3$email$4/s
+        or die "could not update user identity in flake.nix\n";
+    ' "$bootstrap_flake_dir/flake.nix"
+
+  echo "info: using generated bootstrap flake with local identity for $username"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target)
@@ -57,6 +183,33 @@ while [[ $# -gt 0 ]]; do
         exit 2
       fi
       target="${2:-}"
+      shift 2
+      ;;
+    --username)
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        echo "error: --username requires a value" >&2
+        usage >&2
+        exit 2
+      fi
+      username="${2:-}"
+      shift 2
+      ;;
+    --github-username)
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        echo "error: --github-username requires a value" >&2
+        usage >&2
+        exit 2
+      fi
+      github_username="${2:-}"
+      shift 2
+      ;;
+    --email)
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        echo "error: --email requires a value" >&2
+        usage >&2
+        exit 2
+      fi
+      email="${2:-}"
       shift 2
       ;;
     --backup)
@@ -176,12 +329,13 @@ auto_target() {
 }
 
 ensure_flakes_enabled
+configure_identity
 
 if [[ -z "$target" ]]; then
   target="$(auto_target)"
 fi
 
-home_manager_args=(switch --flake ".#${target}")
+home_manager_args=(switch --flake "${bootstrap_flake_dir}#${target}")
 
 if [[ "$backup_mode" == "prompt" ]]; then
   if [[ -t 0 && -t 1 ]]; then

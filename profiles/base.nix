@@ -1,6 +1,7 @@
 {
   pkgs,
   agenix,
+  user,
   ...
 }:
 
@@ -19,8 +20,8 @@
   programs.git = {
     enable = true;
 
-    settings.user.name = "taglia";
-    settings.user.email = "taglia@example.com";
+    settings.user.name = user.githubUsername;
+    settings.user.email = user.email;
   };
 
   programs.yazi.enable = true;

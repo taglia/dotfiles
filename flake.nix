@@ -32,7 +32,13 @@
       ...
     }:
     let
-      username = "taglia";
+      user = {
+        username = "taglia";
+        githubUsername = "taglia";
+        email = "612306+taglia@users.noreply.github.com";
+      };
+
+      username = user.username;
 
       mkHome =
         system: modules:
@@ -65,7 +71,7 @@
           inherit pkgs;
 
           extraSpecialArgs = {
-            inherit agenix pkgs-unstable;
+            inherit agenix pkgs-unstable user;
           };
 
           modules = [
