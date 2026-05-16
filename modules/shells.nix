@@ -46,29 +46,22 @@ in
 
     # Source Nix's fish integration on macOS so NIX_PROFILES, MANPATH,
     # XDG_DATA_DIRS, etc. are set up the way nix-darwin/NixOS would do it.
-    shellInit = lib.mkIf pkgs.stdenv.isDarwin ''
+    shellInit = ''
       if test -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
           source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
       end
     '';
 
-    loginShellInit = lib.mkMerge [
-      # Single-user Nix integration (harmless if file is missing)
-      ''
+    loginShellInit = ''
         if test -e ~/.nix-profile/etc/profile.d/nix.fish
             source ~/.nix-profile/etc/profile.d/nix.fish
         end
-      ''
-
-      # macOS only: counter path_helper's reordering of PATH in login shells
-      (lib.mkIf pkgs.stdenv.isDarwin ''
         fish_add_path --move --prepend --path \
             $HOME/.nix-profile/bin \
             /etc/profiles/per-user/$USER/bin \
             /run/current-system/sw/bin \
             /nix/var/nix/profiles/default/bin
-      '')
-    ];
+    '';
 
     interactiveShellInit = ''
       fish_vi_key_bindings
