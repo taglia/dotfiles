@@ -107,5 +107,9 @@
     undofile = true;
     undolevels = 100000;
     undoreload = 100000;
+
+    # Smart case search
+    ignorecase = true;
+    smartcase = true;
   };
 }
