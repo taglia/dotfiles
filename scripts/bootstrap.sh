@@ -10,16 +10,42 @@ if [[ ! -f "flake.nix" ]]; then
 fi
 
 target=""
+backup_mode="prompt"
+backup_extension=""
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/bootstrap.sh [--target <name>]
+Usage: ./scripts/bootstrap.sh [--target <name>] [--backup[ <extension>] | --backup-extension <extension> | --no-backup]
 
 Runs Home Manager from a flake in this repo.
 
 --target  Home Manager configuration name from flake.nix (homeConfigurations.*)
           If omitted, auto-detects based on OS + arch.
+--backup  Back up conflicting files during Home Manager activation.
+          If no extension is provided, uses a timestamped backup extension.
+--backup-extension <extension>
+          Same as --backup <extension>.
+--no-backup
+          Do not pass Home Manager's backup option.
 EOF
+}
+
+timestamped_backup_extension() {
+  date +"backup-%Y%m%d-%H%M%S"
+}
+
+validate_backup_extension() {
+  local extension="$1"
+
+  if [[ -z "$extension" ]]; then
+    echo "error: backup extension cannot be empty" >&2
+    exit 2
+  fi
+
+  if [[ "$extension" == */* ]]; then
+    echo "error: backup extension must not contain '/'" >&2
+    exit 2
+  fi
 }
 
 while [[ $# -gt 0 ]]; do
@@ -33,6 +59,30 @@ while [[ $# -gt 0 ]]; do
       target="${2:-}"
       shift 2
       ;;
+    --backup)
+      backup_mode="enabled"
+      if [[ $# -ge 2 && "${2:-}" != -* ]]; then
+        backup_extension="${2:-}"
+        shift 2
+      else
+        shift
+      fi
+      ;;
+    --backup-extension)
+      if [[ $# -lt 2 || -z "${2:-}" ]]; then
+        echo "error: --backup-extension requires a value" >&2
+        usage >&2
+        exit 2
+      fi
+      backup_mode="enabled"
+      backup_extension="${2:-}"
+      shift 2
+      ;;
+    --no-backup)
+      backup_mode="disabled"
+      backup_extension=""
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -44,6 +94,10 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ -n "$backup_extension" ]]; then
+  validate_backup_extension "$backup_extension"
+fi
 
 if ! command -v nix >/dev/null 2>&1; then
   cat >&2 <<'EOF'
@@ -62,8 +116,8 @@ ensure_flakes_enabled() {
 
   has_required_features() {
     local file="$1"
-    grep -qE '^\s*(extra-)?experimental-features\s*=.*\bnix-command\b' "$file" \
-      && grep -qE '^\s*(extra-)?experimental-features\s*=.*\bflakes\b' "$file"
+    grep -qE '^[[:space:]]*(extra-)?experimental-features[[:space:]]*=.*\bnix-command\b' "$file" \
+      && grep -qE '^[[:space:]]*(extra-)?experimental-features[[:space:]]*=.*\bflakes\b' "$file"
   }
 
   if [[ -f /etc/nix/nix.conf ]] || [[ -d /etc/nix ]]; then
@@ -127,8 +181,45 @@ if [[ -z "$target" ]]; then
   target="$(auto_target)"
 fi
 
+home_manager_args=(switch --flake ".#${target}")
+
+if [[ "$backup_mode" == "prompt" ]]; then
+  if [[ -t 0 && -t 1 ]]; then
+    backup_extension="$(timestamped_backup_extension)"
+
+    printf "Back up conflicting files with Home Manager's -b option? [Y/n] "
+    read -r reply
+
+    case "$reply" in
+      ""|[Yy]|[Yy][Ee][Ss])
+        backup_mode="enabled"
+        ;;
+      [Nn]|[Nn][Oo])
+        backup_mode="disabled"
+        backup_extension=""
+        ;;
+      *)
+        echo "error: expected yes or no" >&2
+        exit 2
+        ;;
+    esac
+  else
+    backup_mode="disabled"
+  fi
+fi
+
+if [[ "$backup_mode" == "enabled" ]]; then
+  if [[ -z "$backup_extension" ]]; then
+    backup_extension="$(timestamped_backup_extension)"
+  fi
+
+  validate_backup_extension "$backup_extension"
+  home_manager_args+=(-b "$backup_extension")
+  echo "info: Home Manager will back up conflicting files using extension: $backup_extension"
+fi
+
 echo "info: switching Home Manager configuration: $target"
-nix run github:nix-community/home-manager/release-25.11 -- switch --flake ".#${target}"
+nix run github:nix-community/home-manager/release-25.11 -- "${home_manager_args[@]}"
 
 cat <<EOF
 

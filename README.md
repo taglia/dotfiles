@@ -110,6 +110,8 @@ Log out and back in (or restart your terminal) to fully apply.
 These scripts can be run from anywhere, but expect to live inside this repo (`flake.nix` next to `scripts/`):
 
 - `scripts/bootstrap.sh`: enable flakes (if needed) and run `home-manager switch`
+  - On an interactive terminal, it asks whether to pass Home Manager's backup option for conflicting files.
+  - Use `--backup` for a timestamped backup extension, `--backup backup` for `.backup`, or `--no-backup` to skip the prompt.
 - `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it
 
 Examples:
@@ -117,5 +119,6 @@ Examples:
 ```bash
 ./scripts/bootstrap.sh
 ./scripts/bootstrap.sh --target apple-private
+./scripts/bootstrap.sh --target apple-private --backup
 ./scripts/set-default-shell.sh
 ```

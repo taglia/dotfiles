@@ -111,4 +111,9 @@ in
     enableBashIntegration = true;
     enableZshIntegration = true;
   };
+
+  programs.btop.enable = true;
+  programs.htop.enable = true;
+  programs.yazi.enable = true;
+  programs.bat.enable = true;
 }

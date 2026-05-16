@@ -46,6 +46,10 @@
       fastfetch
       magic-wormhole
 
+      # Dev tools
+      sqlite
+      nmap
+
       # Nix tooling
       nil
       nixfmt-rfc-style
