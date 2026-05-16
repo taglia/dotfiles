@@ -27,12 +27,12 @@ trap cleanup EXIT
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/bootstrap.sh [--target <name>] [--username <name>] [--github-username <name>] [--email <address>] [--backup[ <extension>] | --backup-extension <extension> | --no-backup]
+Usage: ./scripts/bootstrap_and_switch.sh [--target <name>] [--username <name>] [--github-username <name>] [--email <address>] [--backup[ <extension>] | --backup-extension <extension> | --no-backup]
 
 Runs Home Manager from a flake in this repo.
 
 --target  Home Manager configuration name from flake.nix (homeConfigurations.*)
-          If omitted, auto-detects based on OS + arch.
+          If omitted, prompts interactively and defaults to apple-private.
 --username <name>
           Local account username to use for home.username and home.homeDirectory.
 --github-username <name>
@@ -103,6 +103,25 @@ prompt_identity_value() {
 current_flake_user_value() {
   local attr="$1"
   perl -0ne 'print "$1\n" if /'"$attr"'\s*=\s*"([^"]*)"/' flake.nix | head -n 1
+}
+
+configure_target() {
+  local default_target="apple-private"
+
+  if [[ -n "$target" ]]; then
+    return 0
+  fi
+
+  if [[ -t 0 && -t 1 ]]; then
+    target="$(prompt_identity_value "Home Manager profile" "$default_target")"
+  else
+    target="$default_target"
+  fi
+
+  if [[ -z "$target" ]]; then
+    echo "error: target cannot be empty" >&2
+    exit 2
+  fi
 }
 
 configure_identity() {
@@ -275,14 +294,30 @@ ensure_flakes_enabled() {
 
   if [[ -f /etc/nix/nix.conf ]] || [[ -d /etc/nix ]]; then
     if [[ ! -f /etc/nix/nix.conf ]]; then
-      echo "info: creating /etc/nix/nix.conf (requires sudo)"
+      echo "info: /etc/nix exists but /etc/nix/nix.conf is missing."
+      echo "info: sudo is needed to create /etc/nix/nix.conf and enable Nix flakes."
       sudo mkdir -p /etc/nix
       echo "$desired" | sudo tee /etc/nix/nix.conf >/dev/null
       return 0
     fi
 
-    if ! sudo bash -c "$(declare -f has_required_features); has_required_features /etc/nix/nix.conf"; then
-      echo "info: enabling flakes in /etc/nix/nix.conf (requires sudo)"
+    if [[ -r /etc/nix/nix.conf ]]; then
+      if has_required_features /etc/nix/nix.conf; then
+        has_features=0
+      else
+        has_features=1
+      fi
+    else
+      echo "info: sudo is needed to read /etc/nix/nix.conf and check whether flakes are enabled."
+      if sudo bash -c "$(declare -f has_required_features); has_required_features /etc/nix/nix.conf"; then
+        has_features=0
+      else
+        has_features=1
+      fi
+    fi
+
+    if [[ "$has_features" -ne 0 ]]; then
+      echo "info: sudo is needed to update /etc/nix/nix.conf and enable Nix flakes."
       echo "$desired" | sudo tee -a /etc/nix/nix.conf >/dev/null
     fi
     return 0
@@ -299,41 +334,9 @@ ensure_flakes_enabled() {
   fi
 }
 
-auto_target() {
-  local os arch
-  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-  arch="$(uname -m)"
-
-  case "$os" in
-    darwin)
-      # flake.nix uses aarch64-darwin, which is Apple Silicon.
-      echo "apple"
-      ;;
-    linux)
-      case "$arch" in
-        x86_64) echo "linux-x86" ;;
-        aarch64|arm64) echo "linux-arm" ;;
-        *)
-          echo "error: unsupported arch for auto-detect: $arch" >&2
-          echo "hint: pass --target explicitly (see flake.nix homeConfigurations)" >&2
-          exit 2
-          ;;
-      esac
-      ;;
-    *)
-      echo "error: unsupported OS for auto-detect: $os" >&2
-      echo "hint: pass --target explicitly (see flake.nix homeConfigurations)" >&2
-      exit 2
-      ;;
-  esac
-}
-
-ensure_flakes_enabled
+configure_target
 configure_identity
-
-if [[ -z "$target" ]]; then
-  target="$(auto_target)"
-fi
+ensure_flakes_enabled
 
 home_manager_args=(switch --flake "${bootstrap_flake_dir}#${target}")
 
