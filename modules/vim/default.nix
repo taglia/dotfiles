@@ -8,9 +8,7 @@
       ./settings.nix
       ./plugins/undotree.nix
       ./plugins/treesitter.nix
-      ./plugins/telescope.nix
-      ./plugins/alpha.nix
-      ./plugins/neo-tree.nix
+      ./plugins/snacks.nix
       ./plugins/git.nix
 
       # LSP

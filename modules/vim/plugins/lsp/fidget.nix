@@ -64,16 +64,7 @@
         poll_rate = 10; # How frequently to update and render notifications
         filter = "info"; # "off", "error", "warn", "info", "debug", "trace"
         history_size = 128; # Number of removed messages to retain in history
-        override_vim_notify = true;
-        redirect = {
-          __raw = ''
-            function(msg, level, opts)
-              if opts and opts.on_open then
-                return require("fidget.integration.nvim-notify").delegate(msg, level, opts)
-              end
-            end
-          '';
-        };
+        override_vim_notify = false;
         configs = {
           default = {
             name = "Notifications";

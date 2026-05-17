@@ -112,12 +112,12 @@
 
         linux-arm = mkHome "aarch64-linux" [
           ./profiles/base.nix
-          ./profiles/linux-arm.nix
+          ./profiles/linux.nix
         ];
 
         linux-arm-private = mkHome "aarch64-linux" [
           ./profiles/base.nix
-          ./profiles/linux-arm.nix
+          ./profiles/linux.nix
           ./profiles/ai.nix
           ./profiles/private.nix
         ];

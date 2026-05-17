@@ -76,7 +76,6 @@
         kind = "tab";
         use_default_keymaps = true;
         integrations = {
-          telescope = true;
           diffview = false;
         };
       };

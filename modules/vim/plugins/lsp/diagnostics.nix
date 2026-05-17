@@ -94,8 +94,6 @@
   '';
 
   plugins = {
-    # ... your existing tiny-inline-diagnostic, telescope, etc.
-
     trouble = {
       enable = true;
       lazyLoad.settings.cmd = "Trouble";
