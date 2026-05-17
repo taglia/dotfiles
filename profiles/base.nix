@@ -52,8 +52,30 @@
       magic-wormhole
 
       # Dev tools
+      cmake
+      fx
+      gitleaks
+      glow
       sqlite
       nmap
+      hdf5
+      hugo
+      hub
+      links2
+      mosh
+      pandoc
+      pwgen
+      sc-im
+      tabiew
+      unar
+
+      # Fun
+      asciiquarium
+      cmatrix
+      nethack
+
+      # Security
+      lynis
 
       # Nix tooling
       nil
