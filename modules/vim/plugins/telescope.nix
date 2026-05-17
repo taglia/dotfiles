@@ -1,6 +1,8 @@
 {
   plugins.telescope = {
     enable = true;
+    lazyLoad.settings.cmd = [ "Telescope" ];
+
     extensions = {
       file-browser = {
         enable = true;
@@ -17,6 +19,11 @@
           };
         };
         sorting_strategy = "ascending";
+      };
+      pickers = {
+        colorscheme = {
+          enable_preview = true;
+        };
       };
     };
     keymaps = {
@@ -168,13 +175,4 @@
       };
     }
   ];
-  extraConfigLua = ''
-    require("telescope").setup{
-      pickers = {
-        colorscheme = {
-          enable_preview = true
-        }
-      }
-    }
-  '';
 }

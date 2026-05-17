@@ -5,6 +5,7 @@
     };
     cmp = {
       enable = true;
+
       settings = {
         autoEnableSources = true;
         experimental = {

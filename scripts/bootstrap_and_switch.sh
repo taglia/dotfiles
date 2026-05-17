@@ -16,20 +16,12 @@ username=""
 github_username=""
 email=""
 bootstrap_flake_dir="$repo_root"
-bootstrap_temp_dir=""
-
-cleanup() {
-  if [[ -n "$bootstrap_temp_dir" && -d "$bootstrap_temp_dir" ]]; then
-    rm -rf "$bootstrap_temp_dir"
-  fi
-}
-trap cleanup EXIT
 
 usage() {
   cat <<'EOF'
 Usage: ./scripts/bootstrap_and_switch.sh [--target <name>] [--username <name>] [--github-username <name>] [--email <address>] [--backup[ <extension>] | --backup-extension <extension> | --no-backup]
 
-Runs Home Manager from a flake in this repo.
+Updates the user identity in flake.nix, then runs Home Manager from this repo.
 
 --target  Home Manager configuration name from flake.nix (homeConfigurations.*)
           If omitted, prompts interactively and defaults to apple-private.
@@ -172,12 +164,6 @@ EOF
   validate_nix_string_value "github username" "$github_username"
   validate_nix_string_value "email" "$email"
 
-  bootstrap_temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-bootstrap.XXXXXX")"
-  bootstrap_flake_dir="$bootstrap_temp_dir/repo"
-  mkdir -p "$bootstrap_flake_dir"
-  cp -R "$repo_root/." "$bootstrap_flake_dir/"
-  rm -rf "$bootstrap_flake_dir/.git"
-
   DOTFILES_BOOTSTRAP_USERNAME="$username" \
   DOTFILES_BOOTSTRAP_GITHUB_USERNAME="$github_username" \
   DOTFILES_BOOTSTRAP_EMAIL="$email" \
@@ -188,9 +174,9 @@ EOF
 
       s/(user\s*=\s*\{\s*username\s*=\s*")[^"]*(";\s*githubUsername\s*=\s*")[^"]*(";\s*email\s*=\s*")[^"]*(";\s*\};)/$1$username$2$github_username$3$email$4/s
         or die "could not update user identity in flake.nix\n";
-    ' "$bootstrap_flake_dir/flake.nix"
+    ' flake.nix
 
-  echo "info: using generated bootstrap flake with local identity for $username"
+  echo "info: updated flake.nix identity for $username"
 }
 
 while [[ $# -gt 0 ]]; do
