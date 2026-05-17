@@ -1,6 +1,7 @@
 {
   plugins.neo-tree = {
     enable = true;
+    lazyLoad.settings.cmd = "Neotree";
     settings = {
       sources = [
         "filesystem"

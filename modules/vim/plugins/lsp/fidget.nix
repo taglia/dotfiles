@@ -1,6 +1,7 @@
 {
   plugins.fidget = {
     enable = true;
+    lazyLoad.settings.event = "LspAttach";
     settings = {
       logger = {
         level = "warn"; # "off", "error", "warn", "info", "debug", "trace"

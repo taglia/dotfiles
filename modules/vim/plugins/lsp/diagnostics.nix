@@ -1,6 +1,7 @@
 {
   plugins.tiny-inline-diagnostic = {
     enable = true;
+    lazyLoad.settings.event = "LspAttach";
 
     settings = {
       preset = "classic";
@@ -97,6 +98,7 @@
 
     trouble = {
       enable = true;
+      lazyLoad.settings.cmd = "Trouble";
 
       settings = {
         # Use icons from your icon provider (mini.icons or nvim-web-devicons).
@@ -184,8 +186,9 @@
       key = "[q";
       action.__raw = ''
         function()
-          if require("trouble").is_open() then
-            require("trouble").prev({ skip_groups = true, jump = true })
+          local trouble = package.loaded["trouble"]
+          if trouble and trouble.is_open() then
+            trouble.prev({ skip_groups = true, jump = true })
           else
             local ok, err = pcall(vim.cmd.cprev)
             if not ok then vim.notify(err, vim.log.levels.ERROR) end
@@ -199,8 +202,9 @@
       key = "]q";
       action.__raw = ''
         function()
-          if require("trouble").is_open() then
-            require("trouble").next({ skip_groups = true, jump = true })
+          local trouble = package.loaded["trouble"]
+          if trouble and trouble.is_open() then
+            trouble.next({ skip_groups = true, jump = true })
           else
             local ok, err = pcall(vim.cmd.cnext)
             if not ok then vim.notify(err, vim.log.levels.ERROR) end

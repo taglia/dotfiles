@@ -4,3 +4,4 @@ packages/*.tar.gz
 result
 result-*
 *.log
+.nvimlog
