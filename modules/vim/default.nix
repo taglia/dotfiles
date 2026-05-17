@@ -11,6 +11,7 @@
       ./plugins/telescope.nix
       ./plugins/alpha.nix
       ./plugins/neo-tree.nix
+      ./plugins/git.nix
 
       # LSP
       ./plugins/lsp/lsp.nix

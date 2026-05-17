@@ -1,2 +1,6 @@
 packages/*.tar.gz
 !packages/.gitkeep
+
+result
+result-*
+*.log
