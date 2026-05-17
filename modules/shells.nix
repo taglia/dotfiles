@@ -94,6 +94,33 @@ in
       set -g fish_pager_color_prefix f5c2e7
       set -g fish_pager_color_completion cdd6f4
       set -g fish_pager_color_description 6c7086
+
+      set -gx STARSHIP_RIGHT_STATUS (date '+%H:%M')
+
+      function __starship_command_started --on-event fish_preexec
+        set -gx STARSHIP_COMMAND_CURRENT_STARTED_AT (date '+%H:%M')
+      end
+
+      function __starship_command_finished --on-event fish_postexec
+        if set -q STARSHIP_COMMAND_CURRENT_STARTED_AT; and set -q CMD_DURATION; and test "$CMD_DURATION" -ge 1000 2>/dev/null
+          set -l seconds (math --scale=0 "$CMD_DURATION / 1000")
+          set -gx STARSHIP_RIGHT_STATUS "run at $STARSHIP_COMMAND_CURRENT_STARTED_AT, took "$seconds"s"
+          set -gx STARSHIP_RIGHT_STATUS_FROM_COMMAND 1
+        else
+          set -gx STARSHIP_RIGHT_STATUS (date '+%H:%M')
+          set -e STARSHIP_RIGHT_STATUS_FROM_COMMAND
+        end
+
+        set -e STARSHIP_COMMAND_CURRENT_STARTED_AT
+      end
+
+      function __starship_refresh_right_status --on-event fish_prompt
+        if set -q STARSHIP_RIGHT_STATUS_FROM_COMMAND
+          set -e STARSHIP_RIGHT_STATUS_FROM_COMMAND
+        else
+          set -gx STARSHIP_RIGHT_STATUS (date '+%H:%M')
+        end
+      end
     '';
   };
 

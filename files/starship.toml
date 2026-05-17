@@ -4,7 +4,7 @@ $os$username$directory$git_branch$git_status$fill$nodejs$python$rust$golang
 $character
 """
 
-right_format = """$cmd_duration$time"""
+right_format = """${env_var.STARSHIP_RIGHT_STATUS}"""
 
 # Catppuccin Mocha colors
 palette = "catppuccin_mocha"
@@ -96,8 +96,13 @@ style = "bold sapphire"
 
 [time]
 disabled = false
-format = "[$time]($style)"
+format = "[$time]($style) "
 time_format = "%R"
+style = "bold overlay2"
+
+[env_var.STARSHIP_RIGHT_STATUS]
+variable = "STARSHIP_RIGHT_STATUS"
+format = "[$env_value]($style) "
 style = "bold overlay2"
 
 [character]
@@ -109,7 +114,7 @@ vimcmd_replace_symbol = "[∙](red)"
 vimcmd_replace_one_symbol = "[∙](red)"
 
 [cmd_duration]
+disabled = true
 min_time = 1
 format = "took [$duration]($style) "
 style = "bold overlay2"
-
