@@ -12,6 +12,10 @@
     ../modules/vim/default.nix
   ];
 
+  # Avoid Home Manager's generated option manual, which can trigger
+  # context warnings for options.json on newer Nix versions.
+  manual.manpages.enable = false;
+
   programs.mise = {
     enable = true;
     enableFishIntegration = true;
@@ -91,6 +95,9 @@
       prettierd
 
       # Python tooling
+      (python3.withPackages (python-pkgs: [
+        python-pkgs.pip
+      ]))
       pyright
       ruff
       black
