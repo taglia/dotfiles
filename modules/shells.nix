@@ -53,14 +53,14 @@ in
     '';
 
     loginShellInit = ''
-        if test -e ~/.nix-profile/etc/profile.d/nix.fish
-            source ~/.nix-profile/etc/profile.d/nix.fish
-        end
-        fish_add_path --move --prepend --path \
-            $HOME/.nix-profile/bin \
-            /etc/profiles/per-user/$USER/bin \
-            /run/current-system/sw/bin \
-            /nix/var/nix/profiles/default/bin
+      if test -e ~/.nix-profile/etc/profile.d/nix.fish
+          source ~/.nix-profile/etc/profile.d/nix.fish
+      end
+      fish_add_path --move --prepend --path \
+          $HOME/.nix-profile/bin \
+          /etc/profiles/per-user/$USER/bin \
+          /run/current-system/sw/bin \
+          /nix/var/nix/profiles/default/bin
     '';
 
     interactiveShellInit = ''

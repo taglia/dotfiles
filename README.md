@@ -1,6 +1,6 @@
 # dotfiles (Nix + Home Manager)
 
-This repo is a Nix flake that defines multiple Home Manager configurations (Linux + macOS).
+This repo is a Nix flake that defines multiple Home Manager configurations for Linux and macOS.
 
 ## Prerequisites
 
@@ -52,32 +52,32 @@ cd ~/dotfiles
 
 Targets are defined in `flake.nix` under `homeConfigurations`:
 
-- `linux-x86`
-- `linux-x86-ai`
-- `linux-x86-private`
-- `linux-arm`
-- `linux-arm-private`
-- `apple`
-- `apple-private`
+- `mbp`
+- `linux`
+- `linux-ai`
+- `linux-private`
+- `linux_arm`
+
+Each target always includes the base profile. The Linux or macOS profile is selected from the target system in `flake.nix`, and the `ai` / `private` suffixes add those extra profile layers.
 
 If you're not sure, start with:
 
-- Apple Silicon macOS: `apple`
-- x86_64 Linux: `linux-x86`
-- aarch64 Linux: `linux-arm`
+- MacBook Pro: `mbp`
+- x86_64 Linux: `linux`
+- aarch64 Linux: `linux_arm`
 
 ## 5) Apply the configuration (home-manager switch)
 
 You can run Home Manager without installing it globally:
 
 ```bash
-nix run github:nix-community/home-manager/release-25.11 -- switch --flake .#apple
+nix run github:nix-community/home-manager/release-25.11 -- switch --flake .#mbp
 ```
 
-Replace `apple` with the target you chose, e.g.:
+Replace `mbp` with the target you chose, e.g.:
 
 ```bash
-nix run github:nix-community/home-manager/release-25.11 -- switch --flake .#linux-x86
+nix run github:nix-community/home-manager/release-25.11 -- switch --flake .#linux
 ```
 
 ## 6) (Optional) Set Fish as your login shell
@@ -109,16 +109,32 @@ Log out and back in (or restart your terminal) to fully apply.
 
 These scripts can be run from anywhere, but expect to live inside this repo (`flake.nix` next to `scripts/`):
 
-- `scripts/bootstrap.sh`: enable flakes (if needed) and run `home-manager switch`
+- `scripts/bootstrap_and_switch.sh`: update local identity in `flake.nix`, enable flakes if needed, and run `home-manager switch`
   - On an interactive terminal, it asks whether to pass Home Manager's backup option for conflicting files.
   - Use `--backup` for a timestamped backup extension, `--backup backup` for `.backup`, or `--no-backup` to skip the prompt.
 - `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it
+- `scripts/update-pkgs-unstable.sh`: update only the `nixpkgs-unstable` input
+- `scripts/package.sh`: create a tarball under `packages/`
 
 Examples:
 
 ```bash
-./scripts/bootstrap.sh
-./scripts/bootstrap.sh --target apple-private
-./scripts/bootstrap.sh --target apple-private --backup
+./scripts/bootstrap_and_switch.sh
+./scripts/bootstrap_and_switch.sh --target mbp
+./scripts/bootstrap_and_switch.sh --target mbp --backup
 ./scripts/set-default-shell.sh
+```
+
+## Flake maintenance
+
+The flake exposes a formatter for supported systems:
+
+```bash
+nix fmt
+```
+
+It also exposes Home Manager activation-package checks, grouped by system:
+
+```bash
+nix flake check
 ```

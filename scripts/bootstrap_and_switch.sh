@@ -24,7 +24,7 @@ Usage: ./scripts/bootstrap_and_switch.sh [--target <name>] [--username <name>] [
 Updates the user identity in flake.nix, then runs Home Manager from this repo.
 
 --target  Home Manager configuration name from flake.nix (homeConfigurations.*)
-          If omitted, prompts interactively and defaults to apple-private.
+          If omitted, prompts interactively and defaults to mbp.
 --username <name>
           Local account username to use for home.username and home.homeDirectory.
 --github-username <name>
@@ -98,7 +98,7 @@ current_flake_user_value() {
 }
 
 configure_target() {
-  local default_target="apple-private"
+  local default_target="mbp"
 
   if [[ -n "$target" ]]; then
     return 0

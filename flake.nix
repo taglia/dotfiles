@@ -40,38 +40,26 @@
 
       username = user.username;
 
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+
       mkHome =
-        system: modules:
+        system: extraModules:
         let
-          pkgs = import nixpkgs {
-            inherit system;
-
-            config = {
-              allowUnfreePredicate =
-                pkg:
-                builtins.elem (pkg.pname or pkg.name) [
-                  "claude-code"
-                ];
-            };
-          };
-
-          pkgs-unstable = import nixpkgs-unstable {
-            inherit system;
-
-            config = {
-              allowUnfreePredicate =
-                pkg:
-                builtins.elem (pkg.pname or pkg.name) [
-                  "claude-code"
-                ];
-            };
-          };
+          pkgs = import nixpkgs { inherit system; };
+          isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
+          platformModule = if isDarwin then ./profiles/apple.nix else ./profiles/linux.nix;
         in
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
 
           extraSpecialArgs = {
-            inherit agenix pkgs-unstable user;
+            inherit agenix nixpkgs-unstable user;
           };
 
           modules = [
@@ -81,58 +69,72 @@
             {
               home.username = username;
 
-              home.homeDirectory =
-                if builtins.match ".*darwin" system != null then "/Users/${username}" else "/home/${username}";
+              home.homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
 
               home.stateVersion = "25.11";
             }
+
+            ./profiles/base.nix
+            platformModule
           ]
-          ++ modules;
+          ++ extraModules;
         };
+
+      homeConfigurations = {
+        linux = mkHome "x86_64-linux" [ ];
+
+        linux-ai = mkHome "x86_64-linux" [
+          ./profiles/ai.nix
+        ];
+
+        linux-private = mkHome "x86_64-linux" [
+          ./profiles/ai.nix
+          ./profiles/private.nix
+        ];
+
+        linux_arm = mkHome "aarch64-linux" [ ];
+
+        mbp = mkHome "aarch64-darwin" [
+          ./profiles/ai.nix
+          ./profiles/private.nix
+        ];
+      };
     in
     {
-      homeConfigurations = {
-        linux-x86 = mkHome "x86_64-linux" [
-          ./profiles/base.nix
-          ./profiles/linux.nix
-        ];
+      inherit homeConfigurations;
 
-        linux-x86-ai = mkHome "x86_64-linux" [
-          ./profiles/base.nix
-          ./profiles/linux.nix
-          ./profiles/ai.nix
-        ];
+      formatter = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        pkgs.writeShellApplication {
+          name = "nixfmt-dotfiles";
+          runtimeInputs = [ pkgs.nixfmt-rfc-style ];
+          text = ''
+            if [ "$#" -gt 0 ]; then
+              exec nixfmt "$@"
+            fi
 
-        linux-x86-private = mkHome "x86_64-linux" [
-          ./profiles/base.nix
-          ./profiles/linux.nix
-          ./profiles/ai.nix
-          ./profiles/private.nix
-        ];
+            find . -path ./.git -prune -o -name '*.nix' -type f -print0 | xargs -0 nixfmt
+          '';
+        }
+      );
 
-        linux-arm = mkHome "aarch64-linux" [
-          ./profiles/base.nix
-          ./profiles/linux.nix
-        ];
+      checks = {
+        x86_64-linux = {
+          linux = homeConfigurations.linux.activationPackage;
+          linux-ai = homeConfigurations.linux-ai.activationPackage;
+          linux-private = homeConfigurations.linux-private.activationPackage;
+        };
 
-        linux-arm-private = mkHome "aarch64-linux" [
-          ./profiles/base.nix
-          ./profiles/linux.nix
-          ./profiles/ai.nix
-          ./profiles/private.nix
-        ];
+        aarch64-linux = {
+          linux_arm = homeConfigurations.linux_arm.activationPackage;
+        };
 
-        apple = mkHome "aarch64-darwin" [
-          ./profiles/base.nix
-          ./profiles/apple.nix
-        ];
-
-        apple-private = mkHome "aarch64-darwin" [
-          ./profiles/base.nix
-          ./profiles/apple.nix
-          ./profiles/private.nix
-          ./profiles/ai.nix
-        ];
+        aarch64-darwin = {
+          mbp = homeConfigurations.mbp.activationPackage;
+        };
       };
     };
 }

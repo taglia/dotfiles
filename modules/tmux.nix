@@ -1,14 +1,11 @@
 { pkgs, ... }:
 
 let
-  catppuccinScript =
-    "${pkgs.tmuxPlugins.catppuccin}/share/tmux-plugins/catppuccin/catppuccin.tmux";
+  catppuccinScript = "${pkgs.tmuxPlugins.catppuccin}/share/tmux-plugins/catppuccin/catppuccin.tmux";
 
-  cpuScript =
-    "${pkgs.tmuxPlugins.cpu}/share/tmux-plugins/cpu/cpu.tmux";
+  cpuScript = "${pkgs.tmuxPlugins.cpu}/share/tmux-plugins/cpu/cpu.tmux";
 
-  batteryScript =
-    "${pkgs.tmuxPlugins.battery}/share/tmux-plugins/battery/battery.tmux";
+  batteryScript = "${pkgs.tmuxPlugins.battery}/share/tmux-plugins/battery/battery.tmux";
 in
 {
   programs.tmux = {
@@ -26,13 +23,10 @@ in
       catppuccin
     ];
 
-    extraConfig =
-      builtins.readFile ../files/tmux.conf
-      + ''
-        run-shell ${cpuScript}
-        run-shell ${batteryScript}
-        run-shell ${catppuccinScript}
-      '';
+    extraConfig = builtins.readFile ../files/tmux.conf + ''
+      run-shell ${cpuScript}
+      run-shell ${batteryScript}
+      run-shell ${catppuccinScript}
+    '';
   };
 }
-

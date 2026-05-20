@@ -1,4 +1,18 @@
-{ pkgs-unstable, ... }:
+{ nixpkgs-unstable, pkgs, ... }:
+
+let
+  pkgs-unstable = import nixpkgs-unstable {
+    system = pkgs.stdenv.hostPlatform.system;
+
+    config = {
+      allowUnfreePredicate =
+        pkg:
+        builtins.elem (pkg.pname or pkg.name) [
+          "claude-code"
+        ];
+    };
+  };
+in
 
 {
   home.packages = [
