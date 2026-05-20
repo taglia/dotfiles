@@ -11,7 +11,12 @@ mkdir -p "$package_dir"
 
 tar \
   --exclude="$repo_name/.git" \
-  --exclude="$repo_name/packages/*.tar.gz" \
+  --exclude="$repo_name/packages" \
+  --exclude="$repo_name/result" \
+  --exclude="$repo_name/result-*" \
+  --exclude="$repo_name/*.log" \
+  --exclude="$repo_name/.nvimlog" \
+  --exclude="$repo_name/.DS_Store" \
   -czf "$archive" \
   -C "$(dirname -- "$repo_dir")" \
   "$repo_name"
