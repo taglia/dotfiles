@@ -1,6 +1,13 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
+  nvim = "${config.programs.nixvim.build.package}/bin/nvim";
+
   shellAliases = {
     ll = "ls -la";
     la = "ls -A";
@@ -10,14 +17,17 @@ let
     gc = "git commit";
     gp = "git push";
     gl = "git pull";
-    vim = "nvim";
+    nvim = nvim;
+    vim = nvim;
+    vimdiff = "${nvim} -d";
   };
 in
 {
   programs.home-manager.enable = true;
 
   home.sessionVariables = {
-    EDITOR = "nvim";
+    EDITOR = nvim;
+    VISUAL = nvim;
     LANG = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
   };
