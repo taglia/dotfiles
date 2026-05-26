@@ -4,9 +4,6 @@
     lsp-lines = {
       enable = true;
     };
-    lsp-format = {
-      enable = true;
-    };
     helm = {
       enable = true;
     };
@@ -14,37 +11,20 @@
       enable = true;
       inlayHints = true;
       servers = {
-        html = {
+        bashls = {
           enable = true;
         };
-        lua_ls = {
+        clangd = {
           enable = true;
         };
-        nil_ls = {
+        cssls = {
           enable = true;
         };
-        ts_ls = {
-          enable = true;
-        };
-        marksman = {
-          enable = true;
-        };
-        pyright = {
+        fish_lsp = {
           enable = true;
         };
         gopls = {
           enable = true;
-        };
-        terraformls = {
-          enable = true;
-        };
-        jsonls = {
-          enable = true;
-        };
-        rust_analyzer = {
-          enable = true;
-          installCargo = false;
-          installRustc = false;
         };
         helm_ls = {
           enable = true;
@@ -57,6 +37,44 @@
               };
             };
           };
+        };
+        html = {
+          enable = true;
+        };
+        jsonls = {
+          enable = true;
+        };
+        lua_ls = {
+          enable = true;
+        };
+        marksman = {
+          enable = true;
+        };
+        nil_ls = {
+          enable = true;
+        };
+        pyright = {
+          enable = true;
+        };
+        ruby_lsp = {
+          enable = true;
+        };
+        rust_analyzer = {
+          enable = true;
+          installCargo = false;
+          installRustc = false;
+        };
+        sqls = {
+          enable = true;
+        };
+        taplo = {
+          enable = true;
+        };
+        terraformls = {
+          enable = true;
+        };
+        ts_ls = {
+          enable = true;
         };
         yamlls = {
           enable = true;
@@ -117,20 +135,6 @@
           "<leader>cr" = {
             action = "rename";
             desc = "Rename";
-          };
-        };
-        diagnostic = {
-          "<leader>cd" = {
-            action = "open_float";
-            desc = "Line Diagnostics";
-          };
-          "[d" = {
-            action = "goto_next";
-            desc = "Next Diagnostic";
-          };
-          "]d" = {
-            action = "goto_prev";
-            desc = "Previous Diagnostic";
           };
         };
       };

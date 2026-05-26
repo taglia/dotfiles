@@ -144,6 +144,76 @@
   keymaps = [
     {
       mode = "n";
+      key = "<leader>cd";
+      action.__raw = ''
+        function()
+          vim.diagnostic.open_float()
+        end
+      '';
+      options.desc = "Line Diagnostics";
+    }
+    {
+      mode = "n";
+      key = "]d";
+      action.__raw = ''
+        function()
+          vim.diagnostic.goto_next()
+        end
+      '';
+      options.desc = "Next Diagnostic";
+    }
+    {
+      mode = "n";
+      key = "[d";
+      action.__raw = ''
+        function()
+          vim.diagnostic.goto_prev()
+        end
+      '';
+      options.desc = "Previous Diagnostic";
+    }
+    {
+      mode = "n";
+      key = "]e";
+      action.__raw = ''
+        function()
+          vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.ERROR })
+        end
+      '';
+      options.desc = "Next Error";
+    }
+    {
+      mode = "n";
+      key = "[e";
+      action.__raw = ''
+        function()
+          vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.ERROR })
+        end
+      '';
+      options.desc = "Previous Error";
+    }
+    {
+      mode = "n";
+      key = "]w";
+      action.__raw = ''
+        function()
+          vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.WARN })
+        end
+      '';
+      options.desc = "Next Warning";
+    }
+    {
+      mode = "n";
+      key = "[w";
+      action.__raw = ''
+        function()
+          vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.WARN })
+        end
+      '';
+      options.desc = "Previous Warning";
+    }
+    {
+      mode = "n";
       key = "<leader>xx";
       action = "<cmd>Trouble diagnostics toggle<cr>";
       options.desc = "Diagnostics (Trouble)";
