@@ -1,33 +1,30 @@
 {
-  config,
   pkgs,
   lib,
   ...
 }:
 
 let
-  nvim = "${config.programs.nixvim.build.package}/bin/nvim";
+  vim = "${pkgs.vim}/bin/vim";
+  stableNixpkgs = "github:NixOS/nixpkgs/nixos-26.05";
+  unstableNixpkgs = "github:NixOS/nixpkgs/nixos-unstable";
 
   shellAliases = {
     ll = "ls -la";
     la = "ls -A";
     l = "ls -CF";
 
-    gs = "git status";
-    gc = "git commit";
-    gp = "git push";
-    gl = "git pull";
-    nvim = nvim;
-    vim = nvim;
-    vimdiff = "${nvim} -d";
+    vi = vim;
+    vim = vim;
+    vimdiff = "${vim} -d";
   };
 in
 {
   programs.home-manager.enable = true;
 
   home.sessionVariables = {
-    EDITOR = nvim;
-    VISUAL = nvim;
+    EDITOR = vim;
+    VISUAL = vim;
     LANG = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
   };
@@ -54,11 +51,55 @@ in
       }
     ];
 
-    # Source Nix's fish integration on macOS so NIX_PROFILES, MANPATH,
-    # XDG_DATA_DIRS, etc. are set up the way nix-darwin/NixOS would do it.
+    # Source Nix's fish integration when available so NIX_PROFILES, MANPATH,
+    # XDG_DATA_DIRS, etc. match the active Nix installation.
     shellInit = ''
       if test -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
           source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
+      end
+
+      function run_stable
+          if test (count $argv) -eq 0
+              echo "usage: run_stable PACKAGE [ARGS...]"
+              return 2
+          end
+          set -l package $argv[1]
+          set -e argv[1]
+          nix run "${stableNixpkgs}#$package" -- $argv
+      end
+
+      function run_unstable
+          if test (count $argv) -eq 0
+              echo "usage: run_unstable PACKAGE [ARGS...]"
+              return 2
+          end
+          set -l package $argv[1]
+          set -e argv[1]
+          nix run "${unstableNixpkgs}#$package" -- $argv
+      end
+
+      function shell_stable
+          if test (count $argv) -eq 0
+              echo "usage: shell_stable PACKAGE [PACKAGE...]"
+              return 2
+          end
+          set -l packages
+          for package in $argv
+              set -a packages "${stableNixpkgs}#$package"
+          end
+          nix shell $packages
+      end
+
+      function shell_unstable
+          if test (count $argv) -eq 0
+              echo "usage: shell_unstable PACKAGE [PACKAGE...]"
+              return 2
+          end
+          set -l packages
+          for package in $argv
+              set -a packages "${unstableNixpkgs}#$package"
+          end
+          nix shell $packages
       end
     '';
 
@@ -105,6 +146,8 @@ in
       set -g fish_pager_color_completion cdd6f4
       set -g fish_pager_color_description 6c7086
 
+      # Feed Starship's right prompt with either the current time or, briefly
+      # after a slow command, when it started and how long it took.
       set -gx STARSHIP_RIGHT_STATUS (date '+%H:%M')
 
       function __starship_command_started --on-event fish_preexec
@@ -143,6 +186,8 @@ in
     enable = true;
   };
 
+  xdg.configFile."starship.toml".source = ../files/starship.toml;
+
   programs.atuin = {
     enable = true;
 
@@ -164,6 +209,7 @@ in
 
   programs.btop.enable = true;
   programs.htop.enable = true;
+
   programs.yazi = {
     enable = true;
     shellWrapperName = "y";

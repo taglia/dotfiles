@@ -49,11 +49,14 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
       mkHome =
-        system: extraModules:
+        {
+          system,
+          modules ? [ ],
+        }:
         let
           pkgs = import nixpkgs { inherit system; };
           isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
-          platformModule = if isDarwin then ./profiles/apple.nix else ./profiles/linux.nix;
+          platformModule = if isDarwin then ./profiles/darwin.nix else ./profiles/linux.nix;
         in
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
@@ -82,28 +85,53 @@
             ./profiles/base.nix
             platformModule
           ]
-          ++ extraModules;
+          ++ modules;
         };
 
-      homeConfigurations = {
-        linux = mkHome "x86_64-linux" [ ];
+      fullModules = [
+        ./modules/dev.nix
+        ./modules/packages-dev.nix
+        ./modules/media.nix
+      ];
 
-        linux-ai = mkHome "x86_64-linux" [
-          ./profiles/ai.nix
-        ];
+      hosts = {
+        linux = {
+          system = "x86_64-linux";
+          modules = fullModules;
+        };
 
-        linux-private = mkHome "x86_64-linux" [
-          ./profiles/ai.nix
-          ./profiles/private.nix
-        ];
+        linux-ai = {
+          system = "x86_64-linux";
+          modules = fullModules ++ [ ./profiles/ai.nix ];
+        };
 
-        linux_arm = mkHome "aarch64-linux" [ ];
+        linux-private = {
+          system = "x86_64-linux";
+          modules = fullModules ++ [
+            ./profiles/ai.nix
+            ./profiles/private.nix
+          ];
+        };
 
-        mbp = mkHome "aarch64-darwin" [
-          ./profiles/ai.nix
-          ./profiles/private.nix
-        ];
+        linux-minimal.system = "x86_64-linux";
+
+        linux-arm = {
+          system = "aarch64-linux";
+          modules = fullModules;
+        };
+
+        linux-minimal-arm.system = "aarch64-linux";
+
+        mbp = {
+          system = "aarch64-darwin";
+          modules = fullModules ++ [
+            ./profiles/ai.nix
+            ./profiles/private.nix
+          ];
+        };
       };
+
+      homeConfigurations = nixpkgs.lib.mapAttrs (_: mkHome) hosts;
     in
     {
       inherit homeConfigurations;
@@ -126,20 +154,11 @@
         }
       );
 
-      checks = {
-        x86_64-linux = {
-          linux = homeConfigurations.linux.activationPackage;
-          linux-ai = homeConfigurations.linux-ai.activationPackage;
-          linux-private = homeConfigurations.linux-private.activationPackage;
-        };
-
-        aarch64-linux = {
-          linux_arm = homeConfigurations.linux_arm.activationPackage;
-        };
-
-        aarch64-darwin = {
-          mbp = homeConfigurations.mbp.activationPackage;
-        };
-      };
+      checks = forAllSystems (
+        system:
+        nixpkgs.lib.genAttrs (builtins.filter (name: hosts.${name}.system == system) (
+          builtins.attrNames hosts
+        )) (name: homeConfigurations.${name}.activationPackage)
+      );
     };
 }
