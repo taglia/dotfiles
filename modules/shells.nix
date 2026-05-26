@@ -164,6 +164,10 @@ in
 
   programs.btop.enable = true;
   programs.htop.enable = true;
-  programs.yazi.enable = true;
+  programs.yazi = {
+    enable = true;
+    shellWrapperName = "y";
+  };
+
   programs.bat.enable = true;
 }

@@ -2,17 +2,17 @@
   description = "My Home Manager configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nixvim = {
-      url = "github:nix-community/nixvim/nixos-25.11";
+      url = "github:nix-community/nixvim/nixos-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -23,7 +23,7 @@
   };
 
   outputs =
-    {
+    inputs@{
       nixpkgs,
       nixpkgs-unstable,
       home-manager,
@@ -59,7 +59,12 @@
           inherit pkgs;
 
           extraSpecialArgs = {
-            inherit agenix nixpkgs-unstable user;
+            inherit
+              agenix
+              nixpkgs-unstable
+              user
+              inputs
+              ;
           };
 
           modules = [
@@ -110,7 +115,7 @@
         in
         pkgs.writeShellApplication {
           name = "nixfmt-dotfiles";
-          runtimeInputs = [ pkgs.nixfmt-rfc-style ];
+          runtimeInputs = [ pkgs.nixfmt ];
           text = ''
             if [ "$#" -gt 0 ]; then
               exec nixfmt "$@"

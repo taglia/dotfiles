@@ -34,8 +34,6 @@
     settings.user.email = user.email;
   };
 
-  programs.yazi.enable = true;
-
   xdg.configFile."starship.toml".source = ../files/starship.toml;
 
   home.packages =
@@ -89,7 +87,7 @@
 
       # Nix tooling
       nil
-      nixfmt-rfc-style
+      nixfmt
 
       # Lua / Neovim
       lua-language-server
