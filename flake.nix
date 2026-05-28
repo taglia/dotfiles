@@ -118,6 +118,7 @@
           modules = [
             home-manager.darwinModules.home-manager
             ./modules/darwin/homebrew.nix
+            ./modules/darwin/packages.nix
             ./modules/darwin/settings.nix
 
             (

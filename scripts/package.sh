@@ -14,6 +14,7 @@ tar \
   --exclude="$repo_name/packages" \
   --exclude="$repo_name/result" \
   --exclude="$repo_name/result-*" \
+  --exclude="$repo_name/unmanaged_apps.txt" \
   --exclude="$repo_name/*.log" \
   --exclude="$repo_name/.nvimlog" \
   --exclude="$repo_name/.DS_Store" \
