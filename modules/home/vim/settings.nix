@@ -22,6 +22,17 @@
     }
 
     vim.opt.clipboard = 'unnamedplus'
+
+    vim.api.nvim_create_autocmd({ "RecordingEnter", "RecordingLeave" }, {
+      callback = function()
+        vim.defer_fn(function()
+          local ok, lualine = pcall(require, "lualine")
+          if ok then
+            lualine.refresh({ place = { "statusline" } })
+          end
+        end, 0)
+      end,
+    })
   '';
 
   globals.mapleader = " ";
