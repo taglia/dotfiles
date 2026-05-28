@@ -171,9 +171,9 @@
         };
 
       fullModules = [
-        ./modules/dev.nix
-        ./modules/packages-dev.nix
-        ./modules/media.nix
+        ./modules/home/dev.nix
+        ./modules/home/packages-dev.nix
+        ./modules/home/media.nix
       ];
 
       hosts = rec {

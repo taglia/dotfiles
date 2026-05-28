@@ -4,9 +4,9 @@
 
 {
   imports = [
-    ../modules/packages-cli.nix
-    ../modules/shells.nix
-    ../modules/tmux.nix
+    ../modules/home/packages-cli.nix
+    ../modules/home/shells.nix
+    ../modules/home/tmux.nix
   ];
 
   # Avoid Home Manager's generated option manual, which can trigger

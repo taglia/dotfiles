@@ -186,7 +186,7 @@ in
     enable = true;
   };
 
-  xdg.configFile."starship.toml".source = ../files/starship.toml;
+  xdg.configFile."starship.toml".source = ../../files/starship.toml;
 
   programs.atuin = {
     enable = true;

@@ -23,7 +23,7 @@ in
       catppuccin
     ];
 
-    extraConfig = builtins.readFile ../files/tmux.conf + ''
+    extraConfig = builtins.readFile ../../files/tmux.conf + ''
       run-shell ${cpuScript}
       run-shell ${batteryScript}
       run-shell ${catppuccinScript}
