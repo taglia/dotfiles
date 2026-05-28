@@ -11,6 +11,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-darwin = {
+      url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixvim = {
       url = "github:nix-community/nixvim/nixos-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -27,6 +32,7 @@
       nixpkgs,
       nixpkgs-unstable,
       home-manager,
+      nix-darwin,
       nixvim,
       agenix,
       ...
@@ -48,6 +54,41 @@
 
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
+      mkHomeModules =
+        {
+          pkgs,
+          modules ? [ ],
+        }:
+        let
+          isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
+          platformModule = if isDarwin then ./profiles/darwin.nix else ./profiles/linux.nix;
+        in
+        [
+          nixvim.homeModules.nixvim
+          agenix.homeManagerModules.default
+
+          {
+            home.username = username;
+
+            home.homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
+
+            home.stateVersion = "25.11";
+          }
+
+          ./profiles/base.nix
+          platformModule
+        ]
+        ++ modules;
+
+      homeSpecialArgs = {
+        inherit
+          agenix
+          nixpkgs-unstable
+          user
+          inputs
+          ;
+      };
+
       mkHome =
         {
           system,
@@ -55,37 +96,77 @@
         }:
         let
           pkgs = import nixpkgs { inherit system; };
-          isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
-          platformModule = if isDarwin then ./profiles/darwin.nix else ./profiles/linux.nix;
         in
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
 
-          extraSpecialArgs = {
-            inherit
-              agenix
-              nixpkgs-unstable
-              user
-              inputs
-              ;
-          };
+          extraSpecialArgs = homeSpecialArgs;
+
+          modules = mkHomeModules { inherit pkgs modules; };
+        };
+
+      mkDarwin =
+        {
+          system,
+          modules ? [ ],
+        }:
+        nix-darwin.lib.darwinSystem {
+          inherit system;
+
+          specialArgs = homeSpecialArgs;
 
           modules = [
-            nixvim.homeModules.nixvim
-            agenix.homeManagerModules.default
+            home-manager.darwinModules.home-manager
+            ./modules/darwin/homebrew.nix
 
-            {
-              home.username = username;
+            (
+              { pkgs, ... }:
+              {
+                system.stateVersion = 6;
+                system.primaryUser = username;
 
-              home.homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
+                nix.settings.experimental-features = [
+                  "nix-command"
+                  "flakes"
+                ];
 
-              home.stateVersion = "25.11";
-            }
+                programs.fish.enable = true;
 
-            ./profiles/base.nix
-            platformModule
-          ]
-          ++ modules;
+                security.pam.services.sudo_local = {
+                  # Use Touch ID and Apple Watch for sudo when macOS allows it.
+                  touchIdAuth = true;
+
+                  # Keep biometric sudo working from inside tmux/screen sessions.
+                  reattach = true;
+                };
+
+                environment.shells = [
+                  pkgs.bashInteractive
+                  pkgs.fish
+                  pkgs.zsh
+                ];
+
+                users.users.${username} = {
+                  home = "/Users/${username}";
+                };
+
+                # Keep the primary user's login shell on the stable nix-darwin
+                # system profile path. The old standalone Home Manager path
+                # under ~/.nix-profile can disappear once Home Manager is
+                # integrated into nix-darwin.
+                system.activationScripts.primaryUserShell.text = ''
+                  dscl . -create /Users/${username} UserShell /run/current-system/sw/bin/fish
+                '';
+
+                home-manager = {
+                  useGlobalPkgs = true;
+                  useUserPackages = true;
+                  extraSpecialArgs = homeSpecialArgs;
+                  users.${username}.imports = mkHomeModules { inherit pkgs modules; };
+                };
+              }
+            )
+          ];
         };
 
       fullModules = [
@@ -94,7 +175,7 @@
         ./modules/media.nix
       ];
 
-      hosts = {
+      hosts = rec {
         linux = {
           system = "x86_64-linux";
           modules = fullModules;
@@ -129,12 +210,20 @@
             ./profiles/private.nix
           ];
         };
+
+        mbp-home = mbp;
       };
 
       homeConfigurations = nixpkgs.lib.mapAttrs (_: mkHome) hosts;
+
+      darwinHosts = {
+        mbp = hosts.mbp;
+      };
+
+      darwinConfigurations = nixpkgs.lib.mapAttrs (_: mkDarwin) darwinHosts;
     in
     {
-      inherit homeConfigurations;
+      inherit homeConfigurations darwinConfigurations;
 
       formatter = forAllSystems (
         system:
@@ -156,9 +245,19 @@
 
       checks = forAllSystems (
         system:
-        nixpkgs.lib.genAttrs (builtins.filter (name: hosts.${name}.system == system) (
-          builtins.attrNames hosts
-        )) (name: homeConfigurations.${name}.activationPackage)
+        let
+          homeChecks = nixpkgs.lib.genAttrs (builtins.filter (name: hosts.${name}.system == system) (
+            builtins.attrNames hosts
+          )) (name: homeConfigurations.${name}.activationPackage);
+
+          darwinChecks = builtins.listToAttrs (
+            map (name: {
+              name = "darwin-${name}";
+              value = darwinConfigurations.${name}.system;
+            }) (builtins.filter (name: darwinHosts.${name}.system == system) (builtins.attrNames darwinHosts))
+          );
+        in
+        homeChecks // darwinChecks
       );
     };
 }

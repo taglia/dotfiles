@@ -1,6 +1,6 @@
 # dotfiles (Nix + Home Manager)
 
-This repo is a Nix flake that defines multiple Home Manager configurations for Linux and macOS.
+This repo is a Nix flake that defines multiple Home Manager configurations for Linux and macOS. It also exposes a minimal nix-darwin configuration for macOS system-level setup.
 
 ## Prerequisites
 
@@ -52,33 +52,59 @@ cd ~/dotfiles
 
 Targets are defined in `flake.nix` under `homeConfigurations`:
 
-- `mbp`
+- `mbp-home`
+- `mbp` (legacy Home Manager-only alias)
 - `linux`
 - `linux-ai`
 - `linux-private`
-- `linux_arm`
+- `linux-arm`
 
 Each target always includes the base profile. The Linux or macOS profile is selected from the target system in `flake.nix`, and the `ai` / `private` suffixes add those extra profile layers.
 
 If you're not sure, start with:
 
-- MacBook Pro: `mbp`
+- MacBook Pro, Home Manager only: `mbp-home`
 - x86_64 Linux: `linux`
-- aarch64 Linux: `linux_arm`
+- aarch64 Linux: `linux-arm`
 
 ## 5) Apply the configuration (home-manager switch)
 
 You can run Home Manager without installing it globally:
 
 ```bash
-nix run github:nix-community/home-manager/release-25.11 -- switch --flake .#mbp
+nix run github:nix-community/home-manager/release-26.05 -- switch --flake .#mbp-home
 ```
 
 Replace `mbp` with the target you chose, e.g.:
 
 ```bash
-nix run github:nix-community/home-manager/release-25.11 -- switch --flake .#linux
+nix run github:nix-community/home-manager/release-26.05 -- switch --flake .#linux
 ```
+
+## 5b) Apply the macOS system configuration (nix-darwin)
+
+The flake also exposes `darwinConfigurations.mbp` for a minimal nix-darwin setup. This wraps the same Home Manager modules and adds macOS system-level pieces such as shell registration and Homebrew/Mac App Store inventory.
+
+Build it without switching first:
+
+```bash
+nix build .#darwinConfigurations.mbp.system
+```
+
+Then switch when ready:
+
+```bash
+darwin-rebuild switch --flake .#mbp
+```
+
+The Homebrew migration starts conservatively:
+
+- declared brews/casks/MAS apps are installed if missing
+- existing installed apps are not upgraded during activation
+- unmanaged Homebrew items are not removed
+- normal manual `brew update` / `brew upgrade` remains valid
+
+Mac App Store apps require the Mac to be signed into an Apple ID that owns those apps. Removing an app from `homebrew.masApps` does not uninstall it automatically.
 
 ## 6) (Optional) Set Fish as your login shell
 
