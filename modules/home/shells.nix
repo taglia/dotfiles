@@ -22,6 +22,10 @@ in
 {
   programs.home-manager.enable = true;
 
+  home.packages = [
+    pkgs.home-manager
+  ];
+
   home.sessionVariables = {
     EDITOR = vim;
     VISUAL = vim;
