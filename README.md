@@ -1,6 +1,6 @@
-# dotfiles (Nix + Home Manager)
+# dotfiles (Nix + Home Manager + nix-darwin)
 
-This repo is a Nix flake that defines multiple Home Manager configurations for Linux and macOS. It also exposes a minimal nix-darwin configuration for macOS system-level setup.
+This repo is a Nix flake that defines Home Manager configurations for Linux and macOS, plus a nix-darwin configuration for macOS system-level setup.
 
 ## Prerequisites
 
@@ -41,6 +41,8 @@ After editing `/etc/nix/nix.conf`, restart the Nix daemon:
 - Linux (systemd):
   - `sudo systemctl restart nix-daemon || true`
 
+On macOS, nix-darwin also declares these settings once activated, but the initial bootstrap still needs flakes enabled before the first switch.
+
 ## 3) Clone the repo
 
 ```bash
@@ -48,42 +50,31 @@ git clone <this-repo-url> ~/dotfiles
 cd ~/dotfiles
 ```
 
-## 4) Pick a Home Manager target
+## 4) Pick a target
 
 Targets are defined in `flake.nix` under `homeConfigurations`:
 
 - `mbp-home`
-- `mbp` (legacy Home Manager-only alias)
+- `mbp` (legacy Home Manager-only alias for `mbp-home`)
 - `linux`
 - `linux-ai`
 - `linux-private`
+- `linux-minimal`
 - `linux-arm`
+- `linux-minimal-arm`
 
 Each target always includes the base profile. The Linux or macOS profile is selected from the target system in `flake.nix`, and the `ai` / `private` suffixes add those extra profile layers.
 
 If you're not sure, start with:
 
-- MacBook Pro, Home Manager only: `mbp-home`
+- MacBook Pro, nix-darwin: `darwinConfigurations.mbp`
+- MacBook Pro, standalone Home Manager only: `mbp-home`
 - x86_64 Linux: `linux`
 - aarch64 Linux: `linux-arm`
 
-## 5) Apply the configuration (home-manager switch)
+## 5) Apply the macOS system configuration (nix-darwin)
 
-You can run Home Manager without installing it globally:
-
-```bash
-nix run github:nix-community/home-manager/release-26.05 -- switch --flake .#mbp-home
-```
-
-Replace `mbp` with the target you chose, e.g.:
-
-```bash
-nix run github:nix-community/home-manager/release-26.05 -- switch --flake .#linux
-```
-
-## 5b) Apply the macOS system configuration (nix-darwin)
-
-The flake also exposes `darwinConfigurations.mbp` for a minimal nix-darwin setup. This wraps the same Home Manager modules and adds macOS system-level pieces such as shell registration and Homebrew/Mac App Store inventory.
+The main macOS path is `darwinConfigurations.mbp`. It wraps the same Home Manager modules and adds system-level pieces such as shell registration, sudo Touch ID support, macOS settings, native Nix packages, and Homebrew/Mac App Store inventory.
 
 Build it without switching first:
 
@@ -97,18 +88,36 @@ Then switch when ready:
 darwin-rebuild switch --flake .#mbp
 ```
 
-The Homebrew migration starts conservatively:
+`darwin-rebuild switch` also activates the integrated Home Manager configuration for `taglia`.
 
-- declared brews/casks/MAS apps are installed if missing
-- existing installed apps are not upgraded during activation
-- unmanaged Homebrew items are not removed
-- normal manual `brew update` / `brew upgrade` remains valid
+Homebrew and Mac App Store apps are declared in `modules/darwin/homebrew.nix`. Current activation behavior is intentionally declarative:
 
-Mac App Store apps require the Mac to be signed into an Apple ID that owns those apps. Removing an app from `homebrew.masApps` does not uninstall it automatically.
+- declared brews, casks, and MAS apps are installed if missing
+- Homebrew metadata is updated during activation
+- installed Homebrew formulae and casks are upgraded during activation
+- undeclared Homebrew and MAS apps can be removed because `cleanup = "uninstall"` is enabled
 
-## 6) (Optional) Set Fish as your login shell
+Mac App Store apps require the Mac to be signed into an Apple ID that owns those apps. Keep `homebrew.masApps` complete when cleanup is enabled.
 
-This repo enables `bash`, `zsh`, and `fish` via Home Manager. If you want to make Fish your login shell:
+Native Nix packages installed into the nix-darwin system profile live in `modules/darwin/packages.nix`. macOS settings, fonts, Finder settings, and similar system preferences live in `modules/darwin/settings.nix`.
+
+## 6) Apply a standalone Home Manager configuration
+
+You can run Home Manager without installing it globally:
+
+```bash
+nix run github:nix-community/home-manager/release-26.05 -- switch --flake .#mbp-home
+```
+
+Replace `mbp-home` with the target you chose, e.g.:
+
+```bash
+nix run github:nix-community/home-manager/release-26.05 -- switch --flake .#linux
+```
+
+## 7) Shells
+
+nix-darwin registers `bash`, `zsh`, and `fish` as valid shells and sets the primary user's login shell to the nix-darwin Fish path. Standalone Home Manager systems do not change the login shell automatically. If you are not using nix-darwin and want to make Fish your login shell:
 
 1) Ensure Fish is installed (it should be after `home-manager switch`):
 
@@ -130,6 +139,15 @@ chsh -s "$(command -v fish)"
 ```
 
 Log out and back in (or restart your terminal) to fully apply.
+
+## Managed app config
+
+Some application config is managed by Home Manager from files in this repo:
+
+- Ghostty: `files/ghostty/config`
+- Aerospace: `files/aerospace/aerospace.toml`
+
+Apps that still need classification or manual handling are tracked in `unmanaged_apps.txt`. That file is committed for review, but excluded from `scripts/package.sh` archives.
 
 ## Secrets
 
@@ -245,19 +263,20 @@ Using an SSH key as an age identity can be convenient for one-off local use, but
 
 These scripts can be run from anywhere, but expect to live inside this repo (`flake.nix` next to `scripts/`):
 
-- `scripts/bootstrap_and_switch.sh`: update local identity in `flake.nix`, enable flakes if needed, and run `home-manager switch`
+- `scripts/bootstrap_and_switch.sh`: standalone Home Manager bootstrap; update local identity in `flake.nix`, enable flakes if needed, and run `home-manager switch`
+  - This is not the primary macOS nix-darwin path. Use `darwin-rebuild switch --flake .#mbp` for nix-darwin.
   - On an interactive terminal, it asks whether to pass Home Manager's backup option for conflicting files.
   - Use `--backup` for a timestamped backup extension, `--backup backup` for `.backup`, or `--no-backup` to skip the prompt.
-- `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it
+- `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it; useful for standalone Home Manager systems, not normally needed with nix-darwin
 - `scripts/update-pkgs-unstable.sh`: update only the `nixpkgs-unstable` input
-- `scripts/package.sh`: create a tarball under `packages/`
+- `scripts/package.sh`: create a tarball under `packages/`; excludes build outputs, logs, and `unmanaged_apps.txt`
 
 Examples:
 
 ```bash
 ./scripts/bootstrap_and_switch.sh
-./scripts/bootstrap_and_switch.sh --target mbp
-./scripts/bootstrap_and_switch.sh --target mbp --backup
+./scripts/bootstrap_and_switch.sh --target mbp-home
+./scripts/bootstrap_and_switch.sh --target linux --backup
 ./scripts/set-default-shell.sh
 ```
 

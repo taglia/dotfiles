@@ -21,10 +21,12 @@ usage() {
   cat <<'EOF'
 Usage: ./scripts/bootstrap_and_switch.sh [--target <name>] [--username <name>] [--github-username <name>] [--email <address>] [--backup[ <extension>] | --backup-extension <extension> | --no-backup]
 
-Updates the user identity in flake.nix, then runs Home Manager from this repo.
+Updates the user identity in flake.nix, then runs standalone Home Manager from this repo.
+This script does not run nix-darwin. On macOS with nix-darwin, prefer:
+  darwin-rebuild switch --flake .#mbp
 
 --target  Home Manager configuration name from flake.nix (homeConfigurations.*)
-          If omitted, prompts interactively and defaults to mbp.
+          If omitted, prompts interactively and defaults to mbp-home.
 --username <name>
           Local account username to use for home.username and home.homeDirectory.
 --github-username <name>
@@ -98,7 +100,7 @@ current_flake_user_value() {
 }
 
 configure_target() {
-  local default_target="mbp"
+  local default_target="mbp-home"
 
   if [[ -n "$target" ]]; then
     return 0
@@ -362,12 +364,12 @@ if [[ "$backup_mode" == "enabled" ]]; then
 fi
 
 echo "info: switching Home Manager configuration: $target"
-nix run github:nix-community/home-manager/release-25.11 -- "${home_manager_args[@]}"
+nix run github:nix-community/home-manager/release-26.05 -- "${home_manager_args[@]}"
 
 cat <<EOF
 
 done.
 
 Next (optional):
-  ./scripts/set-default-shell.sh
+  ./scripts/set-default-shell.sh  # standalone Home Manager only
 EOF
