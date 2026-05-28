@@ -27,6 +27,7 @@
         "filetype"
       ];
     };
+    tmux-navigator.enable = true;
     vim-surround.enable = true;
     which-key.enable = true;
     web-devicons.enable = true;
