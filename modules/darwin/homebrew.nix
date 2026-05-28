@@ -22,10 +22,7 @@
     };
 
     brews = [
-      # Required for `homebrew.masApps`.
-      "mas"
-
-      # Current formula. Consider moving to `pkgs.mole` later if it works well.
+      "mas" # Required for `homebrew.masApps`.
       "mole"
     ];
 
@@ -46,7 +43,6 @@
       "google-chrome"
       "jordanbaird-ice@beta"
       "kitty"
-      "latest"
       "lingon-x"
       "mailmate"
       "mouseless@preview"
@@ -55,6 +51,7 @@
       "pacifist"
       "permute"
       "qflipper"
+      "rhino-app"
       "script-debugger"
       "threema@beta"
       "virtualhereserver"
