@@ -148,6 +148,10 @@
                   pkgs.zsh
                 ];
 
+                environment.systemPackages = [
+                  home-manager.packages.${system}.home-manager
+                ];
+
                 users.users.${username} = {
                   home = "/Users/${username}";
                 };
