@@ -190,6 +190,11 @@ in
     enable = true;
   };
 
+  xdg.configFile."ghostty/config" = {
+    source = ../../files/ghostty/config;
+    force = true;
+  };
+
   xdg.configFile."starship.toml".source = ../../files/starship.toml;
 
   programs.atuin = {

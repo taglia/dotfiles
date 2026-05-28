@@ -1,0 +1,16 @@
+font-family = "Iosevka Term"
+theme = "Catppuccin Mocha"
+macos-titlebar-style = hidden
+window-padding-x = 5
+window-padding-y = 5
+
+background-opacity = 0.85
+background-blur-radius = 20
+
+shell-integration = fish
+
+confirm-close-surface = false
+quit-after-last-window-closed = true
+
+macos-secure-input-indication = true
+macos-option-as-alt = right
