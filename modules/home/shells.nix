@@ -190,6 +190,11 @@ in
     enable = true;
   };
 
+  xdg.configFile."aerospace/aerospace.toml" = {
+    source = ../../files/aerospace/aerospace.toml;
+    force = true;
+  };
+
   xdg.configFile."ghostty/config" = {
     source = ../../files/ghostty/config;
     force = true;
