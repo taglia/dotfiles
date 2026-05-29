@@ -8,11 +8,6 @@
   # Homebrew casks for vendor-distributed GUI apps that nixpkgs does not package
   # well on Darwin.
   environment.systemPackages = with pkgs; [
-    # Example:
-    #
-    # ghostty
-    #
-    # `ghostty` is currently Linux-only in the locked nixpkgs revision, so keep
-    # it managed as a Homebrew cask until nixpkgs supports it on Darwin.
+    pkgs.ghostty-bin
   ];
 }

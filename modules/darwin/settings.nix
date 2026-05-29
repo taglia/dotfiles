@@ -16,7 +16,18 @@
   #   nerd-fonts.hack
   #   nerd-fonts.iosevka
   # ];
-  fonts.packages = [ ];
+  fonts.packages = [
+    nerd-fonts.dejavu-sans-mono
+    nerd-fonts.fira-code
+    nerd-fonts.inconsolata
+    nerd-fonts.inconsolataVersion-go
+    nerd-fonts.iosevka
+    nerd-fonts.iosevka-term
+    nerd-fonts.iosevka-term-slab
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.meslo-lg
+    nerd-fonts.monofur
+  ];
 
   # General macOS defaults.
   #
@@ -98,4 +109,13 @@
   # - power management
   # - host-specific hardware support
   # - extra activation scripts for settings without nix-darwin options
+  
+  # Cesare's options
+  environment.enableAllTerminfo = true;
+  # Check nix.gc.* for automated garbage collector
+  # Check nix.settings.auto-optimise-store
+  power.restartAfterFreeze = true;
+  power.restartAfterPowerFailure = true;
+  # Check programs._1password*
+  # Check programs.fish* and from there onwards
 }
