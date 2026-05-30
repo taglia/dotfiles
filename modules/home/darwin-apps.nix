@@ -1,10 +1,24 @@
 { lib, ... }:
 
+let
+  mouselessConfig = ../../files/mouseless/config.yaml;
+  mouselessConfigTarget = "$HOME/Library/Containers/net.sonuscape.mouseless/Data/.mouseless/configs/config.yaml";
+in
+
 {
   home.file."Library/Containers/net.sonuscape.mouseless/Data/.mouseless/configs/config.yaml" = {
-    source = ../../files/mouseless/config.yaml;
+    source = mouselessConfig;
     force = true;
   };
+
+  home.activation.prepareMouselessConfigLink =
+    lib.hm.dag.entryBetween [ "linkGeneration" ] [ "checkLinkTargets" ]
+      ''
+        if [[ -e "${mouselessConfigTarget}" && ! -L "${mouselessConfigTarget}" ]] \
+          && /usr/bin/cmp -s ${mouselessConfig} "${mouselessConfigTarget}"; then
+          /bin/rm "${mouselessConfigTarget}"
+        fi
+      '';
 
   home.activation.configureDarwinAppDefaults = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     /usr/bin/defaults write com.superultra.Homerow auto-switch-input-source-id -string com.apple.keylayout.ABC
