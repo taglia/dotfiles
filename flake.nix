@@ -38,13 +38,13 @@
       ...
     }:
     let
-      user = {
+      defaultUser = {
         username = "taglia";
         githubUsername = "taglia";
         email = "612306+taglia@users.noreply.github.com";
       };
 
-      username = user.username;
+      username = defaultUser.username;
 
       supportedSystems = [
         "x86_64-linux"
@@ -58,10 +58,12 @@
         {
           pkgs,
           modules ? [ ],
+          user ? defaultUser,
         }:
         let
           isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
           platformModule = if isDarwin then ./profiles/darwin.nix else ./profiles/linux.nix;
+          username = user.username;
         in
         [
           nixvim.homeModules.nixvim
@@ -84,15 +86,16 @@
         inherit
           agenix
           nixpkgs-unstable
-          user
           inputs
           ;
+        user = defaultUser;
       };
 
       mkHome =
         {
           system,
           modules ? [ ],
+          user ? defaultUser,
         }:
         let
           pkgs = import nixpkgs { inherit system; };
@@ -100,9 +103,11 @@
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
 
-          extraSpecialArgs = homeSpecialArgs;
+          extraSpecialArgs = homeSpecialArgs // {
+            inherit user;
+          };
 
-          modules = mkHomeModules { inherit pkgs modules; };
+          modules = mkHomeModules { inherit pkgs modules user; };
         };
 
       mkDarwin =
@@ -206,6 +211,14 @@
 
         linux-minimal.system = "x86_64-linux";
 
+        linux-aws = {
+          system = "x86_64-linux";
+          user = defaultUser // {
+            username = "admin";
+          };
+          modules = fullModules ++ [ ./profiles/ai.nix ];
+        };
+
         linux-arm = {
           system = "aarch64-linux";
           modules = fullModules;
@@ -231,6 +244,7 @@
         _: host:
         mkHome {
           inherit (host) system;
+          user = host.user or defaultUser;
           modules = host.modules or [ ];
         }
       ) hosts;
