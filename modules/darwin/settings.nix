@@ -43,6 +43,9 @@
   system.defaults.NSGlobalDomain = {
     NSAutomaticPeriodSubstitutionEnabled = false;
     NSAutomaticCapitalizationEnabled = false;
+    NSAutomaticSpellingCorrectionEnabled = false;
+    NSAutomaticQuoteSubstitutionEnabled = false;
+    NSAutomaticDashSubstitutionEnabled = false;
     AppleTemperatureUnit = "Celsius";
     AppleShowAllExtensions = true;
     AppleMetricUnits = 1;
