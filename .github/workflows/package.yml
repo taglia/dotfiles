@@ -20,7 +20,9 @@ jobs:
         id: package
         run: |
           archive="$(PACKAGE_DIR="$RUNNER_TEMP/dotfiles-package" ./scripts/package.sh)"
-          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+          release_archive="$RUNNER_TEMP/dotfiles.tar.gz"
+          cp "$archive" "$release_archive"
+          echo "archive=$release_archive" >> "$GITHUB_OUTPUT"
 
       - name: Publish release
         env:
