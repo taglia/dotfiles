@@ -93,6 +93,17 @@
       "raspberry-pi-imager"
       "alfred"
       "airfoil"
+      "acorn"
+      "cheetah3d"
+      "chronosync"
+      "default-folder-x"
+      "fission"
+      "hyperbackupexplorer"
+      "loopback"
+      "screenflow"
+      "sf-symbols"
+      "spamsieve"
+      "vlc"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.
