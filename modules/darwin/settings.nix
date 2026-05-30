@@ -1,4 +1,9 @@
-{ ... }:
+{
+  darwinFeatures ? { },
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   # This module is the staging area for macOS system preferences and other
@@ -16,11 +21,11 @@
   #   nerd-fonts.hack
   #   nerd-fonts.iosevka
   # ];
-  fonts.packages = [
+  fonts.packages = with pkgs; [
     nerd-fonts.dejavu-sans-mono
     nerd-fonts.fira-code
     nerd-fonts.inconsolata
-    nerd-fonts.inconsolataVersion-go
+    nerd-fonts.inconsolata-go
     nerd-fonts.iosevka
     nerd-fonts.iosevka-term
     nerd-fonts.iosevka-term-slab
@@ -109,9 +114,19 @@
   # - power management
   # - host-specific hardware support
   # - extra activation scripts for settings without nix-darwin options
-  
+
   # Cesare's options
-  environment.enableAllTerminfo = true;
+  environment.systemPackages = with pkgs; [
+    ghostty-bin.terminfo
+    kitty.terminfo
+    wezterm.terminfo
+    alacritty.terminfo
+  ];
+
+  # `enableAllTerminfo` currently pulls in removed packages such as `termite`
+  # from nixpkgs 26.05, which prevents the Darwin system from evaluating.
+  # Keep the terminal entries we actually use in `environment.systemPackages`.
+  environment.enableAllTerminfo = false;
   # Check nix.gc.* for automated garbage collector
   # Check nix.settings.auto-optimise-store
   power.restartAfterFreeze = true;
