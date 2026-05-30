@@ -2,25 +2,12 @@
   darwinFeatures ? { },
   lib,
   pkgs,
+  user,
   ...
 }:
 
 {
-  # This module is the staging area for macOS system preferences and other
-  # Darwin-only settings. Keep additions here conservative: prefer settings
-  # that are easy to verify, easy to roll back, and clearly machine-level.
-
-  # Fonts installed system-wide by nix-darwin.
-  #
-  # Add font packages from nixpkgs here when you want them available to macOS
-  # apps outside the Home Manager environment.
-  #
-  # Example:
-  #
-  # fonts.packages = with pkgs; [
-  #   nerd-fonts.hack
-  #   nerd-fonts.iosevka
-  # ];
+  # Fonts installed system-wide for macOS apps outside Home Manager.
   fonts.packages = with pkgs; [
     nerd-fonts.dejavu-sans-mono
     nerd-fonts.fira-code
@@ -34,88 +21,7 @@
     nerd-fonts.monofur
   ];
 
-  # General macOS defaults.
-  #
-  # These are written with `defaults` during activation. Some changes require
-  # logging out, restarting affected apps, or rebooting before they are visible.
-  #
-  # Example:
-  #
-  # system.defaults.NSGlobalDomain = {
-  #   AppleShowAllExtensions = true;
-  #   InitialKeyRepeat = 15;
-  #   KeyRepeat = 2;
-  # };
-
-  # Finder settings.
-  #
-  # Example:
-  #
-  # system.defaults.finder = {
-  #   AppleShowAllExtensions = true;
-  #   FXEnableExtensionChangeWarning = false;
-  #   ShowPathbar = true;
-  #   ShowStatusBar = true;
-  # };
-
-  # Dock and Mission Control settings.
-  #
-  # Example:
-  #
-  # system.defaults.dock = {
-  #   autohide = true;
-  #   mru-spaces = false;
-  #   show-recents = false;
-  # };
-
-  # Trackpad, keyboard, and accessibility settings.
-  #
-  # Example:
-  #
-  # system.defaults.trackpad = {
-  #   Clicking = true;
-  #   TrackpadThreeFingerDrag = true;
-  # };
-  #
-  # system.defaults.universalaccess = {
-  #   reduceMotion = true;
-  # };
-
-  # Screenshots, clock, and other built-in preference domains.
-  #
-  # Example:
-  #
-  # system.defaults.screencapture = {
-  #   location = "~/Desktop";
-  #   type = "png";
-  # };
-  #
-  # system.defaults.menuExtraClock = {
-  #   Show24Hour = true;
-  #   ShowSeconds = false;
-  # };
-
-  # Escape hatch for preference domains that nix-darwin does not expose as
-  # typed options yet. Prefer typed `system.defaults.*` options when available.
-  #
-  # Example:
-  #
-  # system.defaults.CustomUserPreferences = {
-  #   "com.apple.TextEdit" = {
-  #     RichText = false;
-  #   };
-  # };
   system.defaults.CustomUserPreferences = { };
-
-  # Other Darwin-only configuration can live here as it becomes useful:
-  #
-  # - launchd daemons/agents
-  # - networking and firewall preferences
-  # - power management
-  # - host-specific hardware support
-  # - extra activation scripts for settings without nix-darwin options
-
-  # Cesare's options
   environment.systemPackages = with pkgs; [
     ghostty-bin.terminfo
     kitty.terminfo
@@ -127,10 +33,114 @@
   # from nixpkgs 26.05, which prevents the Darwin system from evaluating.
   # Keep the terminal entries we actually use in `environment.systemPackages`.
   environment.enableAllTerminfo = false;
-  # Check nix.gc.* for automated garbage collector
-  # Check nix.settings.auto-optimise-store
+
   power.restartAfterFreeze = true;
   power.restartAfterPowerFailure = lib.mkIf (darwinFeatures.restartAfterPowerFailure or false) true;
-  # Check programs._1password*
-  # Check programs.fish* and from there onwards
+
+  system.defaults.NSGlobalDomain = {
+    NSAutomaticPeriodSubstitutionEnabled = false;
+    NSAutomaticCapitalizationEnabled = false;
+    AppleTemperatureUnit = "Celsius";
+    AppleShowAllExtensions = true;
+    AppleMetricUnits = 1;
+    AppleMeasurementUnits = "Centimeters";
+    AppleInterfaceStyleSwitchesAutomatically = true;
+    AppleICUForce24HourTime = false;
+    "com.apple.keyboard.fnState" = true;
+    "com.apple.mouse.tapBehavior" = 1;
+    "com.apple.trackpad.forceClick" = true;
+  };
+  system.defaults.WindowManager = {
+    EnableTiledWindowMargins = false;
+    EnableTilingByEdgeDrag = false;
+  };
+  system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
+  system.defaults.controlcenter.FocusModes = true;
+
+  system.defaults.dock = {
+    autohide = true;
+    autohide-delay = 0.24;
+    largesize = 16;
+    # Use "left" or "right" here to move the Dock to a screen edge.
+    orientation = "bottom";
+    persistent-apps = [
+      "/Applications/Orion.app"
+      "/System/Applications/Mail.app"
+      "/Applications/OmniFocus.app"
+      "/Applications/1Password.app"
+      "/Applications/Ghostty.app"
+      "/Applications/ShellFish.app"
+      "/Applications/Screens 5.app"
+      "/Applications/Drafts.app"
+      "/Applications/DEVONthink.app"
+      "/Applications/Obsidian.app"
+      "/System/Applications/Messages.app"
+      "/Applications/Signal.app"
+      "/Applications/Ferdium.app"
+      "/Applications/Lire.app"
+    ];
+    persistent-others = [
+      {
+        folder = {
+          path = "/Users/${user.username}/Downloads";
+          arrangement = "date-added";
+          displayas = "stack";
+          showas = "fan";
+        };
+      }
+      {
+        folder = {
+          path = "/Users/${user.username}/TempSpace";
+          arrangement = "name";
+          displayas = "stack";
+          showas = "automatic";
+        };
+      }
+    ];
+    show-recents = true;
+    slow-motion-allowed = true;
+    wvous-bl-corner = 13;
+    wvous-tl-corner = 6;
+  };
+  system.defaults.finder = {
+    AppleShowAllExtensions = true;
+    ShowExternalHardDrivesOnDesktop = true;
+    ShowHardDrivesOnDesktop = false;
+    ShowMountedServersOnDesktop = true;
+    ShowPathbar = true;
+    ShowRemovableMediaOnDesktop = true;
+    ShowStatusBar = true;
+    _FXSortFoldersFirst = true;
+  };
+  system.defaults.iCal = {
+    "TimeZone support enabled" = true;
+    CalendarSidebarShown = true;
+    "first day of week" = "Monday";
+  };
+  system.defaults.loginwindow = {
+    GuestEnabled = false;
+    LoginwindowText = "Cesare's computer";
+  };
+  system.defaults.screensaver = {
+    askForPassword = true;
+    askForPasswordDelay = 2;
+  };
+  system.defaults.trackpad = {
+    Clicking = true;
+    DragLock = true;
+    Dragging = true;
+    ForceSuppressed = false;
+    TrackpadFourFingerHorizSwipeGesture = 2;
+    TrackpadPinch = true;
+    TrackpadRightClick = true;
+    TrackpadRotate = true;
+    TrackpadThreeFingerDrag = true;
+    TrackpadThreeFingerHorizSwipeGesture = 0;
+    TrackpadThreeFingerVertSwipeGesture = 0;
+    TrackpadThreeFingerTapGesture = 0;
+    TrackpadTwoFingerDoubleTapGesture = true;
+    TrackpadTwoFingerFromRightEdgeSwipeGesture = 3;
+  };
+  system.keyboard.enableKeyMapping = true;
+  system.keyboard.remapCapsLockToControl = true;
 }

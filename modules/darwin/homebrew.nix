@@ -13,7 +13,7 @@
     onActivation = {
       autoUpdate = true;
       upgrade = true;
-      cleanup = "uninstall";
+      cleanup = "zap";
     };
 
     taps = [
@@ -62,7 +62,7 @@
       "brave-browser"
       "cyberduck"
       "obsidian"
-      "ollama"
+      "ollama-app"
       "knockknock"
       "ghostty"
       "stats"
