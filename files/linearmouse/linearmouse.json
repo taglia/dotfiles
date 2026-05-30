@@ -1,0 +1,32 @@
+{
+  "$schema" : "https:\/\/schema.linearmouse.app\/0.10.2",
+  "schemes" : [
+    {
+      "buttons" : {
+        "universalBackForward" : true
+      },
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "productID" : "0xc654",
+          "productName" : "CadMouse Pro Wireless",
+          "vendorID" : "0x256f"
+        }
+      }
+    },
+    {
+      "buttons" : {
+        "universalBackForward" : true
+      },
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "productID" : "0xb031",
+          "productName" : "LIFT",
+          "serialNumber" : "4E3F28AA",
+          "vendorID" : "0x46d"
+        }
+      }
+    }
+  ]
+}

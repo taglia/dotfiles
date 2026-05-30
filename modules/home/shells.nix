@@ -186,8 +186,38 @@ in
     enable = true;
   };
 
+  xdg.configFile."btop/btop.conf" = {
+    source = ../../files/btop/btop.conf;
+    force = true;
+  };
+
   xdg.configFile."ghostty/config" = {
     source = ../../files/ghostty/config;
+    force = true;
+  };
+
+  xdg.configFile."glow/glow.yml" = {
+    source = ../../files/glow/glow.yml;
+    force = true;
+  };
+
+  xdg.configFile."kitty/current-theme.conf" = {
+    source = ../../files/kitty/current-theme.conf;
+    force = true;
+  };
+
+  xdg.configFile."kitty/kitty.conf" = {
+    source = ../../files/kitty/kitty.conf;
+    force = true;
+  };
+
+  xdg.configFile."linearmouse/linearmouse.json" = {
+    source = ../../files/linearmouse/linearmouse.json;
+    force = true;
+  };
+
+  xdg.configFile."mise/config.toml" = {
+    source = ../../files/mise/config.toml;
     force = true;
   };
 
