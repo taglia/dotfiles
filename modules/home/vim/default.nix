@@ -1,8 +1,14 @@
-{ inputs, ... }:
+{ inputs, pkgs, ... }:
 {
   programs.nixvim = {
     enable = true;
     nixpkgs.source = inputs.nixpkgs;
+
+    # vim-tmux-navigator shells out to `tmux` when moving from a Neovim split
+    # back to a tmux pane.
+    extraPackages = [
+      pkgs.tmux
+    ];
 
     imports = [
       ./keymaps.nix

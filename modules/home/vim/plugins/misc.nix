@@ -1,4 +1,10 @@
 {
+  extraConfigLuaPre = ''
+    -- Neovim 0.12 installs a default <C-l> redraw/nohlsearch mapping that
+    -- conflicts with vim-tmux-navigator's right-pane binding.
+    pcall(vim.keymap.del, "n", "<C-l>")
+  '';
+
   colorschemes.catppuccin.enable = true;
   plugins = {
     # Lazy loading
@@ -27,7 +33,10 @@
         "filetype"
       ];
     };
-    tmux-navigator.enable = true;
+    tmux-navigator = {
+      enable = true;
+      settings.no_wrap = 1;
+    };
     vim-surround.enable = true;
     which-key.enable = true;
     web-devicons.enable = true;
