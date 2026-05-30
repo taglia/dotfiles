@@ -104,6 +104,7 @@
       "sf-symbols"
       "spamsieve"
       "vlc"
+      "docker-desktop"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.
