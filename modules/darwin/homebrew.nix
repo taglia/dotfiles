@@ -20,7 +20,6 @@
       "marsanne/cask"
       "tw93/tap"
       "1password/tap"
-      "nikitabobko/tap"
     ];
 
     brews = [
@@ -33,7 +32,6 @@
       "1password"
       "1password-cli"
       "a-better-finder-rename"
-      "aerospace"
       "affinity"
       "airbuddy"
       "arduino-ide"

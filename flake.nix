@@ -120,6 +120,7 @@
 
           modules = [
             home-manager.darwinModules.home-manager
+            ./modules/darwin/aerospace.nix
             ./modules/darwin/homebrew.nix
             ./modules/darwin/packages.nix
             ./modules/darwin/settings.nix
@@ -226,7 +227,13 @@
         mbp-home = mbp;
       };
 
-      homeConfigurations = nixpkgs.lib.mapAttrs (_: mkHome) hosts;
+      homeConfigurations = nixpkgs.lib.mapAttrs (
+        _: host:
+        mkHome {
+          inherit (host) system;
+          modules = host.modules or [ ];
+        }
+      ) hosts;
 
       darwinHosts = {
         mbp = hosts.mbp;

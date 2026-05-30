@@ -145,7 +145,8 @@ Log out and back in (or restart your terminal) to fully apply.
 Some application config is managed by Home Manager from files in this repo:
 
 - Ghostty: `files/ghostty/config`
-- Aerospace: `files/aerospace/aerospace.toml`
+
+AeroSpace is managed directly by nix-darwin through `services.aerospace`.
 
 Apps that still need classification or manual handling are tracked in `unmanaged_apps.txt`. That file is committed for review, but excluded from `scripts/package.sh` archives.
 
