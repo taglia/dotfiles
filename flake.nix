@@ -109,11 +109,14 @@
         {
           system,
           modules ? [ ],
+          darwinFeatures ? { },
         }:
         nix-darwin.lib.darwinSystem {
           inherit system;
 
-          specialArgs = homeSpecialArgs;
+          specialArgs = homeSpecialArgs // {
+            inherit darwinFeatures;
+          };
 
           modules = [
             home-manager.darwinModules.home-manager
@@ -211,6 +214,9 @@
 
         mbp = {
           system = "aarch64-darwin";
+          darwinFeatures = {
+            restartAfterPowerFailure = false;
+          };
           modules = fullModules ++ [
             ./profiles/ai.nix
             ./profiles/private.nix

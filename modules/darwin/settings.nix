@@ -130,7 +130,7 @@
   # Check nix.gc.* for automated garbage collector
   # Check nix.settings.auto-optimise-store
   power.restartAfterFreeze = true;
-  power.restartAfterPowerFailure = true;
+  power.restartAfterPowerFailure = lib.mkIf (darwinFeatures.restartAfterPowerFailure or false) true;
   # Check programs._1password*
   # Check programs.fish* and from there onwards
 }
