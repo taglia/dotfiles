@@ -81,6 +81,18 @@
       "bbedit"
       "duckduckgo"
       "aldente"
+      "keyboard-maestro"
+      "cryptomator"
+      "mountain-duck"
+      "cyberduck"
+      "orion"
+      "blockblock"
+      "audio-hijack"
+      "moonlight"
+      "little-snitch"
+      "raspberry-pi-imager"
+      "alfred"
+      "airfoil"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.
