@@ -1,6 +1,10 @@
 { config, pkgs, ... }:
 
 {
+  imports = [
+    ../modules/home/darwin-apps.nix
+  ];
+
   home.packages = with pkgs; [
     qemu
   ];
