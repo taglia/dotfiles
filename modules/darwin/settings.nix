@@ -37,6 +37,9 @@
   power.restartAfterFreeze = true;
   power.restartAfterPowerFailure = lib.mkIf (darwinFeatures.restartAfterPowerFailure or false) true;
 
+  # Export to the per-user launchd session so GUI apps inherit it too.
+  launchd.user.envVariables.XDG_CONFIG_HOME = "/Users/${user.username}/.config";
+
   system.defaults.NSGlobalDomain = {
     NSAutomaticPeriodSubstitutionEnabled = false;
     NSAutomaticCapitalizationEnabled = false;
