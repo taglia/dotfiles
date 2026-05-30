@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   lib,
   ...
@@ -18,6 +19,50 @@ let
     vim = vim;
     vimdiff = "${vim} -d";
   };
+
+  managedConfigLinks = [
+    {
+      source = ../../files/btop/btop.conf;
+      target = "${config.xdg.configHome}/btop/btop.conf";
+    }
+    {
+      source = ../../files/ghostty/config;
+      target = "${config.xdg.configHome}/ghostty/config";
+    }
+    {
+      source = ../../files/glow/glow.yml;
+      target = "${config.xdg.configHome}/glow/glow.yml";
+    }
+    {
+      source = ../../files/kitty/current-theme.conf;
+      target = "${config.xdg.configHome}/kitty/current-theme.conf";
+    }
+    {
+      source = ../../files/kitty/kitty.conf;
+      target = "${config.xdg.configHome}/kitty/kitty.conf";
+    }
+    {
+      source = ../../files/linearmouse/linearmouse.json;
+      target = "${config.xdg.configHome}/linearmouse/linearmouse.json";
+    }
+    {
+      source = ../../files/mise/config.toml;
+      target = "${config.xdg.configHome}/mise/config.toml";
+    }
+    {
+      source = ../../files/starship.toml;
+      target = "${config.xdg.configHome}/starship.toml";
+    }
+  ];
+
+  prepareManagedConfigLinks = lib.concatMapStringsSep "\n" (
+    { source, target }:
+    ''
+      if [[ -e "${target}" && ! -L "${target}" ]] && /usr/bin/cmp -s ${source} "${target}"; then
+        /bin/rm "${target}"
+      fi
+    ''
+  ) managedConfigLinks;
 in
 {
   programs.home-manager.enable = true;
@@ -185,6 +230,10 @@ in
   programs.starship = {
     enable = true;
   };
+
+  home.activation.prepareManagedConfigLinks =
+    lib.hm.dag.entryBetween [ "linkGeneration" ] [ "checkLinkTargets" ]
+      prepareManagedConfigLinks;
 
   xdg.configFile."btop/btop.conf" = {
     source = ../../files/btop/btop.conf;
