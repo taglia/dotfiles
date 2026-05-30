@@ -148,8 +148,6 @@ Some application config is managed by Home Manager from files in this repo:
 
 AeroSpace is managed directly by nix-darwin through `services.aerospace`.
 
-Apps that still need classification or manual handling are tracked in `unmanaged_apps.txt`. That file is committed for review, but excluded from `scripts/package.sh` archives.
-
 ## Secrets
 
 This repo uses `agenix` for encrypted secrets. Keep `secrets.nix` initialized as an empty rule set until the first secret is needed:
@@ -270,7 +268,7 @@ These scripts can be run from anywhere, but expect to live inside this repo (`fl
   - Use `--backup` for a timestamped backup extension, `--backup backup` for `.backup`, or `--no-backup` to skip the prompt.
 - `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it; useful for standalone Home Manager systems, not normally needed with nix-darwin
 - `scripts/update-pkgs-unstable.sh`: update only the `nixpkgs-unstable` input
-- `scripts/package.sh`: create a tarball under `packages/`; excludes build outputs, logs, and `unmanaged_apps.txt`
+- `scripts/package.sh`: create a tarball under `packages/`; excludes build outputs and logs
 
 Examples:
 
