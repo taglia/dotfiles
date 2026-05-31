@@ -269,10 +269,10 @@ just switch-darwin
 just switch-home linux
 just check
 just gc --dry-run
-just update
+just update-all
 ```
 
-`just switch-home` requires a target argument, e.g. `just switch-home mbp-home` or `just switch-home linux`. `just update` updates all flake inputs; use `just update-unstable` to update only `nixpkgs-unstable`.
+`just switch-home` requires a target argument, e.g. `just switch-home mbp-home` or `just switch-home linux`. `just update-all` updates all flake inputs; use `just update-unstable` to update only `nixpkgs-unstable`.
 
 The underlying scripts can be run from anywhere, but expect to live inside this repo (`flake.nix` next to `scripts/`):
 

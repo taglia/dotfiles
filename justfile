@@ -21,7 +21,7 @@ gc *args:
 brew-check target="mbp":
     scripts/check-homebrew-apps.sh "{{target}}"
 
-update:
+update-all:
     nix flake update
 
 update-unstable:
