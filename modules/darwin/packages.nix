@@ -1,6 +1,20 @@
 { pkgs, ... }:
 
 {
+  # Fonts installed system-wide for macOS apps outside Home Manager.
+  fonts.packages = with pkgs; [
+    nerd-fonts.dejavu-sans-mono
+    nerd-fonts.fira-code
+    nerd-fonts.inconsolata
+    nerd-fonts.inconsolata-go
+    nerd-fonts.iosevka
+    nerd-fonts.iosevka-term
+    nerd-fonts.iosevka-term-slab
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.meslo-lg
+    nerd-fonts.monofur
+  ];
+
   # Native Nix packages installed into the nix-darwin system profile.
   #
   # Use this for macOS packages that are available in nixpkgs and make sense as
@@ -18,6 +32,6 @@
   #
   # programs._1password.enable = true;
   environment.systemPackages = with pkgs; [
-    pkgs.ghostty-bin
+    ghostty-bin
   ];
 }

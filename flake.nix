@@ -133,7 +133,9 @@
           modules = [
             home-manager.darwinModules.home-manager
             ./modules/darwin/aerospace.nix
+            ./modules/darwin/app-defaults.nix
             ./modules/darwin/homebrew.nix
+            ./modules/darwin/input.nix
             ./modules/darwin/packages.nix
             ./modules/darwin/settings.nix
 
