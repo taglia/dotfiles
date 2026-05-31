@@ -317,13 +317,13 @@ nix shell n#jq
 nix run u#some-package
 ```
 
-`nix-index` builds a local index of package contents so tools can answer which package provides a command or file. `comma` uses that index for one-shot command lookup and execution. For example, if `hello` is not installed:
+`nix-index` answers which package provides a command or file. `comma` uses that index for one-shot command lookup and execution. For example, if `hello` is not installed:
 
 ```bash
 , hello
 ```
 
-The first lookup may ask to build or update the nix-index database.
+The index database is provided by `nix-index-database` in the Home Manager generation.
 
 ## Flake maintenance
 

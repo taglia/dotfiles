@@ -25,6 +25,11 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -35,6 +40,7 @@
       nix-darwin,
       nixvim,
       agenix,
+      nix-index-database,
       ...
     }:
     let
@@ -68,6 +74,7 @@
         [
           nixvim.homeModules.nixvim
           agenix.homeManagerModules.default
+          nix-index-database.homeModules.nix-index
 
           {
             home.username = username;

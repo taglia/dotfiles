@@ -25,9 +25,7 @@
       fastfetch
       magic-wormhole
 
-      comma
       lynis
-      nix-index
       age
     ])
     ++ [

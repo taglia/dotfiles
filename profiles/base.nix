@@ -24,4 +24,13 @@
       path = inputs.nixpkgs-unstable;
     };
   };
+
+  programs.nix-index = {
+    enable = true;
+    enableBashIntegration = true;
+    enableFishIntegration = true;
+    enableZshIntegration = true;
+  };
+
+  programs.nix-index-database.comma.enable = true;
 }
