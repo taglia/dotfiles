@@ -268,6 +268,11 @@ These scripts can be run from anywhere, but expect to live inside this repo (`fl
   - Use `--backup` for a timestamped backup extension, `--backup backup` for `.backup`, or `--no-backup` to skip the prompt.
 - `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it; useful for standalone Home Manager systems, not normally needed with nix-darwin
 - `scripts/update-pkgs-unstable.sh`: update only the `nixpkgs-unstable` input
+- `scripts/gc.sh`: garbage collect old Nix generations and unreachable store paths; on macOS, also clean Homebrew orphan dependencies and stale cache files
+  - By default it runs `nix-collect-garbage --delete-older-than 30d`, which keeps about one month of rollback history.
+  - On NixOS and nix-darwin, it also runs the same Nix garbage collection through `sudo` when it detects a system profile. Use `--no-sudo` to limit cleanup to the current user, or `--sudo` to force root/system profile cleanup.
+  - On macOS, it runs `brew autoremove` and `brew cleanup`. It does not run `brew bundle cleanup`; nix-darwin already removes undeclared Homebrew packages during activation because `homebrew.onActivation.cleanup = "zap"` is enabled.
+  - Use `--dry-run` before the first real cleanup to inspect what supported tools would remove.
 - `scripts/package.sh`: create a tarball under `packages/`; excludes build outputs and logs
 
 Examples:
@@ -277,6 +282,9 @@ Examples:
 ./scripts/bootstrap_and_switch.sh --target mbp-home
 ./scripts/bootstrap_and_switch.sh --target linux --backup
 ./scripts/set-default-shell.sh
+./scripts/gc.sh --dry-run
+./scripts/gc.sh
+./scripts/gc.sh --older-than 14d --no-brew
 ```
 
 ## Flake maintenance
