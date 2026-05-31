@@ -69,7 +69,7 @@ validate_nix_string_value() {
     exit 2
   fi
 
-  if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *'"'* || "$value" == *'\'* ]]; then
+  if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *'"'* || "$value" == *"\\"* ]]; then
     echo "error: $name must not contain newlines, double quotes, or backslashes" >&2
     exit 2
   fi

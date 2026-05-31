@@ -60,6 +60,7 @@ Targets are defined in `flake.nix` under `homeConfigurations`:
 - `linux-ai`
 - `linux-private`
 - `linux-minimal`
+- `linux-aws` (uses local user `admin`)
 - `linux-arm`
 - `linux-minimal-arm`
 
@@ -95,7 +96,7 @@ Homebrew and Mac App Store apps are declared in `modules/darwin/homebrew.nix`. C
 - declared brews, casks, and MAS apps are installed if missing
 - Homebrew metadata is updated during activation
 - installed Homebrew formulae and casks are upgraded during activation
-- undeclared Homebrew and MAS apps can be removed because `cleanup = "uninstall"` is enabled
+- undeclared Homebrew and MAS apps can be removed, including related support files where Homebrew supports zapping, because `cleanup = "zap"` is enabled
 
 Mac App Store apps require the Mac to be signed into an Apple ID that owns those apps. Keep `homebrew.masApps` complete when cleanup is enabled.
 

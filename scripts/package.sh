@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-repo_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repo_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 repo_name=$(basename -- "$repo_dir")
 package_dir="${PACKAGE_DIR:-$repo_dir/packages}"
 archive="$package_dir/dotfiles_$(date +%Y%m%d).tar.gz"

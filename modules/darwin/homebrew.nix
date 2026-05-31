@@ -84,7 +84,6 @@
       "keyboard-maestro"
       "cryptomator"
       "mountain-duck"
-      "cyberduck"
       "orion"
       "blockblock"
       "audio-hijack"
@@ -112,8 +111,9 @@
     # Requirements:
     # - The Mac must be signed into the App Store with an Apple ID that owns
     #   these apps.
-    # - Keep this list complete when `cleanup = "uninstall"` is enabled, because
-    #   Homebrew Bundle cleanup can remove undeclared MAS apps.
+    # - Keep this list complete when `cleanup = "zap"` is enabled, because
+    #   Homebrew Bundle cleanup can remove undeclared MAS apps and related
+    #   support files where Homebrew supports zapping.
     masApps = {
       "1Blocker" = 1365531024;
       "1Password for Safari" = 1569813296;
