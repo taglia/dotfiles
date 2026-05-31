@@ -72,6 +72,7 @@ in
     VISUAL = vim;
     LANG = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
+    XDG_CONFIG_HOME = "${config.home.homeDirectory}/.config";
   };
 
   programs.bash = {
@@ -246,6 +247,11 @@ in
   };
 
   xdg.configFile."glow/glow.yml" = {
+    source = ../../files/glow/glow.yml;
+    force = true;
+  };
+
+  home.file."Library/Preferences/glow/glow.yml" = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
     source = ../../files/glow/glow.yml;
     force = true;
   };

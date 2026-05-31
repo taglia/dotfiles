@@ -16,6 +16,7 @@
     pandoc
     pwgen
     sc-im
+    shellcheck
     tabiew
     unar
 
