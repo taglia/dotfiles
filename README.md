@@ -100,6 +100,8 @@ Homebrew and Mac App Store apps are declared in `modules/darwin/homebrew.nix`. C
 
 Mac App Store apps require the Mac to be signed into an Apple ID that owns those apps. Keep `homebrew.masApps` complete when cleanup is enabled.
 
+Possible future improvement: `nix-homebrew` can make the Homebrew installation and taps more reproducible while still using the official Homebrew taps.
+
 Native Nix packages installed into the nix-darwin system profile live in `modules/darwin/packages.nix`. macOS settings, fonts, Finder settings, and similar system preferences live in `modules/darwin/settings.nix`.
 
 ## 6) Apply a standalone Home Manager configuration
