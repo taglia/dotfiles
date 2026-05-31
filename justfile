@@ -5,7 +5,7 @@ build-darwin target="mbp":
     nix build ".#darwinConfigurations.{{target}}.system"
 
 switch-darwin target="mbp":
-    darwin-rebuild switch --flake ".#{{target}}"
+    sudo darwin-rebuild switch --flake ".#{{target}}"
 
 switch-home target:
     nix run github:nix-community/home-manager/release-26.05 -- switch --flake ".#{{target}}"
