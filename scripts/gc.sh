@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-older_than="30d"
+older_than="7d"
 dry_run=0
 run_nix=1
 run_brew=1
@@ -16,7 +16,7 @@ Clean old Nix generations and unreachable store paths, plus Homebrew
 orphans/caches on macOS.
 
 Options:
-  --older-than PERIOD  Keep Nix generations newer than PERIOD (default: 30d)
+  --older-than PERIOD  Keep Nix generations newer than PERIOD (default: 7d)
   --dry-run            Show what would be removed where supported
   --no-nix             Skip Nix garbage collection
   --no-brew            Skip Homebrew cleanup
@@ -71,7 +71,7 @@ is_system_nix_host() {
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --older-than)
-      [[ "$#" -ge 2 ]] || die "--older-than requires a period, such as 30d"
+      [[ "$#" -ge 2 ]] || die "--older-than requires a period, such as 7d"
       older_than="$2"
       shift 2
       ;;

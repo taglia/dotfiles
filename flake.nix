@@ -141,6 +141,17 @@
                   "flakes"
                 ];
 
+                nix.registry = {
+                  n.to = {
+                    type = "path";
+                    path = nixpkgs;
+                  };
+                  u.to = {
+                    type = "path";
+                    path = nixpkgs-unstable;
+                  };
+                };
+
                 programs.fish.enable = true;
 
                 security.pam.services.sudo_local = {

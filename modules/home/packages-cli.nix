@@ -11,6 +11,7 @@
       fd
       fzf
       jq
+      just
       vim
       gnupg
       tree
@@ -24,7 +25,9 @@
       fastfetch
       magic-wormhole
 
+      comma
       lynis
+      nix-index
       age
     ])
     ++ [

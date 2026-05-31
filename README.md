@@ -261,7 +261,20 @@ Using an SSH key as an age identity can be convenient for one-off local use, but
 
 ## Automation scripts
 
-These scripts can be run from anywhere, but expect to live inside this repo (`flake.nix` next to `scripts/`):
+Common tasks are exposed through `just`:
+
+```bash
+just
+just switch-darwin
+just switch-home linux
+just check
+just gc --dry-run
+just update
+```
+
+`just switch-home` requires a target argument, e.g. `just switch-home mbp-home` or `just switch-home linux`. `just update` updates all flake inputs; use `just update-unstable` to update only `nixpkgs-unstable`.
+
+The underlying scripts can be run from anywhere, but expect to live inside this repo (`flake.nix` next to `scripts/`):
 
 - `scripts/bootstrap_and_switch.sh`: standalone Home Manager bootstrap; update local identity in `flake.nix`, enable flakes if needed, and run `home-manager switch`
   - This is not the primary macOS nix-darwin path. Use `darwin-rebuild switch --flake .#mbp` for nix-darwin.
@@ -270,7 +283,7 @@ These scripts can be run from anywhere, but expect to live inside this repo (`fl
 - `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it; useful for standalone Home Manager systems, not normally needed with nix-darwin
 - `scripts/update-pkgs-unstable.sh`: update only the `nixpkgs-unstable` input
 - `scripts/gc.sh`: garbage collect old Nix generations and unreachable store paths; on macOS, also clean Homebrew orphan dependencies and stale cache files
-  - By default it runs `nix-collect-garbage --delete-older-than 30d`, which keeps about one month of rollback history.
+  - By default it runs `nix-collect-garbage --delete-older-than 7d`, which keeps about one week of rollback history.
   - On NixOS and nix-darwin, it also runs the same Nix garbage collection through `sudo` when it detects a system profile. Use `--no-sudo` to limit cleanup to the current user, or `--sudo` to force root/system profile cleanup.
   - On macOS, it runs `brew autoremove` and `brew cleanup`. It does not run `brew bundle cleanup`; nix-darwin already removes undeclared Homebrew packages during activation because `homebrew.onActivation.cleanup = "zap"` is enabled.
   - Use `--dry-run` before the first real cleanup to inspect what supported tools would remove.
@@ -287,6 +300,28 @@ Examples:
 ./scripts/gc.sh
 ./scripts/gc.sh --older-than 14d --no-brew
 ```
+
+## Nix helpers
+
+The Home Manager and nix-darwin configurations register short Nix registry aliases:
+
+- `n` points to this flake's stable `nixpkgs` input
+- `u` points to this flake's unstable `nixpkgs-unstable` input
+
+Examples:
+
+```bash
+nix shell n#jq
+nix run u#some-package
+```
+
+`nix-index` builds a local index of package contents so tools can answer which package provides a command or file. `comma` uses that index for one-shot command lookup and execution. For example, if `hello` is not installed:
+
+```bash
+, hello
+```
+
+The first lookup may ask to build or update the nix-index database.
 
 ## Flake maintenance
 
