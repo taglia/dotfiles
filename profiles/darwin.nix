@@ -1,12 +1,8 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 
 {
   imports = [
     ../modules/home/darwin-apps.nix
-  ];
-
-  home.packages = with pkgs; [
-    qemu
   ];
 
   home.sessionPath = [

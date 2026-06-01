@@ -104,6 +104,14 @@ Possible future improvement: `nix-homebrew` can make the Homebrew installation a
 
 Native Nix packages installed into the nix-darwin system profile live in `modules/darwin/packages.nix`. macOS settings, fonts, Finder settings, and similar system preferences live in `modules/darwin/settings.nix`.
 
+Docker Desktop is intentionally not managed. Container development on macOS uses Colima and Lima from Home Manager, with the Docker CLI and Docker Compose from nixpkgs. The VM backend package `qemu` is installed through nix-darwin because it is a host-level runtime dependency. Start the runtime manually when needed:
+
+```bash
+colima start
+docker context ls
+docker version
+```
+
 ## 6) Apply a standalone Home Manager configuration
 
 You can run Home Manager without installing it globally:
