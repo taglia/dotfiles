@@ -21,6 +21,7 @@
 
   power.restartAfterFreeze = true;
   power.restartAfterPowerFailure = lib.mkIf (darwinFeatures.restartAfterPowerFailure or false) true;
+  power.sleep.display = 5;
 
   # Export to the per-user launchd session so GUI apps inherit it too.
   launchd.user.envVariables.XDG_CONFIG_HOME = "/Users/${user.username}/.config";
@@ -47,6 +48,13 @@
   };
   system.defaults.screensaver = {
     askForPassword = true;
-    askForPasswordDelay = 2;
+    askForPasswordDelay = 5;
   };
+
+  # nix-darwin exposes screensaver password settings, but not the
+  # current-host idle timer that controls when the screensaver starts.
+  system.activationScripts.postActivation.text = lib.mkAfter ''
+    launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
+      defaults -currentHost write com.apple.screensaver idleTime -int 120
+  '';
 }
