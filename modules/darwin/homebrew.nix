@@ -14,6 +14,9 @@
       autoUpdate = true;
       upgrade = true;
       cleanup = "zap";
+      # Homebrew Bundle 4.7 requires an explicit noninteractive confirmation
+      # when `--cleanup` is used during activation.
+      extraFlags = [ "--force-cleanup" ];
     };
 
     taps = [
