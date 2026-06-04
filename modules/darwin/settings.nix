@@ -46,13 +46,8 @@
     GuestEnabled = false;
     LoginwindowText = "Cesare's computer";
   };
-  system.defaults.screensaver = {
-    askForPassword = true;
-    askForPasswordDelay = 5;
-  };
-
-  # nix-darwin exposes screensaver password settings, but not the
-  # current-host idle timer that controls when the screensaver starts.
+  # nix-darwin does not expose the current-host idle timer that controls when the
+  # screensaver starts.
   system.activationScripts.postActivation.text = lib.mkAfter ''
     launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
       defaults -currentHost write com.apple.screensaver idleTime -int 120
