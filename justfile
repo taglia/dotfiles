@@ -29,3 +29,7 @@ update-unstable:
 
 package:
     scripts/package.sh
+
+push:
+    git push origin main
+    git push github main
