@@ -112,6 +112,22 @@
         layout = {
           preset = "default";
         };
+        # Show dotfiles and gitignored files by default. Alt-h and Alt-i still
+        # toggle these categories when a narrower view is useful.
+        sources = {
+          files = {
+            hidden = true;
+            ignored = true;
+          };
+          grep = {
+            hidden = true;
+            ignored = true;
+          };
+          explorer = {
+            hidden = true;
+            ignored = true;
+          };
+        };
       };
     };
   };
