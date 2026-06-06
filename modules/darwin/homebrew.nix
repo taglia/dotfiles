@@ -20,9 +20,7 @@
     };
 
     taps = [
-      "marsanne/cask"
-      "tw93/tap"
-      "1password/tap"
+      # "marsanne/cask" # This is the licensed version of Cork (GUI for brew)
     ];
 
     brews = [
@@ -42,7 +40,6 @@
       "basictex"
       "big-mean-folder-machine"
       "blender"
-      "cork"
       "downie"
       "ferdium"
       "font-hack-nerd-font"
