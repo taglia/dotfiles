@@ -106,6 +106,16 @@
       "sf-symbols"
       "spamsieve"
       "vlc"
+
+      "trezor-suite"
+      "devonthink"
+      "imazing"
+      "cookie"
+      "carbon-copy-cloner"
+      "bambu-studio"
+      "backblaze"
+      "backblaze-downloader"
+      "backblaze-restore"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.

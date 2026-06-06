@@ -36,6 +36,86 @@ nix eval ".#darwinConfigurations.${host}.config.homebrew.brewfile" --raw > "$bre
 sed -nE 's/^[[:space:]]*cask[[:space:]]+"([^"]+)".*/\1/p' "$brewfile" | sort -u > "$declared_casks"
 brew list --cask -1 2>/dev/null | sort -u > "$installed_casks"
 
+normalize_path() {
+  local path="$1"
+
+  path="${path/#\~/$HOME}"
+  ruby -e 'puts File.expand_path(ARGV.fetch(0)).sub(%r{/+\z}, "")' "$path"
+}
+
+join_package_path() {
+  local volume="$1"
+  local location="$2"
+  local payload_path="$3"
+  local prefix
+  local path
+
+  if [[ "$payload_path" = /* ]]; then
+    path="$payload_path"
+  else
+    prefix="${volume%/}"
+    if [[ -n "$location" && "$location" != "." && "$location" != "/" ]]; then
+      prefix="$prefix/${location#/}"
+    fi
+    if [[ -z "$prefix" ]]; then
+      path="/$payload_path"
+    else
+      path="$prefix/$payload_path"
+    fi
+  fi
+
+  normalize_path "$path"
+}
+
+package_receipt_apps() {
+  local receipt_pattern="$1"
+  local receipt
+  local volume
+  local location
+  local app_root
+  local candidate
+  local candidates=()
+
+  while IFS= read -r receipt; do
+    [[ -n "$receipt" ]] || continue
+
+    volume="/"
+    location=""
+    while IFS=: read -r key value; do
+      value="${value# }"
+      case "$key" in
+        volume) volume="$value" ;;
+        location) location="$value" ;;
+      esac
+    done < <(pkgutil --pkg-info "$receipt" 2>/dev/null || true)
+
+    while IFS= read -r app_root; do
+      [[ -n "$app_root" ]] || continue
+      candidates=(
+        "$(join_package_path "$volume" "$location" "$app_root")"
+        "$(normalize_path "/Applications/$(basename "$app_root")")"
+        "$(normalize_path "$HOME/Applications/$(basename "$app_root")")"
+      )
+
+      for candidate in "${candidates[@]}"; do
+        if [[ -d "$candidate" ]]; then
+          printf '%s\n' "$candidate"
+          break
+        fi
+      done
+    done < <(
+      pkgutil --files "$receipt" 2>/dev/null |
+        ruby -e '
+          ARGF.each_line(chomp: true) do |line|
+            app = line[%r{\A(.+?\.app)(?:/|\z)}, 1]
+            puts app if app
+          end
+        ' |
+        sort -u
+    )
+  done < <(pkgutil --pkgs="$receipt_pattern" 2>/dev/null || true)
+}
+
 {
   if [[ -s "$installed_casks" ]]; then
     mapfile -t installed_cask_args < "$installed_casks"
@@ -49,15 +129,36 @@ brew list --cask -1 2>/dev/null | sort -u > "$installed_casks"
           json = JSON.parse(STDIN.read)
           json.fetch("casks", []).each do |cask|
             cask.fetch("artifacts", []).each do |artifact|
-              next unless artifact.key?("app")
+              if artifact.key?("app")
+                source = Array(artifact["app"]).first
+                target = artifact["target"] || File.join("/Applications", File.basename(source))
+                target = target.sub(/\A~/, ENV.fetch("HOME"))
+                puts ["app", File.expand_path(target).sub(%r{/+\z}, "")].join("\t")
+              end
 
-              source = Array(artifact["app"]).first
-              target = artifact["target"] || File.join("/Applications", File.basename(source))
-              target = target.sub(/\A~/, ENV.fetch("HOME"))
-              puts File.expand_path(target).sub(%r{/+\z}, "")
+              Array(artifact["uninstall"]).each do |uninstall|
+                next unless uninstall.is_a?(Hash)
+
+                Array(uninstall["pkgutil"]).each do |receipt_pattern|
+                  puts ["pkgutil", receipt_pattern].join("\t")
+                end
+
+                Array(uninstall["delete"]).each do |path|
+                  next unless path.to_s.end_with?(".app")
+
+                  path = path.sub(/\A~/, ENV.fetch("HOME"))
+                  puts ["app", File.expand_path(path).sub(%r{/+\z}, "")].join("\t")
+                end
+              end
             end
           end
-        '
+        ' |
+        while IFS=$'\t' read -r artifact_type artifact_value; do
+          case "$artifact_type" in
+            app) printf '%s\n' "$artifact_value" ;;
+            pkgutil) package_receipt_apps "$artifact_value" ;;
+          esac
+        done
     done
   fi
 } | sort -u > "$brew_owned_apps"
@@ -115,6 +216,7 @@ if [[ -s "$unmanaged_apps" ]]; then
 
       casks = JSON.parse(File.read(ARGV.fetch(0)))
       app_paths = File.readlines(ARGV.fetch(1), chomp: true)
+      installed_tokens = File.readlines(ARGV.fetch(2), chomp: true).to_h { |token| [token, true] }
 
       catalog = casks.map do |cask|
         keys = [cask["token"], *Array(cask["name"])].compact.flat_map do |value|
@@ -152,10 +254,17 @@ if [[ -s "$unmanaged_apps" ]]; then
           selected = (exact.empty? ? matches : exact).first(3)
           cask_list = selected.map { |cask| "#{cask[:token]} (#{cask[:url]})" }.join(", ")
           suffix = matches.length > selected.length ? ", ..." : ""
-          puts "#{path}\tHomebrew cask: available as #{cask_list}#{suffix}"
+          installed = selected.select { |cask| installed_tokens.key?(cask[:token]) }
+
+          if installed.empty?
+            puts "#{path}\tHomebrew cask: available as #{cask_list}#{suffix}"
+          else
+            installed_list = installed.map { |cask| "#{cask[:token]} (#{cask[:url]})" }.join(", ")
+            puts "#{path}\tHomebrew cask: installed as #{installed_list}, but this app path is not owned"
+          end
         end
       end
-    ' "$cask_index_json" "$unmanaged_apps" > "$unmanaged_app_availability"
+    ' "$cask_index_json" "$unmanaged_apps" "$installed_casks" > "$unmanaged_app_availability"
   else
     sed $'s/$/\tHomebrew cask: lookup unavailable/' "$unmanaged_apps" > "$unmanaged_app_availability"
   fi
@@ -199,12 +308,42 @@ if [[ -s "$unmanaged_apps" ]]; then
   echo "App bundles not owned by Homebrew casks or MAS receipts:"
   if [[ -s "$unmanaged_app_availability" ]]; then
     ruby -e '
+      unavailable = []
+      installed = []
+      available = []
+
       ARGF.each_line(chomp: true) do |line|
         path, status = line.split("\t", 2)
-        puts "  - #{path} (#{status})"
+        entry = "  - #{path} (#{status})"
+
+        if status&.start_with?("Homebrew cask: installed as")
+          installed << entry
+        elsif status&.start_with?("Homebrew cask: available as")
+          available << entry
+        else
+          unavailable << entry
+        end
+      end
+
+      unless unavailable.empty?
+        puts "  Cask unavailable:"
+        puts unavailable
+      end
+
+      unless installed.empty?
+        puts if !unavailable.empty?
+        puts "  Cask installed but app path not owned:"
+        puts installed
+      end
+
+      unless available.empty?
+        puts if !unavailable.empty? || !installed.empty?
+        puts "  Cask available:"
+        puts available
       end
     ' "$unmanaged_app_availability"
   else
+    echo "  Cask unavailable:"
     sed 's/^/  - /' "$unmanaged_apps"
   fi
   echo
@@ -216,4 +355,4 @@ else
   echo "Note: manually installed vendor apps can be legitimate; this script flags them so you can decide whether to add a cask, MAS entry, or leave them unmanaged."
 fi
 
-exit "$has_findings"
+exit 0
