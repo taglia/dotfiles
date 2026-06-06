@@ -29,5 +29,6 @@
 
     # TeX
     texlive.combined.scheme-small
+    ghostscript
   ];
 }
