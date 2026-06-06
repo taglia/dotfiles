@@ -116,6 +116,35 @@ package_receipt_apps() {
   done < <(pkgutil --pkgs="$receipt_pattern" 2>/dev/null || true)
 }
 
+payload_app_install_targets() {
+  local cask="$1"
+  local payload_app
+  local basename
+  local candidate
+
+  brew list --cask "$cask" 2>/dev/null |
+    ruby -e '
+      ARGF.each_line(chomp: true) do |line|
+        line.scan(%r{[^/]+\.app}).each do |app|
+          puts app
+        end
+      end
+    ' |
+    sort -u |
+    while IFS= read -r payload_app; do
+      [[ -n "$payload_app" ]] || continue
+      basename="$(basename "$payload_app")"
+
+      for candidate in \
+        "/Applications/$basename" \
+        "$HOME/Applications/$basename"; do
+        if [[ -d "$candidate" ]]; then
+          normalize_path "$candidate"
+        fi
+      done
+    done
+}
+
 {
   if [[ -s "$installed_casks" ]]; then
     mapfile -t installed_cask_args < "$installed_casks"
@@ -159,6 +188,7 @@ package_receipt_apps() {
             pkgutil) package_receipt_apps "$artifact_value" ;;
           esac
         done
+      payload_app_install_targets "$cask"
     done
   fi
 } | sort -u > "$brew_owned_apps"
