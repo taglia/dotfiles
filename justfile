@@ -18,13 +18,13 @@ check:
 gc *args:
     scripts/gc.sh {{args}}
 
-check-brew target="mbp":
+check-brew-declared target="mbp":
     scripts/check-homebrew-apps.sh "{{target}}"
 
 update-nix:
     nix flake update
 
-check-updates-brew:
+check-brew-updates:
     brew update
     brew outdated --formula --verbose
     brew outdated --cask --greedy --verbose

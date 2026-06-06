@@ -278,6 +278,8 @@ just
 just switch-darwin
 just switch-home linux
 just check
+just check-brew-declared
+just check-brew-updates
 just gc --dry-run
 just update
 ```
