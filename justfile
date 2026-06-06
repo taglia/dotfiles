@@ -18,27 +18,27 @@ check:
 gc *args:
     scripts/gc.sh {{args}}
 
-brew-check target="mbp":
+check-brew target="mbp":
     scripts/check-homebrew-apps.sh "{{target}}"
 
-update-all:
+update-nix:
     nix flake update
 
-check-brew-and-mas-updates:
+check-updates-brew:
     brew update
     brew outdated --formula --verbose
     brew outdated --cask --greedy --verbose
     mas outdated
 
-update-brew-and-mas:
+update-brew:
     brew update
     brew upgrade --formula
     brew upgrade --cask --greedy --force
     sudo mas upgrade
 
-update-everything:
+update:
     nix flake update
-    just update-brew-and-mas
+    just update-brew
 
 update-unstable:
     scripts/update-pkgs-unstable.sh
