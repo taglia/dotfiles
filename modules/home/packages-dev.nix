@@ -26,5 +26,8 @@
 
     # Nix formatting
     nixfmt
+
+    # TeX
+    texlive.combined.scheme-small
   ];
 }

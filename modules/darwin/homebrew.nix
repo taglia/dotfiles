@@ -37,7 +37,6 @@
       "airbuddy"
       "arduino-ide"
       "balenaetcher"
-      "basictex"
       "big-mean-folder-machine"
       "blender"
       "downie"
