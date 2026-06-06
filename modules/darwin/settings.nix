@@ -50,6 +50,6 @@
   # screensaver starts.
   system.activationScripts.postActivation.text = lib.mkAfter ''
     launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
-      defaults -currentHost write com.apple.screensaver idleTime -int 120
+      defaults -currentHost write com.apple.screensaver idleTime -int 300
   '';
 }
