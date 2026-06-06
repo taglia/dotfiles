@@ -24,6 +24,22 @@ brew-check target="mbp":
 update-all:
     nix flake update
 
+check-brew-and-mas-updates:
+    brew update
+    brew outdated --formula --verbose
+    brew outdated --cask --greedy --verbose
+    mas outdated
+
+update-brew-and-mas:
+    brew update
+    brew upgrade --formula
+    brew upgrade --cask --greedy --force
+    sudo mas upgrade
+
+update-everything:
+    nix flake update
+    just update-brew-and-mas
+
 update-unstable:
     scripts/update-pkgs-unstable.sh
 

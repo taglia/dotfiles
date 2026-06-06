@@ -11,8 +11,8 @@
     enable = true;
 
     onActivation = {
-      autoUpdate = true;
-      upgrade = true;
+      autoUpdate = false;
+      upgrade = false;
       cleanup = "zap";
       # Homebrew Bundle 4.7 requires an explicit noninteractive confirmation
       # when `--cleanup` is used during activation.

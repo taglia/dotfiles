@@ -167,14 +167,17 @@ if [[ "$run_brew" -eq 1 ]]; then
   else
     brew_autoremove_args=(brew autoremove)
     brew_cleanup_args=(brew cleanup)
+    brew_cache_cleanup_args=(brew cleanup --scrub)
 
     if [[ "$dry_run" -eq 1 ]]; then
       brew_autoremove_args+=(--dry-run)
       brew_cleanup_args+=(--dry-run)
+      brew_cache_cleanup_args+=(--dry-run)
     fi
 
     if [[ -n "$brew_prune" ]]; then
       brew_cleanup_args+=(--prune="$brew_prune")
+      brew_cache_cleanup_args+=(--prune="$brew_prune")
     fi
 
     log "Running Homebrew autoremove for orphaned dependencies."
@@ -182,6 +185,9 @@ if [[ "$run_brew" -eq 1 ]]; then
 
     log "Running Homebrew cleanup for stale downloads and old formula versions."
     run_cmd "${brew_cleanup_args[@]}"
+
+    log "Running Homebrew cache scrub for cached downloads."
+    run_cmd "${brew_cache_cleanup_args[@]}"
   fi
 else
   log "Skipping Homebrew cleanup."
