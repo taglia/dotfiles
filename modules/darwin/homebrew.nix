@@ -112,6 +112,7 @@
       "backblaze"
       "backblaze-downloader"
       "backblaze-restore"
+      "calibre"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.
@@ -176,6 +177,7 @@
       "WaterMinder" = 1415257369;
       "Windows App" = 1295203466;
       "Yoink" = 457622435;
+      "Amazon Kindle: Reading App" = 302584613;
     };
   };
 }
