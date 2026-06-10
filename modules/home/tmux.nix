@@ -18,6 +18,7 @@ in
       cpu
       vim-tmux-navigator
       catppuccin
+      tmux-toggle-popup
     ];
 
     extraConfig = builtins.readFile ../../files/tmux.conf + ''
