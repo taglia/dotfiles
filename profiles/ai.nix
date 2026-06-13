@@ -23,6 +23,7 @@ in
     pkgs-unstable.claude-code
     pkgs-unstable.codex
     pkgs-unstable.opencode
+    pkgs-unstable.pi-coding-agent
   ]
   ++ pkgs.lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) [
     pkgs-unstable.ollama
