@@ -14,6 +14,16 @@
     description = "spice-vdagent session agent";
     wantedBy = [ "graphical-session.target" ];
     partOf = [ "graphical-session.target" ];
-    serviceConfig.ExecStart = "${pkgs.spice-vdagent}/bin/spice-vdagent -x";
+    after = [ "graphical-session.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.spice-vdagent}/bin/spice-vdagent -x";
+      # The session's DISPLAY/WAYLAND_DISPLAY may not be in the user manager's
+      # environment the instant the target is reached ("could not connect to
+      # X-server"); retry until the display is ready.
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+    # Don't let those retries trip systemd's start-rate limit.
+    unitConfig.StartLimitIntervalSec = 0;
   };
 }
