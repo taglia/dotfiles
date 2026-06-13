@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   ...
 }:
@@ -9,6 +10,14 @@
     ../modules/home/shells.nix
     ../modules/home/tmux.nix
   ];
+
+  # nh wraps darwin-rebuild / home-manager with a package diff before each
+  # switch and a unified `nh clean`. `flake` sets the default target so plain
+  # `nh darwin switch` / `nh home switch` work from anywhere.
+  programs.nh = {
+    enable = true;
+    flake = "${config.home.homeDirectory}/dotfiles";
+  };
 
   # Avoid Home Manager's generated option manual, which can trigger
   # context warnings for options.json on newer Nix versions.
