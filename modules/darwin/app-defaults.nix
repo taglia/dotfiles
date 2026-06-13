@@ -7,6 +7,10 @@
     largesize = 16;
     # Use "left" or "right" here to move the Dock to a screen edge.
     orientation = "bottom";
+    # Stop macOS reordering Spaces by most-recent-use. Aerospace works inside a
+    # single Space, so this isn't something it needs; it just keeps native Space
+    # behavior deterministic and out of the way.
+    mru-spaces = false;
     persistent-apps = [
       "/Applications/Orion.app"
       "/System/Applications/Mail.app"
@@ -57,6 +61,11 @@
     ShowStatusBar = true;
     _FXSortFoldersFirst = true;
   };
+
+  # Keep each display on its own Spaces. This is already the macOS default and
+  # not required by Aerospace; pinned here only so the setting is explicit.
+  # Takes effect after logout.
+  system.defaults.spaces.spans-displays = false;
 
   system.defaults.iCal = {
     "TimeZone support enabled" = true;
