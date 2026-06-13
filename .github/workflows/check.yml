@@ -1,0 +1,32 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  flake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # Evaluates every output for all systems (Linux and Darwin), catching
+      # eval errors without needing a macOS runner to build the Darwin system.
+      - name: nix flake check (evaluate all outputs)
+        run: nix flake check --no-build --all-systems
+
+      - name: Shellcheck scripts
+        run: nix shell nixpkgs#shellcheck --command shellcheck scripts/*.sh
+
+      - name: Bash syntax check
+        run: |
+          for f in scripts/*.sh; do
+            bash -n "$f"
+          done
