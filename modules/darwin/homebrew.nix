@@ -113,6 +113,7 @@
       "backblaze-downloader"
       "backblaze-restore"
       "calibre"
+      "utm"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.
