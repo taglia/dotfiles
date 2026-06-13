@@ -229,6 +229,48 @@
           ];
         };
 
+      mkNixos =
+        {
+          system,
+          hostModule,
+          homeModules ? fullModules,
+          user ? defaultUser,
+        }:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+        in
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+
+          specialArgs = homeSpecialArgs // {
+            inherit user;
+          };
+
+          modules = [
+            hostModule
+
+            # Integrate Home Manager into the system, same as on darwin, so the
+            # user environment from this repo (fish, nvim, tmux, ...) comes along.
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                extraSpecialArgs = homeSpecialArgs // {
+                  inherit user;
+                };
+                users.${user.username}.imports = mkHomeModules {
+                  inherit pkgs user;
+                  modules = homeModules;
+                };
+              };
+            }
+          ];
+        };
+
       fullModules = [
         ./modules/home/dev.nix
         ./modules/home/packages-dev.nix
@@ -299,9 +341,25 @@
       };
 
       darwinConfigurations = nixpkgs.lib.mapAttrs (_: mkDarwin) darwinHosts;
+
+      nixosHosts = {
+        utm-vm = {
+          system = "aarch64-linux";
+          hostModule = ./hosts/utm-vm;
+        };
+      };
+
+      nixosConfigurations = nixpkgs.lib.mapAttrs (
+        _: host:
+        mkNixos {
+          inherit (host) system hostModule;
+          homeModules = host.homeModules or fullModules;
+          user = host.user or defaultUser;
+        }
+      ) nixosHosts;
     in
     {
-      inherit homeConfigurations darwinConfigurations;
+      inherit homeConfigurations darwinConfigurations nixosConfigurations;
 
       formatter = forAllSystems (
         system:
@@ -334,8 +392,15 @@
               value = darwinConfigurations.${name}.system;
             }) (builtins.filter (name: darwinHosts.${name}.system == system) (builtins.attrNames darwinHosts))
           );
+
+          nixosChecks = builtins.listToAttrs (
+            map (name: {
+              name = "nixos-${name}";
+              value = nixosConfigurations.${name}.config.system.build.toplevel;
+            }) (builtins.filter (name: nixosHosts.${name}.system == system) (builtins.attrNames nixosHosts))
+          );
         in
-        homeChecks // darwinChecks
+        homeChecks // darwinChecks // nixosChecks
       );
     };
 }
