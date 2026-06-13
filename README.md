@@ -5,18 +5,22 @@ This repo is a Nix flake that defines Home Manager configurations for Linux and 
 ## Prerequisites
 
 - Nix installed
-  - Recommended (macOS + Linux): Determinate Systems Nix Installer
-  - Alternative: Official Nix installer
+  - Recommended (macOS + Linux): the official multi-user Nix installer. This
+    flake lets nix-darwin manage `nix` (channels, registry, GC), which assumes
+    the official daemon-based install.
+  - Determinate Systems / Lix: also fine, but Determinate manages `nix.conf` and
+    the daemon itself. If you use it, set `nix.enable = false` in the nix-darwin
+    config so the two do not fight over `/etc/nix/nix.conf`.
 - Build tools
   - macOS: install Xcode Command Line Tools: `xcode-select --install`
   - Linux: install your distro's build essentials (e.g. `build-essential`, `gcc`, `make`, etc.)
 
 ## 1) Install Nix
 
-If you use the Determinate installer:
+Official multi-user installer:
 
 ```bash
-curl -fsSL https://install.determinate.systems/nix | sh -s -- install
+sh <(curl -L https://nixos.org/nix/install) --daemon
 ```
 
 Then restart your terminal (or source the profile snippet the installer prints).
