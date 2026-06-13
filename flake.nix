@@ -152,6 +152,29 @@
                   "flakes"
                 ];
 
+                # Lightweight NixOS VM used as a Linux remote builder, so the
+                # Linux homeConfigurations (and any Linux package) can be built
+                # and tested from this Mac. Provides aarch64-linux natively. To
+                # also build x86_64-linux, add emulation (slower) with:
+                #   nix.linux-builder.config.boot.binfmt.emulatedSystems = [ "x86_64-linux" ];
+                nix.linux-builder.enable = true;
+                # The build user must be trusted to use the remote builder.
+                nix.settings.trusted-users = [ "@admin" ];
+
+                # Hard-link identical files in the store and collect old
+                # generations weekly. Complements scripts/gc.sh, which also
+                # prunes Homebrew; this keeps the Nix store tidy without it.
+                nix.optimise.automatic = true;
+                nix.gc = {
+                  automatic = true;
+                  interval = {
+                    Weekday = 0;
+                    Hour = 3;
+                    Minute = 0;
+                  };
+                  options = "--delete-older-than 30d";
+                };
+
                 nix.registry = {
                   n.to = {
                     type = "path";
