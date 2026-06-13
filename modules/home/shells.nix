@@ -145,6 +145,13 @@ in
           /etc/profiles/per-user/$USER/bin \
           /run/current-system/sw/bin \
           /nix/var/nix/profiles/default/bin
+
+      # On NixOS the prepend above would push /run/wrappers/bin below
+      # /run/current-system/sw/bin, which also ships a (non-setuid) sudo and
+      # would shadow the real setuid wrapper. Keep the wrappers dir first.
+      if test -d /run/wrappers/bin
+          fish_add_path --move --prepend --path /run/wrappers/bin
+      end
     '';
 
     interactiveShellInit = ''
