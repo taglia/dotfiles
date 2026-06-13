@@ -40,6 +40,16 @@
   # Locale and time. Override per-host if a machine lives elsewhere.
   time.timeZone = "Asia/Singapore";
   i18n.defaultLocale = "en_SG.UTF-8";
+
+  # glibc only has the locales we generate. en_US is needed because the Home
+  # Manager shells force LANG/LC_ALL=en_US.UTF-8; en_SG is the system default;
+  # C.UTF-8 is the always-safe fallback. Without en_US you'd get
+  # "cannot change locale" warnings from that forced LC_ALL.
+  i18n.supportedLocales = [
+    "C.UTF-8/UTF-8"
+    "en_US.UTF-8/UTF-8"
+    "en_SG.UTF-8/UTF-8"
+  ];
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_SG.UTF-8";
     LC_IDENTIFICATION = "en_SG.UTF-8";

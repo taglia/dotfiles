@@ -1,8 +1,14 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   # GUI workstation stack. Imported by machines that want a desktop; headless
   # hosts simply leave this module out.
+
+  # Iosevka Nerd Font, matching the terminal/editor fonts used on darwin.
+  fonts.packages = with pkgs; [
+    nerd-fonts.iosevka
+    nerd-fonts.iosevka-term
+  ];
 
   services.xserver.enable = true;
 
