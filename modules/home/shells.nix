@@ -20,49 +20,36 @@ let
     vimdiff = "${vim} -d";
   };
 
-  managedConfigLinks = [
-    {
-      source = ../../files/btop/btop.conf;
-      target = "${config.xdg.configHome}/btop/btop.conf";
-    }
-    {
-      source = ../../files/ghostty/config;
-      target = "${config.xdg.configHome}/ghostty/config";
-    }
-    {
-      source = ../../files/glow/glow.yml;
-      target = "${config.xdg.configHome}/glow/glow.yml";
-    }
-    {
-      source = ../../files/kitty/current-theme.conf;
-      target = "${config.xdg.configHome}/kitty/current-theme.conf";
-    }
-    {
-      source = ../../files/kitty/kitty.conf;
-      target = "${config.xdg.configHome}/kitty/kitty.conf";
-    }
-    {
-      source = ../../files/linearmouse/linearmouse.json;
-      target = "${config.xdg.configHome}/linearmouse/linearmouse.json";
-    }
-    {
-      source = ../../files/mise/config.toml;
-      target = "${config.xdg.configHome}/mise/config.toml";
-    }
-    {
-      source = ../../files/starship.toml;
-      target = "${config.xdg.configHome}/starship.toml";
-    }
-  ];
+  # Single source of truth for the static config files we link into XDG config.
+  # Keys are paths relative to xdg.configHome; values are the repo sources.
+  # Both the `xdg.configFile` entries and the pre-link cleanup step below are
+  # derived from this set so the two can never drift apart.
+  managedXdgConfig = {
+    "btop/btop.conf" = ../../files/btop/btop.conf;
+    "ghostty/config" = ../../files/ghostty/config;
+    "glow/glow.yml" = ../../files/glow/glow.yml;
+    "kitty/current-theme.conf" = ../../files/kitty/current-theme.conf;
+    "kitty/kitty.conf" = ../../files/kitty/kitty.conf;
+    "linearmouse/linearmouse.json" = ../../files/linearmouse/linearmouse.json;
+    "mise/config.toml" = ../../files/mise/config.toml;
+    "starship.toml" = ../../files/starship.toml;
+  };
 
-  prepareManagedConfigLinks = lib.concatMapStringsSep "\n" (
-    { source, target }:
-    ''
-      if [[ -e "${target}" && ! -L "${target}" ]] && /usr/bin/cmp -s ${source} "${target}"; then
-        /bin/rm "${target}"
-      fi
-    ''
-  ) managedConfigLinks;
+  # Remove a pre-existing real file at the target so Home Manager's
+  # checkLinkTargets phase does not abort before it can create the symlink.
+  prepareManagedConfigLinks = lib.concatStringsSep "\n" (
+    lib.mapAttrsToList (
+      name: source:
+      let
+        target = "${config.xdg.configHome}/${name}";
+      in
+      ''
+        if [[ -e "${target}" && ! -L "${target}" ]] && /usr/bin/cmp -s ${source} "${target}"; then
+          /bin/rm "${target}"
+        fi
+      ''
+    ) managedXdgConfig
+  );
 in
 {
   programs.home-manager.enable = true;
@@ -236,47 +223,16 @@ in
     lib.hm.dag.entryBetween [ "linkGeneration" ] [ "checkLinkTargets" ]
       prepareManagedConfigLinks;
 
-  xdg.configFile."btop/btop.conf" = {
-    source = ../../files/btop/btop.conf;
+  xdg.configFile = lib.mapAttrs (_name: source: {
+    inherit source;
     force = true;
-  };
+  }) managedXdgConfig;
 
-  xdg.configFile."ghostty/config" = {
-    source = ../../files/ghostty/config;
-    force = true;
-  };
-
-  xdg.configFile."glow/glow.yml" = {
-    source = ../../files/glow/glow.yml;
-    force = true;
-  };
-
+  # macOS glow reads its config from ~/Library/Preferences instead of XDG.
   home.file."Library/Preferences/glow/glow.yml" = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-    source = ../../files/glow/glow.yml;
+    source = managedXdgConfig."glow/glow.yml";
     force = true;
   };
-
-  xdg.configFile."kitty/current-theme.conf" = {
-    source = ../../files/kitty/current-theme.conf;
-    force = true;
-  };
-
-  xdg.configFile."kitty/kitty.conf" = {
-    source = ../../files/kitty/kitty.conf;
-    force = true;
-  };
-
-  xdg.configFile."linearmouse/linearmouse.json" = {
-    source = ../../files/linearmouse/linearmouse.json;
-    force = true;
-  };
-
-  xdg.configFile."mise/config.toml" = {
-    source = ../../files/mise/config.toml;
-    force = true;
-  };
-
-  xdg.configFile."starship.toml".source = ../../files/starship.toml;
 
   programs.atuin = {
     enable = true;
