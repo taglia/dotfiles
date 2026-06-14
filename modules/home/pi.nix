@@ -15,6 +15,8 @@ let
     ".pi/agent/ascii-art/taglia-pi.txt" = ../../files/pi/agent/ascii-art/taglia-pi.txt;
     ".pi/agent/extensions/ascii-header.ts" = ../../files/pi/agent/extensions/ascii-header.ts;
     ".pi/agent/extensions/prettier-footer.ts" = ../../files/pi/agent/extensions/prettier-footer.ts;
+    ".pi/agent/extensions/session-cost-breakdown.ts" =
+      ../../files/pi/agent/extensions/session-cost-breakdown.ts;
   };
 
   prepareManagedPiAgentLinks = lib.concatStringsSep "\n" (
