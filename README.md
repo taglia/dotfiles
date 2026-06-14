@@ -160,8 +160,16 @@ Log out and back in (or restart your terminal) to fully apply.
 Some application config is managed by Home Manager from files in this repo:
 
 - Ghostty: `files/ghostty/config`
+- pi: `files/pi/agent/...` → `~/.pi/agent/...` via `modules/home/pi.nix`
 
 AeroSpace is managed directly by nix-darwin through `services.aerospace`.
+
+### pi workflow
+
+- Stable/global pi config is managed in Home Manager under `files/pi/agent/...`.
+- New extension development happens project-locally in `.pi/extensions/` so you can edit and test with `/reload` without running `home-manager switch` or `darwin-rebuild switch`.
+- When an extension is ready, promote it by moving it into `files/pi/agent/extensions/` and rebuilding once.
+- Keep pi runtime state unmanaged: `~/.pi/agent/auth.json`, `sessions/`, `npm/`, and similar mutable directories stay outside Home Manager.
 
 ## Secrets
 

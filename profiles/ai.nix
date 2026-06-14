@@ -18,6 +18,8 @@ let
 in
 
 {
+  imports = [ ../modules/home/pi.nix ];
+
   home.packages = [
     pkgs-unstable.rtk
     pkgs-unstable.claude-code
