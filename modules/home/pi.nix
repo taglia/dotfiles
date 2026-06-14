@@ -39,6 +39,9 @@ in
       prepareManagedPiAgentLinks;
 
   home.activation.installMinimalWebExtension = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ -L ~/.pi/agent/extensions/minimal-web ]; then
+      $DRY_RUN_CMD /bin/rm $VERBOSE_ARG ~/.pi/agent/extensions/minimal-web
+    fi
     $DRY_RUN_CMD mkdir -p $VERBOSE_ARG ~/.pi/agent/extensions/minimal-web
     $DRY_RUN_CMD cp $VERBOSE_ARG ${minimalWebSource}/index.ts ~/.pi/agent/extensions/minimal-web/index.ts
     $DRY_RUN_CMD cp $VERBOSE_ARG ${minimalWebSource}/package.json ~/.pi/agent/extensions/minimal-web/package.json
