@@ -19,6 +19,7 @@ in
     "${config.home.homeDirectory}/.ssh/id_ed25519"
   ];
   age.secretsDir = agenixDir;
+  age.secretsMountPoint = agenixDir;
 
   age.secrets =
     (lib.optionalAttrs (builtins.pathExists kagiSecretFile) {
