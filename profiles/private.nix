@@ -4,6 +4,7 @@ let
   kagiSecretFile = ../secrets/pi-kagi-api-key.age;
   ollamaSecretFile = ../secrets/pi-ollama-api-key.age;
   agenixDir = "${config.home.homeDirectory}/.local/share/agenix";
+  agenixMountPoint = "${config.home.homeDirectory}/.local/share/agenix.d";
 
   secretEnv =
     (lib.optionalAttrs (builtins.pathExists kagiSecretFile) {
@@ -19,7 +20,7 @@ in
     "${config.home.homeDirectory}/.ssh/id_ed25519"
   ];
   age.secretsDir = agenixDir;
-  age.secretsMountPoint = agenixDir;
+  age.secretsMountPoint = agenixMountPoint;
 
   age.secrets =
     (lib.optionalAttrs (builtins.pathExists kagiSecretFile) {
