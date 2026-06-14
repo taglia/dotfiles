@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 
@@ -39,7 +40,9 @@ in
     $DRY_RUN_CMD mkdir -p $VERBOSE_ARG ~/.pi/agent/extensions/minimal-web
     $DRY_RUN_CMD cp $VERBOSE_ARG ${minimalWebSource}/index.ts ~/.pi/agent/extensions/minimal-web/index.ts
     $DRY_RUN_CMD cp $VERBOSE_ARG ${minimalWebSource}/package.json ~/.pi/agent/extensions/minimal-web/package.json
-    $DRY_RUN_CMD npm install --prefix ~/.pi/agent/extensions/minimal-web --omit=dev
+    if [ ! -d ~/.pi/agent/extensions/minimal-web/node_modules ]; then
+      $DRY_RUN_CMD ${pkgs.nodejs}/bin/npm install --prefix ~/.pi/agent/extensions/minimal-web --omit=dev
+    fi
   '';
 
   home.file = lib.mapAttrs (_name: source: {
