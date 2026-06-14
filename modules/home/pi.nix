@@ -6,6 +6,7 @@
 
 let
   managedPiAgentFiles = {
+    ".pi/agent/AGENTS.md" = ../../files/pi/agent/AGENTS.md;
     ".pi/agent/settings.json" = ../../files/pi/agent/settings.json;
     ".pi/agent/themes/catppuccin-mocha.json" = ../../files/pi/agent/themes/catppuccin-mocha.json;
     ".pi/agent/ascii-art/taglia-pi.txt" = ../../files/pi/agent/ascii-art/taglia-pi.txt;
