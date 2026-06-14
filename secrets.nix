@@ -3,4 +3,5 @@ let
 in
 {
   "secrets/pi-kagi-api-key.age".publicKeys = [ mbp ];
+  "secrets/pi-ollama-api-key.age".publicKeys = [ mbp ];
 }
