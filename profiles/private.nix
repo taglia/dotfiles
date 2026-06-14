@@ -15,7 +15,10 @@ let
     });
 in
 {
-  age.identityPaths = [ "${config.home.homeDirectory}/.ssh/id_rsa" ];
+  age.identityPaths = [
+    "${config.home.homeDirectory}/.ssh/id_rsa"
+    "${config.home.homeDirectory}/.ssh/id_ed25519"
+  ];
   age.secretsDir = agenixDir;
   age.secretsMountPoint = agenixMountPoint;
 
