@@ -5,7 +5,6 @@
   "lastChangelogVersion": "0.79.1",
   "theme": "catppuccin-mocha",
   "packages": [
-    "npm:pi-web-access",
     "npm:pi-vim",
     "npm:@juicesharp/rpiv-todo"
   ]
