@@ -303,7 +303,10 @@
           user = defaultUser // {
             username = "admin";
           };
-          modules = fullModules ++ [ ./profiles/ai.nix ];
+          modules = fullModules ++ [
+            ./profiles/ai.nix
+            ./profiles/private.nix
+          ];
         };
 
         linux-arm = {
