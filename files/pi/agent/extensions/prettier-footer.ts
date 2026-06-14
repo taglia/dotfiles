@@ -2,6 +2,7 @@ import type { AssistantMessage } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import { isAbsolute, relative, resolve, sep } from "node:path";
+import { execSync } from "node:child_process";
 
 function sanitizeStatusText(text: string): string {
   return text.replace(/[\r\n\t]/g, " ").replace(/ +/g, " ").trim();
@@ -15,6 +16,36 @@ function formatTokens(count: number): string {
   return `${Math.round(count / 1000000)}M`;
 }
 
+function checkGitDirty(cwd: string): boolean {
+  try {
+    const output = execSync("git status --porcelain", {
+      cwd,
+      encoding: "utf8",
+      timeout: 2000,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return output.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function createGitDirtyChecker(): () => boolean {
+  let lastCwd = "";
+  let lastResult = false;
+  let lastCheck = 0;
+  const TTL_MS = 3000;
+
+  return () => {
+    const cwd = process.cwd();
+    const now = Date.now();
+    if (cwd === lastCwd && now - lastCheck < TTL_MS) return lastResult;
+    lastCwd = cwd;
+    lastResult = checkGitDirty(cwd);
+    lastCheck = now;
+    return lastResult;
+  };
+}
 function formatCwdForFooter(cwd: string, home: string | undefined): string {
   if (!home) return cwd;
 
@@ -35,6 +66,7 @@ export default function (pi: ExtensionAPI) {
 
     ctx.ui.setFooter((tui, theme, footerData) => {
       const unsub = footerData.onBranchChange(() => tui.requestRender());
+      const getDirty = createGitDirtyChecker();
       const separator = () => theme.fg("dim", "  •  ");
       const label = (text: string) => theme.fg("muted", `${text}: `);
       const value = (text: string) => theme.fg("text", text);
@@ -94,10 +126,11 @@ export default function (pi: ExtensionAPI) {
             process.env.HOME || process.env.USERPROFILE,
           );
           const branch = footerData.getGitBranch();
+          const dirty = branch ? getDirty() : false;
           const sessionName = ctx.sessionManager.getSessionName();
 
           const line1Segments = [label("dir") + value(cwd)];
-          if (branch) line1Segments.push(label("git") + theme.fg("accent", branch));
+          if (branch) line1Segments.push(label("git") + theme.fg("accent", branch) + (dirty ? theme.fg("warning", " *") : ""));
           if (sessionName) line1Segments.push(label("session") + value(sessionName));
           const line1 = truncateToWidth(line1Segments.join(separator()), width, theme.fg("dim", "..."));
 
