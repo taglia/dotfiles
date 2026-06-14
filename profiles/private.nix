@@ -6,11 +6,11 @@ let
   agenixDir = "${config.home.homeDirectory}/.local/share/agenix";
 
   secretEnv =
-    (lib.optionalAttrs (config.age.secrets ? pi_kagi_api_key) {
-      KAGI_API_KEY_FILE = config.age.secrets.pi_kagi_api_key.path;
+    (lib.optionalAttrs (builtins.pathExists kagiSecretFile) {
+      KAGI_API_KEY_FILE = "${agenixDir}/pi_kagi_api_key";
     })
-    // (lib.optionalAttrs (config.age.secrets ? pi_ollama_api_key) {
-      OLLAMA_API_KEY_FILE = config.age.secrets.pi_ollama_api_key.path;
+    // (lib.optionalAttrs (builtins.pathExists ollamaSecretFile) {
+      OLLAMA_API_KEY_FILE = "${agenixDir}/pi_ollama_api_key";
     });
 in
 {
@@ -22,10 +22,16 @@ in
 
   age.secrets =
     (lib.optionalAttrs (builtins.pathExists kagiSecretFile) {
-      pi_kagi_api_key.file = kagiSecretFile;
+      pi_kagi_api_key = {
+        file = kagiSecretFile;
+        path = "${agenixDir}/pi_kagi_api_key";
+      };
     })
     // (lib.optionalAttrs (builtins.pathExists ollamaSecretFile) {
-      pi_ollama_api_key.file = ollamaSecretFile;
+      pi_ollama_api_key = {
+        file = ollamaSecretFile;
+        path = "${agenixDir}/pi_ollama_api_key";
+      };
     });
 
   home.sessionVariables = secretEnv;
