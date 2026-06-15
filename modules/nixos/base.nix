@@ -35,6 +35,7 @@
 
   environment.systemPackages = with pkgs; [
     git # needed by `nixos-rebuild --flake` against a git tree
+    ghostty.terminfo
   ];
 
   # Locale and time. Override per-host if a machine lives elsewhere.
