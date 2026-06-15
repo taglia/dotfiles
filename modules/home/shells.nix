@@ -27,6 +27,7 @@ let
   managedXdgConfig = {
     "btop/btop.conf" = ../../files/btop/btop.conf;
     "ghostty/config" = ../../files/ghostty/config;
+    "ghostty/shaders" = ../../files/ghostty/shaders;
     "glow/glow.yml" = ../../files/glow/glow.yml;
     "kitty/current-theme.conf" = ../../files/kitty/current-theme.conf;
     "kitty/kitty.conf" = ../../files/kitty/kitty.conf;
