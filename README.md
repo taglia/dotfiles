@@ -233,19 +233,13 @@ If recipient keys change, re-encrypt existing secrets:
 agenix -r -i ~/.ssh/id_ed25519
 ```
 
-When a secret is consumed by Home Manager, declare the SSH identity path explicitly in the profile that uses secrets. For Home Manager, it is best to also set `age.secretsDir` and `age.secretsMountPoint` to literal paths so `config.age.secrets.<name>.path` is a real path string instead of a shell expression.
+When a secret is consumed by Home Manager, declare the SSH identity path explicitly in the profile that uses secrets. Follow the upstream pattern: keep the default Home Manager runtime directories (`$XDG_RUNTIME_DIR/agenix` and `$XDG_RUNTIME_DIR/agenix.d` on Linux) and reference secrets via `config.age.secrets.<name>.path`.
 
 ```nix
 { config, ... }:
 
-let
-  agenixDir = "${config.home.homeDirectory}/.local/share/agenix";
-  agenixMountPoint = "${config.home.homeDirectory}/.local/share/agenix.d";
-in
 {
   age.identityPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
-  age.secretsDir = agenixDir;
-  age.secretsMountPoint = agenixMountPoint;
   age.secrets.example_api_token.file = ../secrets/example-api-token.age;
 }
 ```
@@ -257,14 +251,8 @@ For a command-line tool that can read a token from a file, pass the path:
 ```nix
 { config, ... }:
 
-let
-  agenixDir = "${config.home.homeDirectory}/.local/share/agenix";
-  agenixMountPoint = "${config.home.homeDirectory}/.local/share/agenix.d";
-in
 {
   age.identityPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
-  age.secretsDir = agenixDir;
-  age.secretsMountPoint = agenixMountPoint;
   age.secrets.example_api_token.file = ../secrets/example-api-token.age;
 
   home.sessionVariables.EXAMPLE_API_TOKEN_FILE = config.age.secrets.example_api_token.path;
@@ -283,25 +271,13 @@ For pi's Kagi-backed web extension, the exact same pattern becomes:
 ```nix
 { config, ... }:
 
-let
-  agenixDir = "${config.home.homeDirectory}/.local/share/agenix";
-  agenixMountPoint = "${config.home.homeDirectory}/.local/share/agenix.d";
-in
 {
   age.identityPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
-  age.secretsDir = agenixDir;
-  age.secretsMountPoint = agenixMountPoint;
   age.secrets.pi_kagi_api_key.file = ../secrets/pi-kagi-api-key.age;
 }
 ```
 
-Then `modules/home/pi.nix` automatically exports:
-
-```bash
-KAGI_API_KEY_FILE="$HOME/.local/share/agenix/..."
-```
-
-at activation time whenever `age.secrets.pi_kagi_api_key` is present, so the managed pi extension can read the key without copying it into the Nix store.
+Then `modules/home/pi.nix` automatically exports a file path from `config.age.secrets.pi_kagi_api_key.path`, typically under `"$XDG_RUNTIME_DIR/agenix/..."` on Linux, whenever `age.secrets.pi_kagi_api_key` is present. This lets the managed pi extension read the key without copying it into the Nix store. Do not point consumers at `agenix.d`; that is the backing generation directory, while `config.age.secrets.<name>.path` is the stable consumer path.
 
 For a user service that expects environment variables, store the secret as an env file (`EXAMPLE_API_TOKEN=...`) and point the service at the decrypted file:
 
