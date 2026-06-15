@@ -15,10 +15,5 @@ quit-after-last-window-closed = true
 macos-secure-input-indication = true
 macos-option-as-alt = right
 
-# Use a widely-supported TERM value. Ghostty's default `xterm-ghostty` is not
-# present on many remotes (e.g. Debian ships `ghostty` but not
-# `xterm-ghostty`), which breaks tmux/ncurses over SSH.
-term = xterm-256color
-
 custom-shader = shaders/cursor_warp.glsl
 custom-shader = shaders/ripple_cursor.glsl

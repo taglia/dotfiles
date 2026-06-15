@@ -36,6 +36,16 @@ let
     "starship.toml" = ../../files/starship.toml;
   };
 
+  # Ghostty advertises itself as xterm-ghostty by default, but most terminfo
+  # databases only ship the entry under the name "ghostty". Provide an alias
+  # at ~/.terminfo/x/xterm-ghostty so SSH sessions from Ghostty work on any
+  # managed host (NixOS, Darwin, or Nix-managed Debian/Ubuntu).
+  ghosttyTerminfo =
+    if pkgs.stdenv.hostPlatform.isDarwin && pkgs ? ghostty-bin then
+      pkgs.ghostty-bin.terminfo
+    else
+      pkgs.ghostty.terminfo;
+
   # Remove a pre-existing real file at the target so Home Manager's
   # checkLinkTargets phase does not abort before it can create the symlink.
   prepareManagedConfigLinks = lib.concatStringsSep "\n" (
@@ -53,6 +63,10 @@ let
   );
 in
 {
+  home.file.".terminfo/x/xterm-ghostty" = {
+    source = "${ghosttyTerminfo}/share/terminfo/g/ghostty";
+  };
+
   programs.home-manager.enable = true;
 
   home.sessionVariables = {
