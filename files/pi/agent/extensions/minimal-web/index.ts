@@ -256,8 +256,83 @@ function isTextLikeContentType(contentType: string): boolean {
     normalized.includes("text/plain") ||
     normalized.includes("text/markdown") ||
     normalized.includes("text/x-markdown") ||
-    normalized.includes("application/json")
+    normalized.includes("application/json") ||
+    normalized.includes("application/yaml") ||
+    normalized.includes("application/x-yaml") ||
+    normalized.includes("text/yaml") ||
+    normalized.includes("text/x-yaml")
   );
+}
+
+function shouldUseKagiExtract(url: string): boolean {
+  if (process.env.WEB_FETCH_USE_KAGI_EXTRACT === "false") return false;
+  try {
+    return new URL(url).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+type KagiExtractResult = {
+  finalUrl: string;
+  markdown: string;
+};
+
+async function runKagiExtract(
+  url: string,
+  signal?: AbortSignal,
+): Promise<KagiExtractResult | null> {
+  const key = resolveKagiApiKey();
+  const endpoint = `${getKagiBaseUrl()}/extract`;
+  const timeoutSeconds = Math.min(
+    Math.max(1, getFetchTimeoutMs() / 1000),
+    60,
+  );
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${key}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": getUserAgent(),
+      },
+      body: JSON.stringify({
+        pages: [{ url }],
+        format: "json",
+        timeout: timeoutSeconds,
+      }),
+      signal: withTimeout(signal, getFetchTimeoutMs()),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error("Kagi extract timed out");
+    }
+    throw error;
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("Kagi authentication failed");
+  }
+  if (response.status === 429) {
+    throw new Error("Kagi rate limit reached");
+  }
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = await response.json();
+  const page = payload?.data?.[0];
+  if (!page || page.error || !page.markdown) {
+    return null;
+  }
+
+  return {
+    finalUrl: page.url || url,
+    markdown: page.markdown,
+  };
 }
 
 async function fetchText(
@@ -314,16 +389,6 @@ export async function runWebFetch(
   const requestedUrl = requireHttpUrl(params.url).toString();
   const maxChars = clamp(params.maxChars, DEFAULT_FETCH_MAX_CHARS, 1_000, 100_000);
 
-  let fetched: { finalUrl: string; contentType: string; body: string };
-  try {
-    fetched = await fetchText(requestedUrl, signal);
-  } catch (error) {
-    if (error instanceof Error && error.name === "TimeoutError") {
-      throw new Error("Web fetch timed out");
-    }
-    throw error;
-  }
-
   let extracted:
     | {
         title?: string;
@@ -333,16 +398,52 @@ export async function runWebFetch(
         content: string;
       }
     | undefined;
+  let finalUrl = requestedUrl;
 
-  if (
-    fetched.contentType.toLowerCase().includes("text/html") ||
-    fetched.contentType.toLowerCase().includes("application/xhtml+xml")
-  ) {
-    extracted = htmlToReadableText(fetched.finalUrl, fetched.body);
-  } else if (isTextLikeContentType(fetched.contentType)) {
-    extracted = { content: normalizeWhitespace(fetched.body) };
-  } else {
-    throw new Error(`Unsupported content type: ${fetched.contentType || "unknown"}`);
+  // Prefer Kagi Extract for HTTPS pages; fall back to local fetch if it fails or is unavailable.
+  if (shouldUseKagiExtract(requestedUrl)) {
+    try {
+      const kagiResult = await runKagiExtract(requestedUrl, signal);
+      if (kagiResult) {
+        extracted = { content: normalizeWhitespace(kagiResult.markdown) };
+        finalUrl = kagiResult.finalUrl;
+      }
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message === "Kagi authentication failed" ||
+          error.message === "Kagi rate limit reached" ||
+          error.message === "Kagi extract timed out")
+      ) {
+        throw error;
+      }
+      // Otherwise fall through to local fetch.
+    }
+  }
+
+  if (!extracted) {
+    let fetched: { finalUrl: string; contentType: string; body: string };
+    try {
+      fetched = await fetchText(requestedUrl, signal);
+    } catch (error) {
+      if (error instanceof Error && error.name === "TimeoutError") {
+        throw new Error("Web fetch timed out");
+      }
+      throw error;
+    }
+
+    finalUrl = fetched.finalUrl;
+
+    if (
+      fetched.contentType.toLowerCase().includes("text/html") ||
+      fetched.contentType.toLowerCase().includes("application/xhtml+xml")
+    ) {
+      extracted = htmlToReadableText(fetched.finalUrl, fetched.body);
+    } else if (isTextLikeContentType(fetched.contentType)) {
+      extracted = { content: normalizeWhitespace(fetched.body) };
+    } else {
+      throw new Error(`Unsupported content type: ${fetched.contentType || "unknown"}`);
+    }
   }
 
   if (!extracted.content) {
@@ -352,7 +453,7 @@ export async function runWebFetch(
   const truncated = truncate(extracted.content, maxChars);
   return {
     url: requestedUrl,
-    finalUrl: fetched.finalUrl,
+    finalUrl,
     title: extracted.title,
     byline: extracted.byline,
     siteName: extracted.siteName,

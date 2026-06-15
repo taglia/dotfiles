@@ -1,3 +1,4 @@
+.DS_Store
 packages/*.tar.gz
 !packages/.gitkeep
 
@@ -5,3 +6,7 @@ result
 result-*
 *.log
 .nvimlog
+
+# Extension build/test artifacts
+files/pi/agent/extensions/*/node_modules/
+files/pi/agent/extensions/*/package-lock.json
