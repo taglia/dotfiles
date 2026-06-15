@@ -21,7 +21,7 @@ in
       tmux-toggle-popup
     ];
 
-    extraConfig = builtins.readFile ../../files/tmux.conf + ''
+    extraConfig = builtins.readFile ../../files/tmux/tmux.conf + ''
       run-shell ${cpuScript}
       run-shell ${catppuccinScript}
     '';

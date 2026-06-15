@@ -34,6 +34,7 @@ let
     "linearmouse/linearmouse.json" = ../../files/linearmouse/linearmouse.json;
     "mise/config.toml" = ../../files/mise/config.toml;
     "starship.toml" = ../../files/starship.toml;
+    "tmux/os-icon.sh" = ../../files/tmux/os-icon.sh;
   };
 
   # Ghostty advertises itself as xterm-ghostty by default, but most terminfo
@@ -251,7 +252,13 @@ in
   xdg.configFile = lib.mapAttrs (_name: source: {
     inherit source;
     force = true;
-  }) managedXdgConfig;
+  }) managedXdgConfig // {
+    "tmux/os-icon.sh" = {
+      source = managedXdgConfig."tmux/os-icon.sh";
+      force = true;
+      executable = true;
+    };
+  };
 
   # macOS glow reads its config from ~/Library/Preferences instead of XDG.
   home.file."Library/Preferences/glow/glow.yml" = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
