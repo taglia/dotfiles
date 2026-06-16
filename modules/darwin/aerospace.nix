@@ -141,6 +141,14 @@
 
       on-window-detected = [
         {
+          "if".workspace = "1";
+          run = "layout accordion";
+        }
+        {
+          "if".workspace = "2";
+          run = "layout accordion";
+        }
+        {
           "if".app-id = "com.apple.mail";
           run = "move-node-to-workspace 2";
         }
@@ -149,19 +157,7 @@
           run = "move-node-to-workspace 2";
         }
         {
-          "if".app-id = "com.flexibits.fantastical2.mac";
-          run = "move-node-to-workspace 2";
-        }
-        {
-          "if".app-name-regex-substring = "Whatsapp";
-          run = "move-node-to-workspace 4";
-        }
-        {
-          "if".app-name-regex-substring = "Discord";
-          run = "move-node-to-workspace 4";
-        }
-        {
-          "if".app-name-regex-substring = "Slack";
+          "if".app-id = "org.ferdium.ferdium-app";
           run = "move-node-to-workspace 4";
         }
         {
@@ -177,10 +173,6 @@
           run = "layout floating";
         }
         {
-          "if".app-name-regex-substring = "Telegram";
-          run = "layout floating";
-        }
-        {
           "if".app-name-regex-substring = "Threema";
           run = "layout floating";
         }
@@ -191,6 +183,14 @@
         {
           "if".app-id = "com.apple.ActivityMonitor";
           run = "layout floating";
+        }
+        {
+          "if".app-id = "com.mitchellh.ghostty";
+          run = "move-node-to-workspace 5";
+        }
+        {
+          "if".app-id = "com.appliedphasor.secure-shellfish";
+          run = "move-node-to-workspace 5";
         }
         {
           "if".app-id = "com.1password.1password";

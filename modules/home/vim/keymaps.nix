@@ -141,6 +141,14 @@
     }
     {
       mode = "n";
+      key = "<leader>gg";
+      action = "<cmd>Neogit<CR>";
+      options = {
+        desc = "Git";
+      };
+    }
+    {
+      mode = "n";
       key = "<leader>qq";
       action = "<cmd>qa<cr>";
       options = {

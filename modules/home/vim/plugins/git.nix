@@ -62,14 +62,6 @@
       enable = true;
       lazyLoad.settings = {
         cmd = "Neogit";
-        keys = [
-          {
-            __unkeyed-1 = "<leader>gg";
-            __unkeyed-3 = "<cmd>Neogit<CR>";
-            desc = "Git";
-            mode = "n";
-          }
-        ];
       };
 
       settings = {
