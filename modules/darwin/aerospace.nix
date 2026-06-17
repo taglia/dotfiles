@@ -139,25 +139,34 @@
         "9" = "secondary";
       };
 
+      # NOTE: order matters. AeroSpace walks on-window-detected callbacks in list
+      # order and stops at the first match unless `check-further-callbacks = true`
+      # (switch/break semantics). Matchers are re-evaluated live per callback, and
+      # every `run` command is pinned to the detected window via $AEROSPACE_WINDOW_ID,
+      # so a `move-node-to-workspace` here is seen by later matchers and `layout`
+      # targets the detected window's (possibly new) parent container.
+      #
+      # Keep the workspace `layout accordion` rules LAST: a window that matches one
+      # of them and has `check-further-callbacks = false` (the default) stops the
+      # chain, so anything that must also run (app moves, floating rules) has to
+      # come first. Move rules set `check-further-callbacks = true` so they keep
+      # walking to the workspace rules, which then accordion the DESTINATION
+      # workspace (e.g. Mail -> ws 2 -> ws 2 becomes accordion) without stealing
+      # focus (no --focus-follows-window needed).
       on-window-detected = [
         {
-          "if".workspace = "1";
-          run = "layout accordion";
-        }
-        {
-          "if".workspace = "2";
-          run = "layout accordion";
-        }
-        {
           "if".app-id = "com.apple.mail";
+          check-further-callbacks = true;
           run = "move-node-to-workspace 2";
         }
         {
           "if".app-id = "com.omnigroup.OmniFocus4";
+          check-further-callbacks = true;
           run = "move-node-to-workspace 2";
         }
         {
           "if".app-id = "org.ferdium.ferdium-app";
+          check-further-callbacks = true;
           run = "move-node-to-workspace 4";
         }
         {
@@ -186,10 +195,12 @@
         }
         {
           "if".app-id = "com.mitchellh.ghostty";
+          check-further-callbacks = true;
           run = "move-node-to-workspace 5";
         }
         {
           "if".app-id = "com.appliedphasor.secure-shellfish";
+          check-further-callbacks = true;
           run = "move-node-to-workspace 5";
         }
         {
@@ -199,6 +210,14 @@
         {
           "if".app-id = "com.protonmail.bridge";
           run = "layout floating";
+        }
+        {
+          "if".workspace = "1";
+          run = "layout accordion";
+        }
+        {
+          "if".workspace = "2";
+          run = "layout accordion";
         }
       ];
     };
