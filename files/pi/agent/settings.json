@@ -1,6 +1,6 @@
 {
-  "defaultModel": "gpt-5.4",
-  "defaultProvider": "openai-codex",
+  "defaultModel": "glm-5.2",
+  "defaultProvider": "ollama-cloud",
   "defaultThinkingLevel": "medium",
   "lastChangelogVersion": "0.79.1",
   "theme": "catppuccin-mocha",
