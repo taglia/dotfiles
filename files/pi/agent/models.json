@@ -34,23 +34,6 @@
         },
         {
           "contextWindow": 262144,
-          "id": "kimi-k2.6",
-          "input": [
-            "text"
-          ],
-          "name": "Kimi K2.6 (Ollama Cloud)",
-          "reasoning": true,
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": "low",
-            "low": "low",
-            "medium": "medium",
-            "high": "high",
-            "xhigh": "high"
-          }
-        },
-        {
-          "contextWindow": 262144,
           "id": "kimi-k2.7-code",
           "input": [
             "text"
@@ -73,6 +56,23 @@
             "text"
           ],
           "name": "DeepSeek V4 Pro (Ollama Cloud)",
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "low",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high"
+          }
+        },
+        {
+          "contextWindow": 1000000,
+          "id": "glm-5.2",
+          "input": [
+            "text"
+          ],
+          "name": "GLM-5.2 (Ollama Cloud)",
           "reasoning": true,
           "thinkingLevelMap": {
             "off": null,
