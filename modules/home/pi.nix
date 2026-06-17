@@ -17,6 +17,7 @@ let
     ".pi/agent/extensions/prettier-footer.ts" = ../../files/pi/agent/extensions/prettier-footer.ts;
     ".pi/agent/extensions/session-cost-breakdown.ts" =
       ../../files/pi/agent/extensions/session-cost-breakdown.ts;
+    ".pi/agent/extensions/confirm-interrupt.ts" = ../../files/pi/agent/extensions/confirm-interrupt.ts;
     ".pi/agent/extensions/elapsed-time.ts" = ../../files/pi/agent/extensions/elapsed-time.ts;
   };
 
