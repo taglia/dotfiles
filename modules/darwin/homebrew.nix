@@ -109,9 +109,6 @@
       "cookie"
       "carbon-copy-cloner"
       "bambu-studio"
-      "backblaze"
-      "backblaze-downloader"
-      "backblaze-restore"
       "calibre"
       "utm"
     ];
