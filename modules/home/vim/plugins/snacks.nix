@@ -165,18 +165,6 @@
     }
     {
       mode = "n";
-      key = "<leader>gc";
-      action = "<cmd>lua Snacks.picker.git_log()<cr>";
-      options.desc = "Commits";
-    }
-    {
-      mode = "n";
-      key = "<leader>gs";
-      action = "<cmd>lua Snacks.picker.git_status()<cr>";
-      options.desc = "Status";
-    }
-    {
-      mode = "n";
       key = "<leader>sa";
       action = "<cmd>lua Snacks.picker.autocmds()<cr>";
       options.desc = "Auto Commands";

@@ -141,10 +141,10 @@
     }
     {
       mode = "n";
-      key = "<leader>gg";
+      key = "<leader>G";
       action = "<cmd>Neogit<CR>";
       options = {
-        desc = "Git";
+        desc = "Neogit";
       };
     }
     {
