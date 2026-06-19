@@ -174,7 +174,7 @@ EOF
       my $github_username = $ENV{"DOTFILES_BOOTSTRAP_GITHUB_USERNAME"};
       my $email = $ENV{"DOTFILES_BOOTSTRAP_EMAIL"};
 
-      s/(user\s*=\s*\{\s*username\s*=\s*")[^"]*(";\s*githubUsername\s*=\s*")[^"]*(";\s*email\s*=\s*")[^"]*(";\s*\};)/$1$username$2$github_username$3$email$4/s
+      s/(defaultUser\s*=\s*\{\s*username\s*=\s*")[^"]*(";\s*githubUsername\s*=\s*")[^"]*(";\s*email\s*=\s*")[^"]*(";\s*\};)/$1$username$2$github_username$3$email$4/s
         or die "could not update user identity in flake.nix\n";
     ' flake.nix
 
