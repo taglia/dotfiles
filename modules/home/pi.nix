@@ -19,6 +19,7 @@ let
       ../../files/pi/agent/extensions/session-cost-breakdown.ts;
     ".pi/agent/extensions/confirm-interrupt.ts" = ../../files/pi/agent/extensions/confirm-interrupt.ts;
     ".pi/agent/extensions/elapsed-time.ts" = ../../files/pi/agent/extensions/elapsed-time.ts;
+    ".pi/agent/themes/catppuccin-mocha.json" = ../../files/pi/agent/themes/catppuccin-mocha.json;
   };
 
   prepareManagedPiAgentLinks = lib.concatStringsSep "\n" (
