@@ -2,7 +2,11 @@
   system.defaults.NSGlobalDomain = {
     # Enable tap-to-click and force click while keeping pointer/repeat speed alone.
     "com.apple.mouse.tapBehavior" = 1;
+    "com.apple.trackpad.enableSecondaryClick" = true;
     "com.apple.trackpad.forceClick" = true;
+    "com.apple.keyboard.fnState" = true;
+
+    "com.apple.trackpad.trackpadCornerClickBehavior" = null;
 
     # Prevent macOS from changing the characters or words typed into native text fields.
     NSAutomaticCapitalizationEnabled = false;
@@ -26,6 +30,14 @@
       WebAutomaticTextReplacementEnabled = false;
       WebContinuousSpellCheckingEnabled = false;
     };
+  };
+
+  system.defaults.WindowManager = {
+    EnableTiledWindowMargins = false;
+    EnableTilingByEdgeDrag = false;
+    EnableTopTilingByEdgeDrag = false;
+    GloballyEnabled = false;
+    EnableStandardClickToShowDesktop = false;
   };
 
   # Trackpad gestures and click behavior. Key repeat settings are intentionally unmanaged.

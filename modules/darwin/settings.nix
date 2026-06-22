@@ -33,18 +33,28 @@
     AppleMeasurementUnits = "Centimeters";
     AppleInterfaceStyleSwitchesAutomatically = true;
     AppleICUForce24HourTime = false;
-    "com.apple.keyboard.fnState" = true;
-  };
-  system.defaults.WindowManager = {
-    EnableTiledWindowMargins = false;
-    EnableTilingByEdgeDrag = false;
+    NSNavPanelExpandedStateForSaveMode = true;
+    NSNavPanelExpandedStateForSaveMode2 = true;
   };
   system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
-  system.defaults.controlcenter.FocusModes = true;
+
+  # Menubar behavior
+  system.defaults.controlcenter = {
+    AirDrop = false;
+    BatteryShowPercentage = false;
+    Bluetooth = false;
+    Display = false;
+    FocusModes = false;
+    NowPlaying = false;
+    Sound = false;
+  };
 
   system.defaults.loginwindow = {
     GuestEnabled = false;
-    LoginwindowText = "Cesare's computer";
+    LoginwindowText = "⍺ ω";
+    ShutDownDisabledWhileLoggedIn = true;
+    RestartDisabledWhileLoggedIn = true;
+    PowerOffDisabledWhileLoggedIn = true;
   };
   # nix-darwin does not expose the current-host idle timer that controls when the
   # screensaver starts.

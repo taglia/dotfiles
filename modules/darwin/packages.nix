@@ -22,10 +22,27 @@
   # Homebrew casks for vendor-distributed GUI apps that nixpkgs does not package
   # well on Darwin.
   #
-  # 1Password CLI is currently kept as the `1password-cli` Homebrew cask so it
-  # updates with the vendor-managed app. To switch it to nix-darwin, remove the
-  # `1password-cli` cask from `modules/darwin/homebrew.nix`, allow the unfree
-  # package, and enable the module:
+  # 1Password GUI and CLI are kept as Homebrew casks (see
+  # `modules/darwin/homebrew.nix`) rather than moved under nix-darwin / Home
+  # Manager:
+  #
+  # - The GUI app refuses to run outside `/Applications`. Home Manager places
+  #   apps in `~/Applications/Home Manager Apps`, so HM is out. The nix-darwin
+  #   `programs._1password-gui` module works around this by rsync-ing the
+  #   `.app` bundle from the Nix store into `/Applications/1Password.app` on
+  #   every activation, which is heavier and more fragile than the cask.
+  # - 1Password ships frequent updates (often weekly). The Homebrew cask tracks
+  #   vendor releases faster than nixpkgs' unfree `_1password-gui`.
+  # - 1Password 8 has its own built-in updater; under the nix-darwin module an
+  #   in-place self-update would diverge from the Nix-pinned version until the
+  #   next `darwin-rebuild switch` re-rsyncs it.
+  # - The CLI (`op`) is version-coupled to the desktop app's vault format and
+  #   integration features, so both should update together from the same
+  #   vendor-managed source.
+  #
+  # To switch the CLI to nix-darwin anyway, remove the `1password-cli` cask
+  # from `modules/darwin/homebrew.nix`, allow the unfree package, and enable
+  # the module:
   #
   # nixpkgs.config.allowUnfreePredicate =
   #   pkg: builtins.elem (pkgs.lib.getName pkg) [ "1password-cli" ];
