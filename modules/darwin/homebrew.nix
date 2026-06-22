@@ -111,6 +111,7 @@
       "bambu-studio"
       "calibre"
       "utm"
+      "tailscale-app"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.

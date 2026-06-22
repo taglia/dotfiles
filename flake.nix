@@ -140,7 +140,6 @@
             ./modules/darwin/input.nix
             ./modules/darwin/packages.nix
             ./modules/darwin/settings.nix
-            ./modules/darwin/tailscale.nix
 
             (
               { pkgs, ... }:
