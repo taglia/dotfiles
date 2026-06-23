@@ -32,14 +32,6 @@
     };
   };
 
-  system.defaults.WindowManager = {
-    EnableTiledWindowMargins = false;
-    EnableTilingByEdgeDrag = false;
-    EnableTopTilingByEdgeDrag = false;
-    GloballyEnabled = false;
-    EnableStandardClickToShowDesktop = false;
-  };
-
   # Trackpad gestures and click behavior. Key repeat settings are intentionally unmanaged.
   system.defaults.trackpad = {
     Clicking = true;

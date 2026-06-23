@@ -66,10 +66,4 @@
   # not required by Aerospace; pinned here only so the setting is explicit.
   # Takes effect after logout.
   system.defaults.spaces.spans-displays = false;
-
-  system.defaults.iCal = {
-    "TimeZone support enabled" = true;
-    CalendarSidebarShown = true;
-    "first day of week" = "Monday";
-  };
 }

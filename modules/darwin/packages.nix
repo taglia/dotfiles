@@ -50,5 +50,16 @@
   # programs._1password.enable = true;
   environment.systemPackages = with pkgs; [
     qemu
+
+    # `enableAllTerminfo` currently pulls in removed packages such as `termite`
+    # from nixpkgs 26.05, which prevents the Darwin system from evaluating.
+    # Keep the terminal entries we actually use here instead.
+    ghostty-bin.terminfo
+    kitty.terminfo
+    wezterm.terminfo
+    alacritty.terminfo
   ];
+
+  # See note above: disabled to avoid pulling removed terminfo packages.
+  environment.enableAllTerminfo = false;
 }

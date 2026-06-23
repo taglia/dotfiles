@@ -1,24 +1,11 @@
 {
   darwinFeatures ? { },
   lib,
-  pkgs,
   user,
   ...
 }:
 
 {
-  environment.systemPackages = with pkgs; [
-    ghostty-bin.terminfo
-    kitty.terminfo
-    wezterm.terminfo
-    alacritty.terminfo
-  ];
-
-  # `enableAllTerminfo` currently pulls in removed packages such as `termite`
-  # from nixpkgs 26.05, which prevents the Darwin system from evaluating.
-  # Keep the terminal entries we actually use in `environment.systemPackages`.
-  environment.enableAllTerminfo = false;
-
   power.restartAfterFreeze = true;
   power.restartAfterPowerFailure = lib.mkIf (darwinFeatures.restartAfterPowerFailure or false) true;
   power.sleep.display = 5;
@@ -56,6 +43,13 @@
     RestartDisabledWhileLoggedIn = true;
     PowerOffDisabledWhileLoggedIn = true;
   };
+  # Per-app defaults that don't warrant their own module yet.
+  system.defaults.iCal = {
+    "TimeZone support enabled" = true;
+    CalendarSidebarShown = true;
+    "first day of week" = "Monday";
+  };
+
   # nix-darwin does not expose the current-host idle timer that controls when the
   # screensaver starts.
   system.activationScripts.postActivation.text = lib.mkAfter ''

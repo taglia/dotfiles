@@ -1,6 +1,17 @@
 { pkgs, ... }:
 
 {
+  # Disable macOS' native tiling/snapping so AeroSpace is the sole window
+  # manager. These overlap with AeroSpace's responsibilities and would fight
+  # it for control of window placement.
+  system.defaults.WindowManager = {
+    EnableTiledWindowMargins = false;
+    EnableTilingByEdgeDrag = false;
+    EnableTopTilingByEdgeDrag = false;
+    GloballyEnabled = false;
+    EnableStandardClickToShowDesktop = false;
+  };
+
   services.aerospace = {
     enable = true;
     package = pkgs.aerospace;
