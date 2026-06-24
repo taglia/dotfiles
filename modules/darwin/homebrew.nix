@@ -112,6 +112,7 @@
       "calibre"
       "utm"
       "tailscale-app"
+      "trader-workstation"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.
