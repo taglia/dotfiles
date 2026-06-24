@@ -51,6 +51,15 @@ in
     fi
   '';
 
+  # pi-coding-agent ships its own bundled Node runtime, but at runtime it
+  # shells out to a bare `npm` (see the `pi-vim` install into
+  # ~/.pi/agent/npm) and relies on `npm` being on PATH. Provide nodejs here so
+  # `npm`/`node` resolve wherever this profile (and thus pi-coding-agent) is
+  # active. On hosts that manage Node via mise, mise's shims stay ahead of the
+  # Nix profile in PATH, so this only fills the gap on hosts without a
+  # mise-installed Node (e.g. a fresh VM).
+  home.packages = [ pkgs.nodejs ];
+
   home.file = lib.mapAttrs (_name: source: {
     inherit source;
     force = true;
