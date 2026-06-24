@@ -8,6 +8,9 @@ build-darwin target="mbp":
 switch-darwin target="mbp":
     nh darwin switch . -H {{target}}
 
+switch-utm-vm:
+    sudo nixos-rebuild switch --flake .#utm-vm
+
 switch-home target:
     nh home switch . -c {{target}}
 
