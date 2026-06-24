@@ -4,6 +4,15 @@
   # GUI workstation stack. Imported by machines that want a desktop; headless
   # hosts simply leave this module out.
 
+  # System-level GUI apps. Kept here rather than base.nix so headless NixOS
+  # hosts don't pull a GPU terminal. `ghostty` builds from source (Zig) and is
+  # supported on aarch64-linux and x86_64-linux; the first build is slow, later
+  # builds are cached. The macOS code-signing problem that affects `ghostty-bin`
+  # is a Darwin-only issue and does not apply here.
+  environment.systemPackages = with pkgs; [
+    ghostty
+  ];
+
   # Iosevka Nerd Font, matching the terminal/editor fonts used on darwin.
   fonts.packages = with pkgs; [
     nerd-fonts.iosevka

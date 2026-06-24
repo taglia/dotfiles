@@ -277,6 +277,17 @@
         ./modules/home/media.nix
       ];
 
+      # The Home Manager module set shared by the standalone `linux-private`
+      # configuration and the `utm-vm` NixOS host, so the VM gets the same user
+      # environment (AI tools + private agenix secrets) as `linux-private`, just
+      # built for aarch64-linux instead of x86_64-linux. Architecture is handled
+      # by mkNixos importing nixpkgs with the host's `system`, so nothing extra
+      # is needed here for ARM.
+      privateModules = fullModules ++ [
+        ./profiles/ai.nix
+        ./profiles/private.nix
+      ];
+
       hosts = rec {
         linux = {
           system = "x86_64-linux";
@@ -290,10 +301,7 @@
 
         linux-private = {
           system = "x86_64-linux";
-          modules = fullModules ++ [
-            ./profiles/ai.nix
-            ./profiles/private.nix
-          ];
+          modules = privateModules;
         };
 
         linux-minimal.system = "x86_64-linux";
@@ -346,6 +354,9 @@
         utm-vm = {
           system = "aarch64-linux";
           hostModule = ./hosts/utm-vm;
+          # Match the `linux-private` standalone profile (AI tools + private
+          # secrets) so the VM is a full private workstation on ARM.
+          homeModules = privateModules;
         };
       };
 
