@@ -11,6 +11,8 @@
   # is a Darwin-only issue and does not apply here.
   environment.systemPackages = with pkgs; [
     ghostty
+    vivaldi
+    librewolf
   ];
 
   # Iosevka Nerd Font, matching the terminal/editor fonts used on darwin.
