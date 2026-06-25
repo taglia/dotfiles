@@ -29,8 +29,8 @@ let
         target = "${config.home.homeDirectory}/${name}";
       in
       ''
-        if [[ -f "${target}" && ! -L "${target}" ]] && /usr/bin/cmp -s ${source} "${target}"; then
-          /bin/rm "${target}"
+        if [[ -f "${target}" && ! -L "${target}" ]] && ${pkgs.diffutils}/bin/cmp -s ${source} "${target}"; then
+          ${pkgs.coreutils}/bin/rm "${target}"
         fi
       ''
     ) managedPiAgentFiles
@@ -42,10 +42,10 @@ in
       prepareManagedPiAgentLinks;
 
   home.activation.installMinimalWebExtension = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    $DRY_RUN_CMD /bin/rm -rf $VERBOSE_ARG ~/.pi/agent/extensions/minimal-web
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -rf $VERBOSE_ARG ~/.pi/agent/extensions/minimal-web
     $DRY_RUN_CMD mkdir -p $VERBOSE_ARG ~/.pi/agent/extensions/minimal-web
-    $DRY_RUN_CMD /bin/cat ${minimalWebSource}/index.ts > ~/.pi/agent/extensions/minimal-web/index.ts
-    $DRY_RUN_CMD /bin/cat ${minimalWebSource}/package.json > ~/.pi/agent/extensions/minimal-web/package.json
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/cat ${minimalWebSource}/index.ts > ~/.pi/agent/extensions/minimal-web/index.ts
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/cat ${minimalWebSource}/package.json > ~/.pi/agent/extensions/minimal-web/package.json
     if [ ! -d ~/.pi/agent/extensions/minimal-web/node_modules ]; then
       $DRY_RUN_CMD ${pkgs.nodejs}/bin/npm install --prefix ~/.pi/agent/extensions/minimal-web --omit=dev
     fi
