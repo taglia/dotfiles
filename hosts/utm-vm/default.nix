@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, ... }:
 
 {
   imports = [
@@ -30,10 +30,10 @@
       settings = {
         "org/gnome/desktop/screensaver" = {
           lock-enabled = false;
-          lock-delay = 0;
+          lock-delay = lib.gvariant.mkUint32 0;
         };
         "org/gnome/desktop/session" = {
-          idle-delay = 0;
+          idle-delay = lib.gvariant.mkUint32 0;
         };
       };
     }

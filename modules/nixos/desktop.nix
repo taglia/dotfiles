@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   # GUI workstation stack. Imported by machines that want a desktop; headless
@@ -50,4 +50,17 @@
   };
 
   programs.firefox.enable = true;
+
+  # macOS-style natural (reverse) scrolling on the trackpad. Kept in the
+  # shared desktop module so every NixOS host with GNOME gets it as a default;
+  # the user can still override it from GNOME Settings.
+  programs.dconf.profiles.user.databases = [
+    {
+      settings = {
+        "org/gnome/desktop/peripherals/touchpad" = {
+          natural-scroll = true;
+        };
+      };
+    }
+  ];
 }
