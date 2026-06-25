@@ -16,6 +16,29 @@
 
   networking.hostName = "utm-vm";
 
+  # VM conveniences: skip the login screen and never lock the session. Kept
+  # here (not in desktop.nix) so physical/other hosts keep their normal login
+  # and lock behaviour. These are dconf *defaults*, not locked, so the user can
+  # still re-enable locking from within GNOME if they ever want to.
+  services.displayManager.autoLogin = {
+    enable = true;
+    user = "taglia";
+  };
+
+  programs.dconf.profiles.user.databases = [
+    {
+      settings = {
+        "org/gnome/desktop/screensaver" = {
+          lock-enabled = false;
+          lock-delay = 0;
+        };
+        "org/gnome/desktop/session" = {
+          idle-delay = 0;
+        };
+      };
+    }
+  ];
+
   # The NixOS release this machine was first installed from. Leave it alone even
   # as the flake's nixpkgs moves forward.
   system.stateVersion = "26.05";
