@@ -26,7 +26,6 @@
     brews = [
       "mas" # Required for `homebrew.masApps`.
       "mole"
-      "ollama"
     ];
 
     # Current casks from `brew list --cask`.
