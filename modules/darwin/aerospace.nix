@@ -220,6 +220,11 @@
           run = "move-node-to-workspace 5";
         }
         {
+          "if".app-id = "com.kk2.rootshell";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 5";
+        }
+        {
           "if".app-id = "com.1password.1password";
           run = "layout floating";
         }
