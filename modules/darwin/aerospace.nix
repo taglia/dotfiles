@@ -176,6 +176,11 @@
           run = "move-node-to-workspace 2";
         }
         {
+          "if".app-id = "com.flexibits.fantastical2.mac";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 2";
+        }
+        {
           "if".app-id = "org.ferdium.ferdium-app";
           check-further-callbacks = true;
           run = "move-node-to-workspace 4";

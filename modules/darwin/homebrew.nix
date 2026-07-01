@@ -112,6 +112,7 @@
       "utm"
       "tailscale-app"
       "trader-workstation"
+      "fantastical"
     ];
 
     # Mac App Store apps use Homebrew Bundle's `mas` support.
