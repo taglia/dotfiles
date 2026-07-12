@@ -314,6 +314,14 @@
           modules = fullModules ++ [ ./profiles/ai.nix ];
         };
 
+        linux-openclaw = {
+          system = "x86_64-linux";
+          user = defaultUser // {
+            username = "openclaw";
+          };
+          modules = fullModules ++ [ ./profiles/ai.nix ];
+        };
+
         linux-arm = {
           system = "aarch64-linux";
           modules = fullModules;
@@ -329,6 +337,11 @@
           modules = fullModules ++ [
             ./profiles/ai.nix
             ./profiles/private.nix
+            # Darwin-only: SketchyBar runs as a user launchd agent and its HM
+            # module asserts a Darwin platform, so keep it out of the Linux
+            # homeConfigurations by importing it here rather than in
+            # profiles/base.nix or profiles/darwin.nix.
+            ./modules/home/sketchybar.nix
           ];
         };
 

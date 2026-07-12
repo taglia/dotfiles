@@ -41,7 +41,18 @@
         outer = {
           left = 10;
           bottom = 10;
-          top = 10;
+          # Reserve space at the top for the SketchyBar (height=40) so tiled
+          # windows sit below it instead of sliding under it. macOS gives
+          # third-party bars no "reserve screen space" API, so the WM must
+          # leave the gap. The built-in MacBook display already loses its top
+          # ~40px to the notch zone, so it only needs a small gap there;
+          # external displays get the full bar-clearing gap. Per-monitor gaps
+          # are an AeroSpace array of overrides; the last bare value is the
+          # default for any monitor not matched above it.
+          top = [
+            { monitor."built-in" = 10; }
+            50
+          ];
           right = 10;
         };
       };
