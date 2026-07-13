@@ -10,6 +10,7 @@ Cross-project instructions for pi. Read on every session.
 - **Prioritize nix dev-shells to install repo-specific tools**: if specific tools (i.e. for embedded systems, compilers, tooling) is required for a project, always propose to use a dev-shell, and auto-activate it with direnv.
 - **CRITICAL: Do NOT commit or push code without authorization**: never, never commit or push code without asking for approval first.
 - **CRITICAL: Never do `find /`**: always narrow down your search path to something manageable; for any large tree, ASK THE USER.
+- **CRITICAL: Never `find` or `grep` the entire home folder** (`~`, `$HOME`, `/Users/<user>`): it is far too large and slow. Always narrow the search path — target a specific project directory, use `--maxdepth`, or search a known subdirectory. If a genuinely broad home-wide search is needed, ASK THE USER first.
 - **Use small scripts whenever you can rather than push large contexts**: if you need to process large amounts of data, NEVER push that to the LLM, write a script to process the data.
 - **Cleanup temporary files**: if you create temporary documents or scripts, clean them up once you have completed the work and do not need them anymore.
 
