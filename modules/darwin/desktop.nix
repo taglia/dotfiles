@@ -16,6 +16,7 @@
       "/System/Applications/Mail.app"
       "/Applications/OmniFocus.app"
       "/Applications/1Password.app"
+      "/Applications/rootshell.app"
       "/Applications/Ghostty.app"
       "/Applications/ShellFish.app"
       "/Applications/Screens 5.app"
