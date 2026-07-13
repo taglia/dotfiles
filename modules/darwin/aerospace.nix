@@ -20,6 +20,16 @@
       after-login-command = [ ];
       after-startup-command = [ ];
 
+      # Notify SketchyBar on AeroSpace workspace change so the workspace
+      # indicator (files/sketchybar/items/spaces.lua) can highlight the
+      # focused workspace. We don't use macOS Spaces, so AeroSpace workspaces
+      # are the only notion of "workspace".
+      exec-on-workspace-change = [
+        "/bin/bash"
+        "-c"
+        "${pkgs.sketchybar}/bin/sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE"
+      ];
+
       enable-normalization-flatten-containers = true;
       enable-normalization-opposite-orientation-for-nested-containers = true;
 
@@ -41,17 +51,17 @@
         outer = {
           left = 10;
           bottom = 10;
-          # Reserve space at the top for the SketchyBar (height=40) so tiled
-          # windows sit below it instead of sliding under it. macOS gives
-          # third-party bars no "reserve screen space" API, so the WM must
-          # leave the gap. The built-in MacBook display already loses its top
-          # ~40px to the notch zone, so it only needs a small gap there;
-          # external displays get the full bar-clearing gap. Per-monitor gaps
-          # are an AeroSpace array of overrides; the last bare value is the
-          # default for any monitor not matched above it.
+          # Reserve space at the top for SketchyBar (height=38) so tiled
+          # windows sit below it with a ~10px gap instead of sliding under it.
+          # macOS gives third-party bars no "reserve screen space" API, so the
+          # WM must leave the gap: external displays get 38 (bar) + 10 (gap) =
+          # 48. The built-in MacBook display already loses its top area to the
+          # notch/menu-bar zone (which covers the bar), so it only needs a small
+          # gap there. Per-monitor gaps are an AeroSpace array of overrides;
+          # the last bare value is the default for any monitor not matched.
           top = [
             { monitor."built-in" = 10; }
-            50
+            48
           ];
           right = 10;
         };

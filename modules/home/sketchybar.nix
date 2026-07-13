@@ -13,33 +13,38 @@
 # it never reaches the Linux homeConfigurations. The HM module also asserts a
 # Darwin platform as a backstop.
 #
-# The Lua config itself lives in files/sketchybar/sketchybarrc.lua and is pulled
-# in via `config.source`, keeping this module short and matching the convention
-# used elsewhere (e.g. the mouseless config path in darwin-apps.nix). The HM
-# module installs the file at ~/.config/sketchybar/sketchybarrc (the destination
-# name is fixed by the module, so the source can carry a .lua extension for
-# editor/syntax-highlighting); the copy is verbatim, so the source file carries
-# its own `#!/usr/bin/env lua` shebang and is executable.
+# The SketchyBar config itself is kept as a self-contained, separately-identified
+# tree under files/sketchybar/ (see files/sketchybar/README.md for its origin,
+# the nix-adaptations applied, and its external dependencies). It is pulled in
+# here as a *directory* source so the whole multi-file Lua config (sketchybarrc
+# entry + init.lua + items/ + helpers/) is installed verbatim into
+# ~/.config/sketchybar/ and require() of siblings resolves (the HM wrapper adds
+# the config dir to LUA_PATH only in the source path).
 #
-# `configType = "lua"` still drives the wrapper: it pulls in pkgs.sbarlua, auto-
-# infers the Lua interpreter from sbarlua.passthru.luaModule, and adds sbarlua
-# to LUA_PATH/LUA_CPATH so `require("sketchybar")` resolves. The `sbar` global
-# is NOT auto-loaded, so the config file begins with `sbar = require("sketchybar")`.
+# `configType = "lua"` drives the wrapper: it pulls in pkgs.sbarlua, auto-infers
+# the Lua interpreter from sbarlua.passthru.luaModule, and adds sbarlua to
+# LUA_PATH/LUA_CPATH so `require("sketchybar")` resolves. The `sbar` global is
+# NOT auto-loaded, so the entry file begins with `sbar = require("sketchybar")`.
+# The entry file (files/sketchybar/sketchybarrc, no extension — sketchybar looks
+# for that exact name) is executable and carries its own shebang, since the
+# directory-source copy is verbatim.
 #
-# To grow into a plugin-style multi-file config later, switch to a directory
-# source: config = { source = ../../files/sketchybar; recursive = true; }; with
-# the entry file named `sketchybarrc` (NO extension — sketchybar looks for that
-# exact name) inside that directory. The HM wrapper adds the config dir to
-# LUA_PATH only in the source path, so require() of siblings then resolves.
-{ ... }:
+# `extraPackages` puts `aerospace` on the wrapper's PATH so the workspace
+# indicator (items/spaces.lua) can run `aerospace workspace N` (click_script)
+# and `aerospace list-workspaces --focused` without an absolute path.
+{ pkgs, ... }:
 
 let
-  sketchybarConfig = ../../files/sketchybar/sketchybarrc.lua;
+  sketchybarConfigDir = ../../files/sketchybar;
 in
 {
   programs.sketchybar = {
     enable = true;
     configType = "lua";
-    config.source = sketchybarConfig;
+    config = {
+      source = sketchybarConfigDir;
+      recursive = true;
+    };
+    extraPackages = [ pkgs.aerospace ];
   };
 }

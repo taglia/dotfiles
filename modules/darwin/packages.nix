@@ -5,6 +5,7 @@
   fonts.packages = with pkgs; [
     nerd-fonts.dejavu-sans-mono
     nerd-fonts.fira-code
+    nerd-fonts.hack
     nerd-fonts.inconsolata
     nerd-fonts.inconsolata-go
     nerd-fonts.iosevka

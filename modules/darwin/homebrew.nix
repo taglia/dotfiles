@@ -41,8 +41,6 @@
       "blender"
       "downie"
       "ferdium"
-      "font-hack-nerd-font"
-      "font-iosevka-nerd-font"
       "google-chrome"
       "jordanbaird-ice@beta"
       "kitty"
