@@ -81,4 +81,11 @@ battery:subscribe("mouse.exited", function()
 	battery_update()
 end)
 
+-- AlDente is a menu-bar app. Opening the app bundle directly shows its popup;
+-- the registered `aldente://` URL scheme exists but appears to be a no-op here.
+-- If AlDente ever documents a dedicated "show popup" command, replace this.
+battery:subscribe("mouse.clicked", function()
+	SBAR.exec("open -b com.apphousekitchen.aldente-pro")
+end)
+
 battery:subscribe({ "routine", "power_source_change", "system_woke" }, battery_update)
