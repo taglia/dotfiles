@@ -61,7 +61,6 @@
       "obsidian"
       "knockknock"
       "ghostty"
-      "stats"
       "signal"
       "protonvpn"
       "proton-drive"

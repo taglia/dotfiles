@@ -6,43 +6,13 @@ local icons = {
 	_0 = "􀊣",
 }
 
-local volume_slider = SBAR.add("slider", 100, {
-	position = "right",
-	updates = true,
-	label = { drawing = false },
-	icon = { drawing = false },
-	slider = {
-		highlight_color = COLORS.accent_color,
-		width = 0,
-		background = {
-			height = 6,
-			corner_radius = 3,
-		},
-		knob = {
-			string = "􀀁",
-			drawing = false,
-		},
-	},
-})
-
 local volume_icon = SBAR.add("item", "volume_icon", {
 	position = "right",
 	label = { drawing = false },
+	background = { drawing = false },
 })
 
-SBAR.add("bracket", "volume.bracket", {
-	volume_icon.name,
-	volume_slider.name,
-}, {
-	background = {},
-})
-
-volume_slider:subscribe("mouse.clicked", function(env)
-	SBAR.exec("osascript -e 'set volume output volume " .. env["PERCENTAGE"] .. "'")
-end)
-
-volume_slider:subscribe("volume_change", function(env)
-	local volume = tonumber(env.INFO)
+local function set_icon(volume)
 	local icon = icons._0
 	if volume > 60 then
 		icon = icons._100
@@ -53,34 +23,21 @@ volume_slider:subscribe("volume_change", function(env)
 	elseif volume > 0 then
 		icon = icons._10
 	end
-
 	volume_icon:set({ icon = icon })
-	volume_slider:set({ slider = { percentage = volume } })
-end)
-
-local function animate_slider_width(width)
-	-- Run the animation
-	SBAR.animate("tanh", 30.0, function()
-		volume_slider:set({
-			slider = { width = width },
-		})
-	end)
 end
 
--- 6. THE AUTO-CLOSE LOGIC
--- When mouse leaves the slider, wait 0.1 second then check if we should close
-volume_slider:subscribe("mouse.exited", function()
-	SBAR.delay(0.1, function()
-		animate_slider_width(0)
-	end)
+volume_icon:subscribe("volume_change", function(env)
+	set_icon(tonumber(env.INFO) or 0)
 end)
 
--- Expand on hover over icon (Optional, but makes it feel native)
--- Expand on hover over icon (Left Click) | Open Settings (Right Click)
-volume_icon:subscribe("mouse.clicked", function(env)
-	if env.BUTTON == "right" then
-		SBAR.exec("open /System/Library/PreferencePanes/Sound.prefPane")
-	else
-		animate_slider_width(100)
-	end
+-- Initialize without waiting for the first volume_change event.
+SBAR.exec("osascript -e 'output volume of (get volume settings)'", function(out)
+	set_icon(tonumber(out) or 0)
+end)
+
+-- SoundSource is a menu-bar app. Its docs expose a global Show/Hide keyboard
+-- shortcut, but not a reliable command-line "show main window" action. This
+-- sends the user's configured SoundSource shortcut: Option+Shift+S.
+volume_icon:subscribe("mouse.clicked", function()
+	SBAR.exec([[osascript -e 'tell application "System Events" to keystroke "s" using {option down, shift down}']])
 end)

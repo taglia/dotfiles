@@ -13,8 +13,8 @@ require("items.resources")
 -- Right Side (Order: Right -> Left)
 require("items.calendar")
 require("items.battery")
-require("items.vpn")
 require("items.volume")
+require("items.vpn")
 
 -- 4. Finalize
 SBAR.end_config()

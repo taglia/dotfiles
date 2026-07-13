@@ -13,6 +13,19 @@
 
 local WORKSPACES = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
 
+-- Per-workspace icons. Only the active workspace shows its icon.
+local WORKSPACE_ICONS = {
+	["1"] = "󰖟", -- browser / web
+	["2"] = "󰇮", -- mail
+	["3"] = "󰇮", -- mail
+	["4"] = "󰭹", -- chat
+	["5"] = "", -- terminal
+	["6"] = "󰈔", -- file
+	["7"] = "󰈔", -- file
+	["8"] = "󰈔", -- file
+	["9"] = "󰈔", -- file
+}
+
 SBAR.add("event", "aerospace_workspace_change")
 
 local spaces = {}
@@ -21,10 +34,23 @@ local function highlight(focused)
 	focused = focused and focused:gsub("%s+", "") or nil
 	for _, entry in ipairs(spaces) do
 		local is_focused = (focused == entry.sid)
+		local workspace_icon = WORKSPACE_ICONS[entry.sid]
 		entry.item:set({
 			icon = { color = is_focused and COLORS.workspace_focused_fg or COLORS.workspace_unfocused_fg },
+			label = {
+				string = workspace_icon or "",
+				color = is_focused and COLORS.workspace_focused_fg or COLORS.workspace_unfocused_fg,
+				drawing = is_focused and workspace_icon ~= nil,
+			},
 			background = { drawing = is_focused },
 		})
+
+		-- Small slide-in/slide-out effect for the active workspace's icon.
+		-- SketchyBar animates the label width; drawing is toggled above so the icon
+		-- does not reserve space on inactive workspaces.
+		SBAR.animate("tanh", 18.0, function()
+			entry.item:set({ label = { width = (is_focused and workspace_icon ~= nil) and 22 or 0 } })
+		end)
 	end
 end
 
@@ -38,7 +64,13 @@ for _, sid in ipairs(WORKSPACES) do
 			padding_left = 9,
 			padding_right = 9,
 		},
-		label = { drawing = false },
+		label = {
+			drawing = false,
+			width = 0,
+			font = { family = "Hack Nerd Font", style = "Bold", size = 17.0 },
+			padding_left = 0,
+			padding_right = 9,
+		},
 		background = {
 			color = COLORS.workspace_focused_bg,
 			border_color = COLORS.workspace_focused_bg,
