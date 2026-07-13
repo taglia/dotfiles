@@ -26,6 +26,8 @@
   system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
 
   # Menubar behavior
+  system.defaults.NSGlobalDomain._HIHideMenuBar = true;
+  system.defaults.universalaccess.reduceTransparency = true; # This is wider than the menubar, but unfortunately it's the only setting affecting it.
   system.defaults.controlcenter = {
     AirDrop = false;
     BatteryShowPercentage = false;
