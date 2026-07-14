@@ -1,4 +1,4 @@
-{ user, ... }:
+{ lib, user, ... }:
 
 {
   system.defaults.dock = {
@@ -67,4 +67,42 @@
   # not required by Aerospace; pinned here only so the setting is explicit.
   # Takes effect after logout.
   system.defaults.spaces.spans-displays = false;
+
+  # Use a random private local wallpaper when available. The directory is
+  # intentionally not a Nix path so paid/private images never enter the store or
+  # the public repository.
+  system.activationScripts.postActivation.text = lib.mkAfter ''
+    wallpaper_dir="/Users/${user.username}/Pictures/Wallpapers"
+
+    if [ -d "$wallpaper_dir" ]; then
+      wallpaper="$(
+        /usr/bin/find "$wallpaper_dir" -type f \( \
+          -iname '*.jpg' -o \
+          -iname '*.jpeg' -o \
+          -iname '*.png' -o \
+          -iname '*.heic' -o \
+          -iname '*.webp' \
+        \) | /usr/bin/sort | /usr/bin/awk '
+          BEGIN { srand() }
+          { lines[NR] = $0 }
+          END { if (NR > 0) print lines[int(rand() * NR) + 1] }
+        '
+      )"
+
+      if [ -n "$wallpaper" ]; then
+        echo >&2 "setting random wallpaper: $wallpaper"
+        launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
+          /usr/bin/osascript - "$wallpaper" <<'APPLESCRIPT'
+    on run argv
+      set wallpaperPath to item 1 of argv
+      tell application "System Events"
+        tell every desktop
+          set picture to wallpaperPath
+        end tell
+      end tell
+    end run
+    APPLESCRIPT
+      fi
+    fi
+  '';
 }
