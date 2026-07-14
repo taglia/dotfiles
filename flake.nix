@@ -252,6 +252,10 @@
           modules = fullModules ++ [
             ./profiles/ai.nix
             ./profiles/private.nix
+            # Games and terminal toys (cmatrix, asciiquarium, nethack) plus
+            # chess-tui wired to gnuchess --uci as its bot engine. Kept on the
+            # mbp profile only, so the other hosts stay lean.
+            ./modules/home/entertainment.nix
             # Darwin-only: SketchyBar runs as a user launchd agent and its HM
             # module asserts a Darwin platform, so keep it out of the Linux
             # homeConfigurations by importing it here rather than in
