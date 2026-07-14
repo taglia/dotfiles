@@ -21,6 +21,8 @@
 
     taps = [
       # "marsanne/cask" # This is the licensed version of Cork (GUI for brew)
+      "kitknox/rootshell" # rootshell terminal; cask trusted individually below (not whole-tap)
+
     ];
 
     brews = [
@@ -96,6 +98,9 @@
       "raspberry-pi-imager"
       "raycast"
       "rhino-app"
+      {
+        name = "kitknox/rootshell/rootshell"; # fully-qualified => trust applies to this cask only
+      }
       "screenflow"
       "sf-symbols"
       "signal"
