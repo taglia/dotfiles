@@ -16,12 +16,8 @@
   ];
 
   # Iosevka + Hack Nerd Fonts, matching the terminal/editor fonts used on
-  # darwin (Hack Nerd Font is also used by the SketchyBar item icons).
-  fonts.packages = with pkgs; [
-    nerd-fonts.hack
-    nerd-fonts.iosevka
-    nerd-fonts.iosevka-term
-  ];
+  # darwin (see lib/fonts.nix, shared with modules/darwin/packages.nix).
+  fonts.packages = import ../../lib/fonts.nix pkgs;
 
   services.xserver.enable = true;
 

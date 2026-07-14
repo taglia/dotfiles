@@ -1,3 +1,5 @@
+# Font, opacity, blur and padding intentionally mirror files/kitty/kitty.conf —
+# keep the two terminals in sync when changing them.
 font-family = "Iosevka Term"
 theme = "Catppuccin Mocha"
 macos-titlebar-style = hidden

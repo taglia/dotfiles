@@ -22,11 +22,11 @@ jobs:
       - name: nix flake check (evaluate all outputs)
         run: nix flake check --no-build --all-systems
 
+      # Actually build the checks for the runner's own system (the x86_64-linux
+      # Home Manager activation packages), so package/build failures are caught
+      # too, not just eval errors. Darwin checks still can't build here.
+      - name: nix flake check (build x86_64-linux checks)
+        run: nix flake check
+
       - name: Shellcheck scripts
         run: nix shell nixpkgs#shellcheck --command shellcheck scripts/*.sh
-
-      - name: Bash syntax check
-        run: |
-          for f in scripts/*.sh; do
-            bash -n "$f"
-          done

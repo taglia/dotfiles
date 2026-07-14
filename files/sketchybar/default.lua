@@ -1,5 +1,5 @@
 local border_width = 1
-local corner_raduis = 10
+local corner_radius = 10
 local item_padding = 13
 local bar_height = 38
 local item_height = 32
@@ -32,12 +32,12 @@ local default_item = {
 		color = COLORS.background,
 		border_color = COLORS.background_border,
 		border_width = border_width,
-		corner_radius = corner_raduis,
+		corner_radius = corner_radius,
 		height = item_height,
 	},
 	popup = {
 		background = {
-			corner_radius = corner_raduis,
+			corner_radius = corner_radius,
 			color = COLORS.popup_background,
 			border_width = border_width,
 			border_color = COLORS.popup_border,
@@ -46,6 +46,11 @@ local default_item = {
 }
 
 SBAR.default(default_item)
+-- Must stay a SEPARATE call after the one above: setting background.color
+-- auto-enables background.drawing, and within a single table the key order
+-- is pairs() order (random), so an inline drawing=false could be applied
+-- before color and get re-enabled. Items opt in to a visible background
+-- themselves (e.g. the VPN pill).
 SBAR.default({ background = { drawing = false } })
 -- Add Bar
 -- nix adaptation: explicitly enable drawing. Under the Home Manager wrapper

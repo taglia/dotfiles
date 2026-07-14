@@ -66,8 +66,6 @@ bar, white foreground, bright yellow focused workspace).
   (otherwise the bar loads with `drawing = off`).
 - `default.lua`: `drawing = true` on `SBAR.bar()`; bar height is 38px with an opaque
   high-contrast background.
-- `colors.lua`: `CONFIG_DIR` fallback (`os.getenv("CONFIG_DIR") or
-  (os.getenv("HOME") .. "/.config/sketchybar")`).
 
 ## External dependencies
 

@@ -89,3 +89,7 @@ battery:subscribe("mouse.clicked", function()
 end)
 
 battery:subscribe({ "routine", "power_source_change", "system_woke" }, battery_update)
+
+-- Populate immediately instead of waiting up to update_freq for the first
+-- routine tick.
+battery_update()

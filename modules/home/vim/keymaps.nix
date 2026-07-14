@@ -1,6 +1,4 @@
 {
-  globals.mapleader = " ";
-
   keymaps = [
     {
       mode = [

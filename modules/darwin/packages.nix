@@ -1,20 +1,21 @@
 { pkgs, ... }:
 
 {
-  # Fonts installed system-wide for macOS apps outside Home Manager.
-  fonts.packages = with pkgs; [
-    nerd-fonts.dejavu-sans-mono
-    nerd-fonts.fira-code
-    nerd-fonts.hack
-    nerd-fonts.inconsolata
-    nerd-fonts.inconsolata-go
-    nerd-fonts.iosevka
-    nerd-fonts.iosevka-term
-    nerd-fonts.iosevka-term-slab
-    nerd-fonts.jetbrains-mono
-    nerd-fonts.meslo-lg
-    nerd-fonts.monofur
-  ];
+  # Fonts installed system-wide for macOS apps outside Home Manager. The
+  # shared list (lib/fonts.nix) carries the fonts every desktop host needs;
+  # the extras here are Darwin-only niceties.
+  fonts.packages =
+    import ../../lib/fonts.nix pkgs
+    ++ (with pkgs; [
+      nerd-fonts.dejavu-sans-mono
+      nerd-fonts.fira-code
+      nerd-fonts.inconsolata
+      nerd-fonts.inconsolata-go
+      nerd-fonts.iosevka-term-slab
+      nerd-fonts.jetbrains-mono
+      nerd-fonts.meslo-lg
+      nerd-fonts.monofur
+    ]);
 
   # Native Nix packages installed into the nix-darwin system profile.
   #

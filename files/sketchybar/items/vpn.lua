@@ -5,7 +5,10 @@
 
 local vpn = SBAR.add("item", "vpn", {
 	position = "right",
-	update_freq = 10,
+	-- VPN state changes rarely and the poll shells out to scutil (and possibly
+	-- tailscale), so a slow tick is enough; system_woke and clicks refresh it
+	-- at the moments it actually changes.
+	update_freq = 60,
 	icon = {
 		string = "VPN",
 		font = { family = "Hack Nerd Font", style = "Bold", size = DEFAULT_ITEM.icon.font.size * 0.82 },
@@ -78,7 +81,10 @@ else
   ts=
 fi
 
-if [ -n "$ts" ]; then
+
+# Guard the python3 call: on a machine without the Xcode Command Line Tools
+# the /usr/bin/python3 shim would pop the "install developer tools" dialog.
+if [ -n "$ts" ] && [ -x /usr/bin/python3 ] && xcode-select -p >/dev/null 2>&1; then
   "$ts" status --json 2>/dev/null | /usr/bin/python3 -c '
 import json, sys
 try:

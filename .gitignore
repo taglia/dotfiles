@@ -1,12 +1,11 @@
 .DS_Store
 packages/*.tar.gz
-!packages/.gitkeep
 
 result
 result-*
 *.log
 .nvimlog
 
-# Extension build/test artifacts
+# Extension build/test artifacts (package-lock.json stays tracked so the
+# minimal-web install in modules/home/pi.nix can use `npm ci`)
 files/pi/agent/extensions/*/node_modules/
-files/pi/agent/extensions/*/package-lock.json

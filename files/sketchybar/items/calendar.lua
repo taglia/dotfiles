@@ -129,9 +129,11 @@ end
 cal_time:subscribe({ "routine", "system_woke" }, update_calendar)
 cal_time:set({ update_freq = 30 })
 
--- Click: refresh times and toggle the popup.
+-- Click: refresh times and toggle the popup. query() can return nil/partial
+-- data during a reload, so don't trust its shape.
 local function on_click()
-	local current = cal_time:query().popup.drawing
+	local q = cal_time:query()
+	local current = q and q.popup and q.popup.drawing
 	if current == "off" then
 		build_popup()
 	end

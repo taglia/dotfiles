@@ -135,9 +135,6 @@
           nixfmt = {
             command = "${lib.getExe pkgs.nixfmt}";
           };
-          alejandra = {
-            command = "${lib.getExe pkgs.alejandra}";
-          };
           jq = {
             command = "${lib.getExe pkgs.jq}";
           };
@@ -159,9 +156,6 @@
           bicep = {
             command = "${lib.getExe pkgs.bicep}";
           };
-          #yamlfmt = {
-          #  command = "${lib.getExe pkgs.yamlfmt}";
-          #};
         };
       };
     };

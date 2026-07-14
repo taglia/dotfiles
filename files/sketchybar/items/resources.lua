@@ -181,6 +181,10 @@ cpu:subscribe("routine", function()
 	update_cpu_popup()
 end)
 
+-- Defined with the popup ticker below; forward-declared so the click
+-- handlers can start/stop it.
+local sync_popup_ticker
+
 cpu:subscribe("mouse.clicked", function()
 	cpu_popup_open = not cpu_popup_open
 	memory_popup_open = false
@@ -189,6 +193,7 @@ cpu:subscribe("mouse.clicked", function()
 	if cpu_popup_open then
 		update_cpu_popup()
 	end
+	sync_popup_ticker()
 end)
 
 -- ==========================================================
@@ -232,17 +237,25 @@ memory:subscribe("mouse.clicked", function()
 	if memory_popup_open then
 		update_memory_popup()
 	end
+	sync_popup_ticker()
 end)
 
 -- ==========================================================
 -- POPUP REFRESH TICKER
 -- ==========================================================
 
+-- Hidden item whose routine event refreshes the open popup. It only ticks
+-- while a popup is visible: the click handlers toggle `updates` via
+-- sync_popup_ticker() so nothing polls when both popups are closed.
 local popup_ticker = SBAR.add("item", "resources.popup_ticker", {
 	drawing = false,
-	updates = true,
+	updates = false,
 	update_freq = POPUP_REFRESH_SECONDS,
 })
+
+sync_popup_ticker = function()
+	popup_ticker:set({ updates = (cpu_popup_open or memory_popup_open) })
+end
 
 popup_ticker:subscribe("routine", function()
 	update_cpu_popup()

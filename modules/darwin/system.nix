@@ -1,5 +1,4 @@
 {
-  darwinFeatures ? { },
   lib,
   user,
   ...
@@ -7,7 +6,6 @@
 
 {
   power.restartAfterFreeze = true;
-  power.restartAfterPowerFailure = lib.mkIf (darwinFeatures.restartAfterPowerFailure or false) true;
   power.sleep.display = 5;
 
   # Export to the per-user launchd session so GUI apps inherit it too.

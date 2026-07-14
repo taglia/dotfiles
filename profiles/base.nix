@@ -6,9 +6,12 @@
 
 {
   imports = [
+    ../modules/home/cli-tools.nix
+    ../modules/home/fish.nix
     ../modules/home/packages-cli.nix
     ../modules/home/shells.nix
     ../modules/home/tmux.nix
+    ../modules/home/xdg-files.nix
   ];
 
   # nh wraps darwin-rebuild / home-manager with a package diff before each

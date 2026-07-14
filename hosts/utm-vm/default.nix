@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, user, ... }:
 
 {
   imports = [
@@ -22,7 +22,7 @@
   # still re-enable locking from within GNOME if they ever want to.
   services.displayManager.autoLogin = {
     enable = true;
-    user = "taglia";
+    user = user.username;
   };
 
   programs.dconf.profiles.user.databases = [

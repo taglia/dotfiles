@@ -2,7 +2,7 @@ import type { AssistantMessage } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { execSync } from "node:child_process";
+import { execFile } from "node:child_process";
 
 function sanitizeStatusText(text: string): string {
   return text.replace(/[\r\n\t]/g, " ").replace(/ +/g, " ").trim();
@@ -16,33 +16,38 @@ function formatTokens(count: number): string {
   return `${Math.round(count / 1000000)}M`;
 }
 
-function checkGitDirty(cwd: string): boolean {
-  try {
-    const output = execSync("git status --porcelain", {
-      cwd,
-      encoding: "utf8",
-      timeout: 2000,
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    return output.trim().length > 0;
-  } catch {
-    return false;
-  }
-}
-
-function createGitDirtyChecker(): () => boolean {
+// Returns the cached dirty state immediately and refreshes it in the
+// background, so render() never blocks on `git status` (which can take
+// seconds on a large or cold repo). `onChange` is called when the refreshed
+// value differs, so the footer can request a re-render.
+function createGitDirtyChecker(onChange: () => void): () => boolean {
   let lastCwd = "";
   let lastResult = false;
   let lastCheck = 0;
+  let pending = false;
   const TTL_MS = 3000;
 
   return () => {
     const cwd = process.cwd();
     const now = Date.now();
-    if (cwd === lastCwd && now - lastCheck < TTL_MS) return lastResult;
-    lastCwd = cwd;
-    lastResult = checkGitDirty(cwd);
-    lastCheck = now;
+    if ((cwd !== lastCwd || now - lastCheck >= TTL_MS) && !pending) {
+      pending = true;
+      const checkedCwd = cwd;
+      execFile(
+        "git",
+        ["status", "--porcelain"],
+        { cwd: checkedCwd, encoding: "utf8", timeout: 2000 },
+        (error, stdout) => {
+          pending = false;
+          lastCheck = Date.now();
+          const result = !error && stdout.trim().length > 0;
+          const changed = result !== lastResult;
+          lastCwd = checkedCwd;
+          lastResult = result;
+          if (changed) onChange();
+        },
+      );
+    }
     return lastResult;
   };
 }
@@ -66,7 +71,7 @@ export default function (pi: ExtensionAPI) {
 
     ctx.ui.setFooter((tui, theme, footerData) => {
       const unsub = footerData.onBranchChange(() => tui.requestRender());
-      const getDirty = createGitDirtyChecker();
+      const getDirty = createGitDirtyChecker(() => tui.requestRender());
       const separator = () => theme.fg("dim", "  •  ");
       const label = (text: string) => theme.fg("muted", `${text}: `);
       const value = (text: string) => theme.fg("text", text);
@@ -119,7 +124,9 @@ export default function (pi: ExtensionAPI) {
           const contextUsage = ctx.getContextUsage();
           const contextWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
           const contextPercentValue = contextUsage?.percent ?? 0;
-          const contextPercent = contextUsage?.percent !== null ? contextPercentValue.toFixed(1) : "?";
+          // != null (loose) so both null and an absent contextUsage fall
+          // back to "?" instead of a misleading 0.0%.
+          const contextPercent = contextUsage?.percent != null ? contextPercentValue.toFixed(1) : "?";
 
           const cwd = formatCwdForFooter(
             ctx.sessionManager.getCwd(),

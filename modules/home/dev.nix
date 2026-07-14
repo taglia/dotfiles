@@ -4,18 +4,6 @@
   ...
 }:
 
-let
-  shellAliases = {
-    gs = "git status";
-    gc = "git commit";
-    gp = "git push";
-    gl = "git pull";
-    vi = lib.mkForce "nvim";
-    vim = lib.mkForce "nvim";
-    vimdiff = lib.mkForce "nvim -d";
-  };
-in
-
 {
   imports = [
     ./vim/default.nix
@@ -26,9 +14,17 @@ in
     VISUAL = lib.mkForce "nvim";
   };
 
-  programs.bash.shellAliases = shellAliases;
-  programs.zsh.shellAliases = shellAliases;
-  programs.fish.shellAliases = shellAliases;
+  # Shared by bash, zsh and fish; the mkForce entries override the vim
+  # aliases from modules/home/shells.nix on dev hosts.
+  home.shellAliases = {
+    gs = "git status";
+    gc = "git commit";
+    gp = "git push";
+    gl = "git pull";
+    vi = lib.mkForce "nvim";
+    vim = lib.mkForce "nvim";
+    vimdiff = lib.mkForce "nvim -d";
+  };
 
   programs.direnv = {
     enable = true;

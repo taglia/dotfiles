@@ -263,8 +263,9 @@ if ! command -v nix >/dev/null 2>&1; then
   cat >&2 <<'EOF'
 error: nix not found on PATH.
 
-Install Nix first (example):
-  curl -fsSL https://install.determinate.systems/nix | sh -s -- install
+Install Nix first (official multi-user installer, see README "Install Nix";
+the Determinate installer conflicts with this flake's nix-darwin nix.enable):
+  sh <(curl -L https://nixos.org/nix/install) --daemon
 EOF
   exit 1
 fi
@@ -364,7 +365,9 @@ if [[ "$backup_mode" == "enabled" ]]; then
 fi
 
 echo "info: switching Home Manager configuration: $target"
-nix run github:nix-community/home-manager/release-26.05 -- "${home_manager_args[@]}"
+# --inputs-from uses the flake's locked home-manager, so this can never drift
+# from the release pinned in flake.nix/flake.lock.
+nix run --inputs-from "$repo_root" home-manager -- "${home_manager_args[@]}"
 
 cat <<EOF
 

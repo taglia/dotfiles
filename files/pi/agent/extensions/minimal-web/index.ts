@@ -128,16 +128,18 @@ function normalizeWhitespace(text: string): string {
 }
 
 function decodeHtmlEntities(text: string): string {
+  // &amp; must be decoded LAST, otherwise "&amp;lt;" would double-decode to
+  // "<" instead of the literal "&lt;" the document meant.
   return text
     .replace(/&#(\d+);/g, (_m, code) => String.fromCodePoint(Number.parseInt(code, 10)))
     .replace(/&#x([0-9a-fA-F]+);/g, (_m, code) => String.fromCodePoint(Number.parseInt(code, 16)))
     .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
 function truncate(text: string, maxChars: number): { content: string; truncated: boolean } {
@@ -353,11 +355,31 @@ async function fetchText(
     throw new Error(`Fetch failed with HTTP ${response.status}`);
   }
 
-  const body = await response.text();
+  // Enforce the byte cap while streaming instead of after buffering the whole
+  // body, so a huge document can't exhaust memory. The Content-Length check
+  // is just a fast path; servers may omit or understate it.
   const maxBytes = getFetchMaxBytes();
-  if (Buffer.byteLength(body, "utf8") > maxBytes) {
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
     throw new Error(`Fetched document exceeds WEB_FETCH_MAX_BYTES (${maxBytes})`);
   }
+
+  const chunks: Buffer[] = [];
+  let received = 0;
+  if (response.body) {
+    const reader = response.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        await reader.cancel();
+        throw new Error(`Fetched document exceeds WEB_FETCH_MAX_BYTES (${maxBytes})`);
+      }
+      chunks.push(Buffer.from(value));
+    }
+  }
+  const body = Buffer.concat(chunks).toString("utf8");
 
   return {
     finalUrl: response.url,

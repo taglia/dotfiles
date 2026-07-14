@@ -58,15 +58,18 @@ cd ~/dotfiles
 
 Targets are defined in `flake.nix` under `homeConfigurations`:
 
-- `mbp-home`
-- `mbp` (legacy Home Manager-only alias for `mbp-home`)
+- `mbp` (also aliased as `mbp-home`)
 - `linux`
 - `linux-ai`
 - `linux-private`
 - `linux-minimal`
 - `linux-aws` (uses local user `admin`)
+- `linux-openclaw` (uses local user `openclaw`)
 - `linux-arm`
 - `linux-minimal-arm`
+
+There is also one NixOS host, `utm-vm` (`nixosConfigurations.utm-vm`, an
+aarch64-linux UTM virtual machine), switched with `just switch-utm-vm`.
 
 Each target always includes the base profile. The Linux or macOS profile is selected from the target system in `flake.nix`, and the `ai` / `private` suffixes add those extra profile layers.
 
@@ -173,11 +176,10 @@ AeroSpace is managed directly by nix-darwin through `services.aerospace`.
 
 ## Secrets
 
-This repo uses `agenix` for encrypted secrets. Keep `secrets.nix` initialized as an empty rule set until the first secret is needed:
-
-```nix
-{ }
-```
+This repo uses `agenix` for encrypted secrets: `secrets.nix` declares the
+recipients for each secret and the encrypted payloads live under `secrets/`.
+(When bootstrapping a fresh fork with no secrets yet, `secrets.nix` can simply
+be `{ }` until the first secret is needed.)
 
 This repo uses SSH keys as agenix identities. Prefer a machine-specific SSH key per machine; if available, use an `ed25519` key over RSA.
 
@@ -298,7 +300,7 @@ For a user service that expects environment variables, store the secret as an en
 }
 ```
 
-Using an SSH key as an age identity can be convenient for one-off local use, but it is not the preferred default for this repo. Use SSH only when the key is already machine-specific, not broadly reused, and you are comfortable with SSH access and secret decryption sharing the same credential lifecycle.
+Trade-off to keep in mind: this repo standardizes on SSH keys as age identities (see above) because every machine already has one, but it does mean SSH access and secret decryption share the same credential lifecycle. Keep the keys machine-specific and not broadly reused; rotate the corresponding recipient in `secrets.nix` whenever a machine's key changes.
 
 ## Automation scripts
 
@@ -324,7 +326,7 @@ The underlying scripts can be run from anywhere, but expect to live inside this 
   - On an interactive terminal, it asks whether to pass Home Manager's backup option for conflicting files.
   - Use `--backup` for a timestamped backup extension, `--backup backup` for `.backup`, or `--no-backup` to skip the prompt.
 - `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it; useful for standalone Home Manager systems, not normally needed with nix-darwin
-- `scripts/update-pkgs-unstable.sh`: update only the `nixpkgs-unstable` input
+- `just update-unstable`: update only the `nixpkgs-unstable` input
 - `scripts/gc.sh`: garbage collect old Nix generations and unreachable store paths; on macOS, also clean Homebrew orphan dependencies, stale downloads, and cached downloads
   - By default it runs `nix-collect-garbage --delete-older-than 7d`, which keeps about one week of rollback history.
   - On NixOS and nix-darwin, it also runs the same Nix garbage collection through `sudo` when it detects a system profile. Use `--no-sudo` to limit cleanup to the current user, or `--sudo` to force root/system profile cleanup.

@@ -144,27 +144,14 @@
     ansible-vim
   ];
 
+  # Floating-window borders: hover/signature-help borders are handled via
+  # vim.o.winborder (Neovim 0.11+ ignores vim.lsp.handlers overrides), and the
+  # diagnostic float border is configured in ./diagnostics.nix.
   extraConfigLua = ''
-    local _border = "rounded"
-
-    vim.lsp.handlers["textDocument/hover"] = function(err, result, ctx, config)
-      config = config or {}
-      config.border = _border
-      return vim.lsp.handlers.hover(err, result, ctx, config)
-    end
-
-    vim.lsp.handlers["textDocument/signatureHelp"] = function(err, result, ctx, config)
-      config = config or {}
-      config.border = _border
-      return vim.lsp.handlers.signature_help(err, result, ctx, config)
-    end
-
-    vim.diagnostic.config{
-      float={border=_border}
-    };
+    vim.o.winborder = "rounded"
 
     require('lspconfig.ui.windows').default_options = {
-      border = _border
+      border = "rounded"
     }
   '';
 }

@@ -6,7 +6,9 @@ $character
 
 right_format = """${env_var.STARSHIP_RIGHT_STATUS}"""
 
-# Catppuccin Mocha colors
+# Catppuccin Mocha colors. The same palette is duplicated in
+# files/kitty/current-theme.conf, files/pi/agent/themes/catppuccin-mocha.json
+# and the fish colors in modules/home/fish.nix — keep them in sync.
 palette = "catppuccin_mocha"
 
 [palettes.catppuccin_mocha]

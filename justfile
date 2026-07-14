@@ -14,9 +14,10 @@ switch-utm-vm:
 switch-home target:
     nh home switch . -c {{target}}
 
+# Mirrors .github/workflows/check.yml, except CI also runs an eval-only pass
+# for all systems first (--no-build --all-systems).
 check:
     nix flake check
-    bash -n scripts/*.sh
     shellcheck scripts/*.sh
 
 gc *args:
@@ -45,7 +46,7 @@ update:
     just update-brew
 
 update-unstable:
-    scripts/update-pkgs-unstable.sh
+    nix flake update nixpkgs-unstable
 
 package:
     scripts/package.sh
