@@ -19,14 +19,14 @@ local function battery_update()
 			local is_charging = batt_info:find("AC Power")
 
 			-- 1. COLOR & LABEL LOGIC
-			local color = COLORS.accent_color
+			local color = COLORS.mocha_text
 			local should_draw_label = false
 
 			if charge_num < 10 then
-				color = COLORS.red
+				color = COLORS.mocha_red
 				should_draw_label = true
 			elseif charge_num < 30 then
-				color = COLORS.orange
+				color = COLORS.mocha_peach
 				should_draw_label = true
 			end
 
@@ -34,7 +34,7 @@ local function battery_update()
 			local icon
 			if is_charging then
 				icon = ""
-				color = (charge_num < 20) and COLORS.charging or DEFAULT_ITEM.icon.color
+				color = (charge_num < 20) and COLORS.mocha_yellow or DEFAULT_ITEM.icon.color
 				should_draw_label = false
 			else
 				if charge_num > 90 then

@@ -108,7 +108,10 @@ local function aggregate_top(out, value_formatter, name_width)
 	local rows = {}
 	for i = 1, math.min(TOP_COUNT, #entries) do
 		local entry = entries[i]
-		table.insert(rows, string.format("%s  %-" .. name_width .. "s", value_formatter(entry.value), truncate(entry.name, name_width)))
+		table.insert(
+			rows,
+			string.format("%s  %-" .. name_width .. "s", value_formatter(entry.value), truncate(entry.name, name_width))
+		)
 	end
 	return rows
 end
@@ -155,7 +158,7 @@ local function cpu_update()
 	SBAR.exec("ps -A -o %cpu | awk '{s+=$1} END {print s}'", function(total_load)
 		local load = tonumber(total_load) or 0
 		local used = math.floor(load / core_count)
-		local color = (used > 80 and COLORS.red) or (used > 60 and COLORS.orange) or nil
+		local color = (used > 80 and COLORS.mocha_red) or (used > 60 and COLORS.mocha_peach) or nil
 		cpu:set({
 			icon = { color = color or DEFAULT_ITEM.icon.color },
 			label = { string = math.floor(used) .. "%", color = color or DEFAULT_ITEM.label.color },
@@ -203,7 +206,7 @@ end)
 local function memory_update()
 	SBAR.exec("memory_pressure | grep 'System-wide memory free percentage:' | awk '{print 100-$5}'", function(result)
 		local used = tonumber(result) or 0
-		local color = (used > 80 and COLORS.red) or (used > 60 and COLORS.orange) or nil
+		local color = (used > 80 and COLORS.mocha_red) or (used > 60 and COLORS.mocha_peach) or nil
 		memory:set({
 			icon = { color = color or DEFAULT_ITEM.icon.color },
 			label = { string = math.floor(used) .. "%", color = color or DEFAULT_ITEM.label.color },
@@ -215,7 +218,8 @@ local function update_memory_popup()
 	if not memory_popup_open then
 		return
 	end
-	local cmd = [[ps axmro rss,comm | awk 'NR>1 {value=$1/1024; $1=""; sub(/^ +/, ""); printf "%.1f\t%s\n", value, $0}']]
+	local cmd =
+		[[ps axmro rss,comm | awk 'NR>1 {value=$1/1024; $1=""; sub(/^ +/, ""); printf "%.1f\t%s\n", value, $0}']]
 	SBAR.exec(cmd, function(out)
 		local rows = aggregate_top(out, function(value)
 			return string.format("%9s MB", format_int_with_commas(value))
@@ -284,3 +288,4 @@ SBAR.add("bracket", "resources.bracket", {
 -- Call these immediately so we don't wait 2-5s for the first numbers
 cpu_update()
 memory_update()
+

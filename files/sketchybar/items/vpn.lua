@@ -18,8 +18,8 @@ local vpn = SBAR.add("item", "vpn", {
 	label = { drawing = false },
 	background = {
 		drawing = true,
-		color = COLORS.background,
-		border_color = COLORS.background_border,
+		color = COLORS.mocha_mantle,
+		border_color = COLORS.mocha_overlay_1,
 	},
 	popup = { align = "right" },
 })
@@ -144,10 +144,10 @@ fi
 		end
 
 		vpn:set({
-			icon = { color = connected and 0xff22c55e or COLORS.disabled_color },
+			icon = { color = connected and COLORS.mocha_green or COLORS.mocha_overlay_1 },
 			background = {
-				color = connected and 0xff064e3b or COLORS.background,
-				border_color = connected and 0xff22c55e or COLORS.background_border,
+				color = COLORS.mocha_mantle,
+				border_color = connected and COLORS.mocha_green or COLORS.mocha_overlay_1,
 			},
 		})
 
@@ -169,3 +169,4 @@ vpn:subscribe("mouse.clicked", function()
 end)
 
 update_vpn()
+

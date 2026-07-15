@@ -36,10 +36,10 @@ local function highlight(focused)
 		local is_focused = (focused == entry.sid)
 		local workspace_icon = WORKSPACE_ICONS[entry.sid]
 		entry.item:set({
-			icon = { color = is_focused and COLORS.workspace_focused_fg or COLORS.workspace_unfocused_fg },
+			icon = { color = is_focused and COLORS.black or COLORS.mocha_text },
 			label = {
 				string = workspace_icon or "",
-				color = is_focused and COLORS.workspace_focused_fg or COLORS.workspace_unfocused_fg,
+				color = is_focused and COLORS.black or COLORS.mocha_text,
 				drawing = is_focused and workspace_icon ~= nil,
 			},
 			background = { drawing = is_focused },
@@ -60,7 +60,7 @@ for _, sid in ipairs(WORKSPACES) do
 		icon = {
 			string = sid,
 			font = { family = "Hack Nerd Font", style = "Bold", size = 18.0 },
-			color = COLORS.workspace_unfocused_fg,
+			color = COLORS.mocha_text,
 			padding_left = 9,
 			padding_right = 9,
 		},
@@ -72,8 +72,8 @@ for _, sid in ipairs(WORKSPACES) do
 			padding_right = 9,
 		},
 		background = {
-			color = COLORS.workspace_focused_bg,
-			border_color = COLORS.workspace_focused_bg,
+			color = COLORS.mocha_yellow,
+			border_color = COLORS.mocha_yellow,
 			border_width = 1,
 			corner_radius = 10,
 			height = 32,
@@ -92,3 +92,4 @@ end)
 
 -- Best-effort initial highlight at load.
 SBAR.exec("aerospace list-workspaces --focused", highlight)
+

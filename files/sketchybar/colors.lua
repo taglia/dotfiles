@@ -11,25 +11,37 @@ local colors = {}
 colors.white = 0xffffffff
 colors.black = 0xff000000
 colors.transparent = 0x00000000
-colors.red = 0xffff5555
-colors.orange = 0xffffb86c
-colors.charging = 0xffffd700
 
--- Bar / text
-colors.bar_color = 0xff05070a
-colors.accent_color = 0xffffffff
-colors.secondary_accent = 0xff67e8f9
-colors.disabled_color = 0xffd1d5db
-
--- Item backgrounds / popups
-colors.background = 0xff111827
-colors.background_border = 0xff4b5563
-colors.popup_background = 0xff05070a
-colors.popup_border = 0xffffffff
-
--- Workspace indicator
-colors.workspace_focused_bg = 0xffffd166
-colors.workspace_focused_fg = 0xff000000
-colors.workspace_unfocused_fg = 0xffffffff
+-- Catppuccin Mocha (https://catppuccin.com/palette/)
+-- Names match the palette page with spaces -> _ and all lowercase.
+-- Prefixed with mocha_ to avoid colliding with the common colors above
+-- (red, yellow, white, black).
+colors.mocha_rosewater = 0xfff5e0dc
+colors.mocha_flamingo = 0xfff2cdcd
+colors.mocha_pink = 0xfff5c2e7
+colors.mocha_mauve = 0xffcba6f7
+colors.mocha_red = 0xfff38ba8
+colors.mocha_maroon = 0xffeba0ac
+colors.mocha_peach = 0xfffab387
+colors.mocha_yellow = 0xfff9e2af
+colors.mocha_green = 0xffa6e3a1
+colors.mocha_teal = 0xff94e2d5
+colors.mocha_sky = 0xff89dceb
+colors.mocha_sapphire = 0xff74c7ec
+colors.mocha_blue = 0xff89b4fa
+colors.mocha_lavender = 0xffb4befe
+colors.mocha_text = 0xffcdd6f4
+colors.mocha_subtext_1 = 0xffbac2de
+colors.mocha_subtext_0 = 0xffa6adc8
+colors.mocha_overlay_2 = 0xff9399b2
+colors.mocha_overlay_1 = 0xff7f849c
+colors.mocha_overlay_0 = 0xff6c7086
+colors.mocha_surface_2 = 0xff585b70
+colors.mocha_surface_1 = 0xff45475a
+colors.mocha_surface_0 = 0xff313244
+colors.mocha_base = 0xff1e1e2e
+colors.mocha_mantle = 0xff181825
+colors.mocha_crust = 0xff11111b
 
 return colors
+

@@ -13,7 +13,7 @@ local default_item = {
 			family = "Hack Nerd Font",
 			size = size,
 		},
-		color = COLORS.accent_color,
+		color = COLORS.mocha_text,
 		padding_left = item_padding,
 		padding_right = item_padding,
 		y_offset = 0,
@@ -25,12 +25,12 @@ local default_item = {
 			style = "Semibold",
 			size = size,
 		},
-		color = COLORS.accent_color,
+		color = COLORS.mocha_text,
 		padding_right = item_padding,
 	},
 	background = {
-		color = COLORS.background,
-		border_color = COLORS.background_border,
+		color = COLORS.black,
+		border_color = COLORS.mocha_overlay_2,
 		border_width = border_width,
 		corner_radius = corner_radius,
 		height = item_height,
@@ -38,9 +38,9 @@ local default_item = {
 	popup = {
 		background = {
 			corner_radius = corner_radius,
-			color = COLORS.popup_background,
+			color = COLORS.black,
 			border_width = border_width,
-			border_color = COLORS.popup_border,
+			border_color = COLORS.mocha_text,
 		},
 	},
 }
@@ -59,9 +59,10 @@ SBAR.default({ background = { drawing = false } })
 SBAR.bar({
 	-- position = "top",
 	height = bar_height,
-	color = COLORS.bar_color,
+	color = COLORS.black,
 	blur_radius = 0,
 	drawing = true,
 })
 
 return default_item
+

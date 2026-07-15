@@ -33,7 +33,7 @@ local cal_date = SBAR.add("item", "cal.date", {
 	y_offset = -10,
 	label = {
 		font = { size = DEFAULT_ITEM.label.font.size * 0.78 },
-		color = COLORS.secondary_accent,
+		color = COLORS.mocha_sapphire,
 		padding_right = right_padding,
 		padding_left = DEFAULT_ITEM.icon.padding_left,
 	},
@@ -87,11 +87,11 @@ local function build_popup()
 			.. z.name
 			.. "' \"$(TZ="
 			.. z.tz
-			.. " date +%Y%m%d%H%M)\" \"$(TZ="
+			.. ' date +%Y%m%d%H%M)" "$(TZ='
 			.. z.tz
 			.. " date '+%I:%M %p')\" \"$(TZ="
 			.. z.tz
-			.. " date +%Y%m%d)\";"
+			.. ' date +%Y%m%d)";'
 	end
 	SBAR.exec(cmd, function(out)
 		local rows = {}
@@ -143,3 +143,4 @@ cal_time:subscribe("mouse.clicked", on_click)
 cal_date:subscribe("mouse.clicked", on_click)
 
 update_calendar()
+
