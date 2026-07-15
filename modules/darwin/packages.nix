@@ -53,6 +53,13 @@
   environment.systemPackages = with pkgs; [
     qemu
 
+    # Small CLI that sets the desktop wallpaper per-display reliably. Used by
+    # the activation script and LaunchAgent in `modules/darwin/desktop.nix`;
+    # also kept on PATH for manual `desktoppr` invocations. AppleScript's
+    # `tell every desktop` is flaky on external monitors, which is why this
+    # exists. See https://github.com/scriptingosx/desktoppr.
+    desktoppr
+
     # `enableAllTerminfo` currently pulls in removed packages such as `termite`
     # from nixpkgs 26.05, which prevents the Darwin system from evaluating.
     # Keep the terminal entries we actually use here instead.

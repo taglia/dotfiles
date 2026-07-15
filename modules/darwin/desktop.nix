@@ -1,5 +1,33 @@
-{ lib, user, ... }:
+{ lib, pkgs, user, ... }:
 
+let
+  wallpaperDir = "/Users/${user.username}/Pictures/Wallpapers";
+  # The activation script pins the chosen wallpaper path here so the
+  # LaunchAgent can re-apply the *same* image to hot-plugged displays without
+  # re-picking a random one. Lives under the user's state dir, never in the
+  # Nix store, so private/paid images stay out of the store and the repo.
+  stateDir = "/Users/${user.username}/.local/state/dotfiles";
+  stateFile = "${stateDir}/wallpaper";
+  logFile = "${stateDir}/wallpaper.log";
+
+  # Reads the pinned wallpaper path and applies it to every currently
+  # attached display via `desktoppr`. Shared by the activation script (run
+  # as the user through `launchctl asuser`) and the LaunchAgent below (which
+  # already runs as the user), so a freshly connected external monitor gets
+  # the same image as the built-in panel. `desktoppr` sets all screens when
+  # given a single file path; unlike AppleScript's `tell every desktop` it
+  # reliably reaches external displays.
+  applyWallpaper = pkgs.writeShellScript "wallpaper-apply" ''
+    set -eu
+    if [ -f "${stateFile}" ]; then
+      wallpaper="$(cat "${stateFile}")"
+      if [ -n "$wallpaper" ] && [ -f "$wallpaper" ]; then
+        echo "applying wallpaper: $wallpaper" >&2
+        exec ${pkgs.desktoppr}/bin/desktoppr "$wallpaper"
+      fi
+    fi
+  '';
+in
 {
   system.defaults.dock = {
     autohide = true;
@@ -68,15 +96,16 @@
   # Takes effect after logout.
   system.defaults.spaces.spans-displays = false;
 
-  # Use a random private local wallpaper when available. The directory is
-  # intentionally not a Nix path so paid/private images never enter the store or
-  # the public repository.
+  # Pick a random private local wallpaper on every `darwin-rebuild switch`,
+  # pin its path to a state file, and apply it to all displays. The directory
+  # is intentionally not a Nix path so paid/private images never enter the
+  # store or the public repository. The random pick happens only here (on
+  # switch); the LaunchAgent below re-applies the *pinned* path on display
+  # changes without re-picking.
   system.activationScripts.postActivation.text = lib.mkAfter ''
-    wallpaper_dir="/Users/${user.username}/Pictures/Wallpapers"
-
-    if [ -d "$wallpaper_dir" ]; then
+    if [ -d "${wallpaperDir}" ]; then
       wallpaper="$(
-        /usr/bin/find "$wallpaper_dir" -type f \( \
+        /usr/bin/find "${wallpaperDir}" -type f \( \
           -iname '*.jpg' -o \
           -iname '*.jpeg' -o \
           -iname '*.png' -o \
@@ -91,18 +120,54 @@
 
       if [ -n "$wallpaper" ]; then
         echo >&2 "setting random wallpaper: $wallpaper"
+        # Pin the chosen path so the LaunchAgent can re-apply it later.
         launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
-          /usr/bin/osascript - "$wallpaper" <<'APPLESCRIPT'
-    on run argv
-      set wallpaperPath to item 1 of argv
-      tell application "System Events"
-        tell every desktop
-          set picture to wallpaperPath
-        end tell
-      end tell
-    end run
-    APPLESCRIPT
+          /bin/sh -c 'mkdir -p "$1" && printf "%s\n" "$2" > "$3"' _ \
+          "${stateDir}" "$wallpaper" "${stateFile}"
+        launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
+          ${applyWallpaper}
       fi
     fi
+  '';
+
+  # Re-apply the pinned wallpaper when the display configuration changes
+  # (e.g. docking an external monitor) and at login. This is the fix for the
+  # external-monitor gap: macOS gives a hot-plugged display its own Space with
+  # the default wallpaper, and the one-shot activation script above never
+  # re-runs, so the external stayed on the system default.
+  #
+  # No background process is left running: launchd keeps the job *loaded*
+  # (just a plist, no process) and only spawns `applyWallpaper` momentarily
+  # on the triggers below, after which it exits. `WatchPaths` fires when the
+  # windowserver rewrites its display-state plist on connect/disconnect; this
+  # was confirmed to change on hot-plug on this machine. `RunAtLoad` covers
+  # login and the initial `darwin-rebuild switch` load.
+  environment.userLaunchAgents."local.dotfiles.wallpaper.plist".text = ''
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>Label</key>
+      <string>local.dotfiles.wallpaper</string>
+      <key>ProgramArguments</key>
+      <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>/bin/wait4path /nix/store &amp;&amp; exec ${applyWallpaper}</string>
+      </array>
+      <key>RunAtLoad</key>
+      <true/>
+      <key>WatchPaths</key>
+      <array>
+        <string>/Library/Preferences/com.apple.windowserver.displays.plist</string>
+      </array>
+      <key>StandardOutPath</key>
+      <string>${logFile}</string>
+      <key>StandardErrorPath</key>
+      <string>${logFile}</string>
+      <key>ProcessType</key>
+      <string>Background</string>
+    </dict>
+    </plist>
   '';
 }
