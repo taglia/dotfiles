@@ -9,7 +9,7 @@
 # its `background_border`). The `borders` binary comes from `jankyborders` in
 # modules/darwin/packages.nix.
 let
-  bordersStart = "exec-and-forget ${pkgs.jankyborders}/bin/borders style=round active_color=0xffffd166 inactive_color=0xff4b5563 width=5.0";
+  bordersStart = "exec-and-forget ${pkgs.jankyborders}/bin/borders style=round active_color=0xff94e2d5 inactive_color=0xff1e1e2e width=3.0";
 in
 {
   # Disable macOS' native tiling/snapping so AeroSpace is the sole window
@@ -276,3 +276,4 @@ in
     };
   };
 }
+
