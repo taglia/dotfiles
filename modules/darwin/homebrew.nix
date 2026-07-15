@@ -131,7 +131,6 @@
       "Actions For Obsidian" = 1659667937;
       "AutoMounter" = 1160435653;
       "Blackmagic Disk Speed Test" = 425264550;
-      "Dato" = 1470584107;
       "DaVinci Resolve" = 571213070;
       "Drafts" = 1435957248;
       "DS Manager / NAS Pro" = 1435876433;
