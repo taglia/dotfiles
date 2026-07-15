@@ -60,6 +60,12 @@
     # exists. See https://github.com/scriptingosx/desktoppr.
     desktoppr
 
+    # JankyBorders (`borders` binary) draws a colored border around windows.
+    # Started unconditionally with AeroSpace via `after-startup-command` in
+    # `modules/darwin/aerospace.nix`. Kept on PATH for manual use too.
+    # See https://github.com/FelixKratz/JankyBorders.
+    jankyborders
+
     # `enableAllTerminfo` currently pulls in removed packages such as `termite`
     # from nixpkgs 26.05, which prevents the Darwin system from evaluating.
     # Keep the terminal entries we actually use here instead.

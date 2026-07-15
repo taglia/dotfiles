@@ -138,7 +138,6 @@
       "Due" = 524373870;
       "Endurance" = 1590043284;
       "GarageBand" = 682658836;
-      "HazeOver" = 430798174;
       "Hush" = 1544743900;
       "iA Writer" = 775737590;
       "iMovie" = 408981434;

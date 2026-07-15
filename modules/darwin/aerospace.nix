@@ -1,5 +1,16 @@
 { pkgs, ... }:
 
+# JankyBorders is started together with AeroSpace below via
+# `after-startup-command`. `borders <args>` starts the daemon on first call and
+# updates the already-running instance on later calls (JankyBorders
+# deduplicates running instances), so this is safe across AeroSpace restarts.
+# Colors: active = focused window (yellow, matches the focused-workspace pill
+# in files/sketchybar/colors.lua); inactive = the other windows (gray, matches
+# its `background_border`). The `borders` binary comes from `jankyborders` in
+# modules/darwin/packages.nix.
+let
+  bordersStart = "exec-and-forget ${pkgs.jankyborders}/bin/borders style=round active_color=0xffffd166 inactive_color=0xff4b5563 width=5.0";
+in
 {
   # Disable macOS' native tiling/snapping so AeroSpace is the sole window
   # manager. These overlap with AeroSpace's responsibilities and would fight
@@ -18,7 +29,7 @@
 
     settings = {
       after-login-command = [ ];
-      after-startup-command = [ ];
+      after-startup-command = [ bordersStart ];
 
       # Notify SketchyBar on AeroSpace workspace change so the workspace
       # indicator (files/sketchybar/items/spaces.lua) can highlight the
