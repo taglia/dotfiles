@@ -9,6 +9,9 @@ local ZONES = {
 	{ name = "UTC", tz = "UTC" },
 	{ name = "New York", tz = "America/New_York" },
 	{ name = "San Francisco", tz = "America/Los_Angeles" },
+	{ name = "Sydney", tz = "Australia/Sydney" },
+	{ name = "Singapore", tz = "Asia/Singapore" },
+	{ name = "Tokyo", tz = "Asia/Tokyo" },
 }
 
 local right_padding = 28 -- keep clear of macOS/SoundSource activity dot
@@ -57,6 +60,74 @@ for i = 1, #ZONES do
 		drawing = false,
 	})
 	table.insert(popup_items, item)
+end
+
+-- 3b. SEPARATOR + DST INFO ROW (always drawn while the popup is open).
+-- DST rules differ worldwide (EU vs US vs none); we report Italy's next
+-- transition (Europe/Rome follows the EU rules used in Italy).
+local cal_sep = SBAR.add("item", "cal.sep", {
+	position = "popup." .. cal_time.name,
+	icon = { drawing = false },
+	label = {
+		string = string.rep("─", 40),
+		font = { family = "Hack Nerd Font", style = "Regular", size = 15.0 },
+		color = COLORS.mocha_overlay_0,
+		align = "left",
+		width = 360,
+		padding_left = 14,
+		padding_right = 14,
+	},
+	drawing = true,
+})
+
+local cal_dst = SBAR.add("item", "cal.dst", {
+	position = "popup." .. cal_time.name,
+	icon = { drawing = false },
+	label = {
+		string = "",
+		font = { family = "Hack Nerd Font", style = "Regular", size = 15.0 },
+		color = COLORS.mocha_sapphire,
+		align = "left",
+		width = 360,
+		padding_left = 14,
+		padding_right = 14,
+	},
+	drawing = true,
+})
+
+-- Scan up to a year ahead for the next UTC-offset change in Europe/Rome and
+-- format it as "Next DST change (Italy): <weekday> <mon> <day> · ±Nh".
+local dst_cmd = [=[
+tz=Europe/Rome
+today=$(date +%Y-%m-%d)
+base=$(TZ=$tz date -j -f "%Y-%m-%d" "$today" +%z)
+found=""
+for i in $(seq 0 366); do
+	d=$(date -j -v+${i}d -f "%Y-%m-%d" "$today" +%Y-%m-%d)
+	off=$(TZ=$tz date -j -f "%Y-%m-%d" "$d" +%z)
+	if [ "$off" != "$base" ]; then found="$d $base $off"; break; fi
+done
+if [ -n "$found" ]; then
+	set -- $found
+	d=$1
+	bh=$(echo "$2" | sed 's/^\([+-]\)\([0-9][0-9]\).*/\1\2/')
+	oh=$(echo "$3" | sed 's/^\([+-]\)\([0-9][0-9]\).*/\1\2/')
+	diff=$(( oh - bh ))
+	if [ "$diff" -lt 0 ]; then dir="−$(( -diff ))h"; else dir="+${diff}h"; fi
+	wd=$(TZ=$tz date -j -f "%Y-%m-%d" "$d" +"%a %b %d")
+	printf "Next DST change: %s · %s\n" "$wd" "$dir"
+else
+	printf "Next DST change: none within a year\n"
+fi
+]=]
+
+local function update_dst()
+	SBAR.exec(dst_cmd, function(out)
+		local line = (out or ""):match("[^\r\n]+")
+		if line then
+			cal_dst:set({ label = { string = line } })
+		end
+	end)
 end
 
 -- 4. UPDATE LOCAL TIME/DATE
@@ -136,6 +207,7 @@ local function on_click()
 	local current = q and q.popup and q.popup.drawing
 	if current == "off" then
 		build_popup()
+		update_dst()
 	end
 	cal_time:set({ popup = { drawing = (current == "off") } })
 end
@@ -143,4 +215,3 @@ cal_time:subscribe("mouse.clicked", on_click)
 cal_date:subscribe("mouse.clicked", on_click)
 
 update_calendar()
-
