@@ -36,8 +36,9 @@ in
 {
   system.defaults.dock = {
     autohide = true;
+    tilesize = 48;
+    appswitcher-all-displays = true;
     autohide-delay = 0.24;
-    largesize = 16;
     # Use "left" or "right" here to move the Dock to a screen edge.
     orientation = "bottom";
     # Stop macOS reordering Spaces by most-recent-use. Aerospace works inside a
@@ -46,20 +47,48 @@ in
     mru-spaces = false;
     persistent-apps = [
       "/Applications/Orion.app"
-      "/System/Applications/Mail.app"
-      "/Applications/OmniFocus.app"
       "/Applications/1Password.app"
+      "/Applications/Lire.app"
+      {
+        spacer = {
+          small = true;
+        };
+      }
+      "/System/Applications/Mail.app"
+      "/Applications/Fantastical.app"
+      "/Applications/OmniFocus.app"
+      "/Applications/Due.app"
+      {
+        spacer = {
+          small = true;
+        };
+      }
       "/Applications/rootshell.app"
       "/Applications/Ghostty.app"
-      "/Applications/ShellFish.app"
       "/Applications/Screens 5.app"
+      {
+        spacer = {
+          small = true;
+        };
+      }
       "/Applications/Drafts.app"
       "/Applications/DEVONthink.app"
       "/Applications/Obsidian.app"
+      {
+        spacer = {
+          small = true;
+        };
+      }
       "/System/Applications/Messages.app"
       "/Applications/Signal.app"
       "/Applications/Ferdium.app"
-      "/Applications/Lire.app"
+      {
+        spacer = {
+          small = true;
+        };
+      }
+      "/Applications/Cookie.app"
+      "/Applications/AutoMounter.app"
     ];
     persistent-others = [
       {
@@ -79,7 +108,7 @@ in
         };
       }
     ];
-    show-recents = true;
+    show-recents = false;
     slow-motion-allowed = true;
     wvous-bl-corner = 13;
     wvous-tl-corner = 6;
