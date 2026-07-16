@@ -1,4 +1,9 @@
-{ lib, pkgs, user, ... }:
+{
+  lib,
+  pkgs,
+  user,
+  ...
+}:
 
 let
   wallpaperDir = "/Users/${user.username}/Pictures/Wallpapers";
@@ -82,11 +87,11 @@ in
 
   system.defaults.finder = {
     AppleShowAllExtensions = true;
-    ShowExternalHardDrivesOnDesktop = true;
+    ShowExternalHardDrivesOnDesktop = false;
     ShowHardDrivesOnDesktop = false;
-    ShowMountedServersOnDesktop = true;
+    ShowMountedServersOnDesktop = false;
     ShowPathbar = true;
-    ShowRemovableMediaOnDesktop = true;
+    ShowRemovableMediaOnDesktop = false;
     ShowStatusBar = true;
     _FXSortFoldersFirst = true;
   };
