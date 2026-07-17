@@ -50,10 +50,18 @@
     "first day of week" = "Monday";
   };
 
-  # nix-darwin does not expose the current-host idle timer that controls when the
-  # screensaver starts.
+  # nix-darwin does not expose the current-host idle timer that controls when
+  # the screensaver starts. idleTime = 0 disables the screensaver entirely: the
+  # desktop (wallpaper) stays visible until the display sleeps
+  # (power.sleep.display = 5), and the login window appears on wake because
+  # askForPassword is on. No screensaver animation is ever shown; the screen
+  # still locks at the 5-minute display-sleep boundary.
   system.activationScripts.postActivation.text = lib.mkAfter ''
     launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
-      defaults -currentHost write com.apple.screensaver idleTime -int 300
+      defaults -currentHost write com.apple.screensaver idleTime -int 0
+    # Require the password immediately on wake (no grace window) so the login
+    # screen shows as soon as the display wakes from sleep.
+    launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
+      defaults write com.apple.screensaver askForPasswordDelay -int 0
   '';
 }
