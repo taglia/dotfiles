@@ -15,6 +15,9 @@ require("items.calendar")
 require("items.battery")
 require("items.volume")
 require("items.vpn")
+-- Frontmost-app icon is required LAST on the right so it is the leftmost
+-- right-side item (immediately left of the VPN indicator).
+require("items.front_app")
 
 -- 4. Finalize
 SBAR.end_config()

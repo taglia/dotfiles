@@ -33,10 +33,16 @@ workspace pill.
 - **Left**: AeroSpace workspace indicator (`items/spaces.lua`) — one item per
   workspace 1-9, focused workspace highlighted. No macOS Spaces, no `rift`.
   Resources (`items/resources.lua`) — CPU and RAM usage.
-- **Right**: calendar (`items/calendar.lua`) — local time + date; click for a
-  world-clock popup (Paris, London, UTC, New York, San Francisco) ordered
-  chronologically with AM/PM and day offsets. battery (`items/battery.lua`),
-  VPN indicator (`items/vpn.lua`), and volume (`items/volume.lua`).
+- **Right** (left → right on screen): frontmost-app icon
+  (`items/front_app.lua`) — the focused app's icon, rendered natively by
+  sketchybar via `app.<bundle-id>` (the name is resolved to a bundle id first,
+  to avoid sketchybar's ambiguous running-apps name match); hover swaps it for
+  a red `✕` pill signaling that click quits the app. VPN indicator
+  (`items/vpn.lua`), volume
+  (`items/volume.lua`), battery (`items/battery.lua`), and calendar
+  (`items/calendar.lua`) — local time + date; click for a world-clock popup
+  (Paris, London, UTC, New York, San Francisco) ordered chronologically with
+  AM/PM and day offsets.
 
 Colors live in `colors.lua` (explicit high-contrast palette: opaque near-black
 bar, white foreground, bright yellow focused workspace).
@@ -53,6 +59,11 @@ bar, white foreground, bright yellow focused workspace).
   every workspace change (so the highlight reflects reality on multi-monitor
   setups).
 - Replaced the calendar's "open Calendar.app" click with a world-clock popup.
+- Added a frontmost-app icon (`items/front_app.lua`), leftmost on the right
+  side: native `app.<bundle-id>` icon rendering (name → bundle id via
+  `id of app`, to dodge sketchybar's ambiguous name loop), hover shows a red
+  `✕` close affordance, click quits the app (with a no-quit denylist for
+  Finder/Dock/etc.).
 
 ## Nix-adaptations (vs. upstream)
 
@@ -81,7 +92,8 @@ bar, white foreground, bright yellow focused workspace).
 ```
 sketchybarrc        entry point (executable, #!/usr/bin/env lua)
 init.lua            requires globals + items (left: spaces, resources;
-                    right: calendar, battery, VPN, volume)
+                    right, left→right: front_app, VPN, volume, battery,
+                    calendar)
 globals.lua         SBAR / COLORS / DEFAULT_ITEM globals
 colors.lua          high-contrast palette (hardcoded)
 default.lua         default item styling + bar
@@ -89,5 +101,6 @@ items/spaces.lua    AeroSpace workspace indicator (aerospace_workspace_change)
 items/resources.lua CPU + RAM usage
 items/calendar.lua  local time/date + world-clock popup (Paris/London/UTC/NY/SF)
 items/vpn.lua       VPN status indicator
+items/front_app.lua frontmost-app icon (hover = red ✕ close affordance, click = quit)
 items/*.lua         battery, volume
 ```
