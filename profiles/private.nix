@@ -1,30 +1,45 @@
+# Generic agenix wiring: everything is derived from ../secrets.nix, the single
+# source of truth for secrets (see the comment there). To add a secret, edit
+# only ../secrets.nix; this file should not need per-secret changes.
 { config, lib, ... }:
 
 let
-  kagiSecretFile = ../secrets/pi-kagi-api-key.age;
-  ollamaSecretFile = ../secrets/pi-ollama-api-key.age;
+  rules = import ../secrets.nix;
+
+  # age secret names are derived from the file name, keeping the historical
+  # underscore form: secrets/pi-kagi-api-key.age -> pi_kagi_api_key.
+  toName =
+    path: lib.replaceStrings [ "-" ] [ "_" ] (lib.removeSuffix ".age" (builtins.baseNameOf path));
+
+  # Wire only secrets whose .age payload is present, so hosts (or forks)
+  # without the payloads keep evaluating.
+  active = lib.filterAttrs (path: _: builtins.pathExists (../. + "/${path}")) rules;
+  withEnvVarFile = lib.filterAttrs (_: rule: rule ? envVarFile) active;
+
+  # Every declared machine identity; activation silently skips paths not
+  # present on the local machine (agenix does `test -r` per identity), so each
+  # machine ends up using its own key. Non-recipient keys never trigger a
+  # passphrase prompt: age checks a stanza's recipient tag (derived from the
+  # public key, readable without the passphrase) before touching a private
+  # key.
+  identities = lib.unique (
+    map (m: m.identity) (builtins.attrValues (import ../secrets-machines.nix))
+  );
 in
 {
-  age.identityPaths = [
-    "${config.home.homeDirectory}/.ssh/id_rsa"
-    "${config.home.homeDirectory}/.ssh/id_ed25519"
-  ];
+  age.identityPaths = identities;
 
-  age.secrets =
-    (lib.optionalAttrs (builtins.pathExists kagiSecretFile) {
-      pi_kagi_api_key.file = kagiSecretFile;
-    })
-    // (lib.optionalAttrs (builtins.pathExists ollamaSecretFile) {
-      pi_ollama_api_key.file = ollamaSecretFile;
-    });
+  age.secrets = lib.mapAttrs' (
+    path: _: lib.nameValuePair (toName path) { file = ../. + "/${path}"; }
+  ) active;
 
-  home.sessionVariables =
-    (lib.optionalAttrs (builtins.pathExists kagiSecretFile) {
-      KAGI_API_KEY_FILE = config.age.secrets.pi_kagi_api_key.path;
-    })
-    // (lib.optionalAttrs (builtins.pathExists ollamaSecretFile) {
-      OLLAMA_API_KEY_FILE = config.age.secrets.pi_ollama_api_key.path;
-    });
+  # Export only the decrypted file *path* (never the secret value), keeping
+  # secrets out of the Nix store. home.sessionVariables is shell-agnostic:
+  # Home Manager exports it for bash, zsh and fish (and the systemd user
+  # environment on Linux).
+  home.sessionVariables = lib.mapAttrs' (
+    path: rule: lib.nameValuePair rule.envVarFile config.age.secrets.${toName path}.path
+  ) withEnvVarFile;
 
   programs.atuin.settings = {
     auto_sync = true;

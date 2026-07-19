@@ -41,8 +41,9 @@ in
     force = true;
   };
   home.file."Library/Application Support/chess-tui/config.toml" =
-    lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-      text = chessTuiConfig;
-      force = true;
-    };
+    lib.mkIf pkgs.stdenv.hostPlatform.isDarwin
+      {
+        text = chessTuiConfig;
+        force = true;
+      };
 }

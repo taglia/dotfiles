@@ -176,10 +176,15 @@ AeroSpace is managed directly by nix-darwin through `services.aerospace`.
 
 ## Secrets
 
-This repo uses `agenix` for encrypted secrets: `secrets.nix` declares the
-recipients for each secret and the encrypted payloads live under `secrets/`.
-(When bootstrapping a fresh fork with no secrets yet, `secrets.nix` can simply
-be `{ }` until the first secret is needed.)
+This repo uses `agenix` for encrypted secrets. Two files are the source of
+truth: `secrets-machines.nix` declares the machines (recipient public keys +
+private key locations), and `secrets.nix` declares the secrets - each entry
+maps an encrypted payload under `secrets/` to the machines allowed to decrypt
+it (`publicKeys`) and, optionally, an `envVarFile` environment variable for
+the decrypted file path. Commit only encrypted `.age` files, `secrets.nix` and
+`secrets-machines.nix`, never private SSH keys or plaintext secrets. (When
+bootstrapping a fresh fork with no secrets yet, `secrets.nix` can simply be
+`{ }` until the first secret is needed.)
 
 This repo uses SSH keys as agenix identities. Prefer a machine-specific SSH key per machine; if available, use an `ed25519` key over RSA.
 
@@ -195,109 +200,78 @@ Inspect the public key type before choosing one:
 awk '{print $1, FILENAME}' ~/.ssh/*.pub
 ```
 
-Add the chosen SSH public key to `secrets.nix` only when adding a secret:
+### Adding a machine
+
+Machines are declared once in `secrets-machines.nix`:
 
 ```nix
-let
-  mbp = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI...";
-in
-{
-  "secrets/example-api-token.age".publicKeys = [ mbp ];
-}
+mbp = {
+  publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI...";
+  identity = "/Users/taglia/.ssh/id_ed25519";
+};
 ```
 
-Use machine-specific names such as `mbp`, `linux_workstation`, or `server_name`; avoid a generic personal name for machine recipients. Commit only encrypted `.age` files and `secrets.nix`, never your private SSH keys.
+`publicKey` is the age recipient referenced from `secrets.nix`; `identity` is the absolute path of the matching private key on that machine. The identity may live anywhere on the filesystem (including outside the user's home, e.g. a machine-level key), as long as it is readable by the user running Home Manager activation. Use machine-specific names such as `mbp`, `linux_workstation`, or `server_name`; avoid a generic personal name for machine recipients.
 
-Create or edit the secret from the repo root using the matching private key:
+At activation, `profiles/private.nix` passes every declared identity to agenix, which silently skips the ones not present on the local machine - so each machine automatically decrypts with its own key, with no key paths hardcoded per profile. A key that exists on a machine but is not a recipient for a given secret is ignored without error (and never triggers a passphrase prompt, because age matches the recipient's public key before touching the private key). This activation-time behavior is distinct from the `agenix` CLI below, where you always pass an identity explicitly with `-i`.
 
-```bash
-mkdir -p secrets
-agenix -e secrets/example-api-token.age -i ~/.ssh/id_ed25519
-```
+### Adding a secret
 
-If a machine does not have `id_ed25519`, substitute the actual matching private key path for the public recipient you added to `secrets.nix`.
+1. Add one entry to `secrets.nix`:
 
-For an API token, the editor buffer can contain either a raw token:
+   ```nix
+   "secrets/example-api-token.age" = {
+     publicKeys = [ mbp dev-vm ];
+     envVarFile = "EXAMPLE_API_TOKEN_FILE";
+   };
+   ```
 
-```text
-ghp_exampletokenvalue
-```
+   `publicKeys` is where machine authorization lives: only a machine holding a
+   matching private key can decrypt the payload. `envVarFile` is optional; see
+   "Consuming a secret" below.
 
-or an environment-file style value if a service expects an env file:
+2. Encrypt the payload from the repo root using the matching private key:
 
-```sh
-EXAMPLE_API_TOKEN=ghp_exampletokenvalue
-```
+   ```bash
+   mkdir -p secrets
+   agenix -e secrets/example-api-token.age -i ~/.ssh/id_ed25519
+   ```
 
-If recipient keys change, re-encrypt existing secrets:
+   The `-i` flag is a CLI-only detail: it tells `agenix` which private key to use for this manual encryption/decryption and accepts any path. It has no effect on which identities are used later at activation (those come from `secrets-machines.nix`, see "Adding a machine"). For an API token the editor buffer contains the raw token (or an env-file style `EXAMPLE_API_TOKEN=...` line if a service expects an env file); for a binary file, pipe it in instead of opening an editor:
+
+   ```bash
+   agenix -e secrets/example.age < ./example.bin
+   ```
+
+3. Rebuild (`darwin-rebuild switch --flake .#mbp` or `just switch-home mbp-home`).
+
+No other edits are needed: `profiles/private.nix` imports `secrets.nix` and
+derives `age.secrets` and `home.sessionVariables` automatically, wiring only
+secrets whose `.age` payload exists in the checkout. age secret names are
+derived from the file name, e.g. `secrets/example-api-token.age` becomes
+`config.age.secrets.example_api_token`.
+
+### Consuming a secret
+
+The important rule is to pass the decrypted file *path* around, never the secret value. Do not use `builtins.readFile` on a decrypted secret or put the value directly in `home.sessionVariables`, because that would copy the secret into the Nix store or generated config files.
+
+- With `envVarFile` set, activation exports that variable containing the decrypted file path (via `home.sessionVariables`, so it reaches bash, zsh and fish alike). Scripts read the token at runtime:
+
+  ```bash
+  token="$(cat "$EXAMPLE_API_TOKEN_FILE")"
+  curl -H "Authorization: Bearer $token" https://api.example.com/me
+  ```
+
+- Without `envVarFile`, the secret is just decrypted to a file. Reference `config.age.secrets.<name>.path` from any Home Manager module, e.g. a `home.file` symlink where an app expects a fixed location, or a user service that expects environment variables (store the secret as an env file, `EXAMPLE_API_TOKEN=...`, and set `EnvironmentFile = config.age.secrets.example_api_env.path;`).
+
+After activation, `agenix` decrypts secrets to runtime files, typically under `$XDG_RUNTIME_DIR/agenix/` on Linux. Do not point consumers at `agenix.d`; that is the backing generation directory, while `config.age.secrets.<name>.path` is the stable consumer path.
+
+### Rotating recipients
+
+If recipient keys change, re-encrypt existing secrets (the agenix CLI reads the recipient lists from `secrets.nix`):
 
 ```bash
 agenix -r -i ~/.ssh/id_ed25519
-```
-
-When a secret is consumed by Home Manager, declare the SSH identity path explicitly in the profile that uses secrets. Follow the upstream pattern: keep the default Home Manager runtime directories (`$XDG_RUNTIME_DIR/agenix` and `$XDG_RUNTIME_DIR/agenix.d` on Linux) and reference secrets via `config.age.secrets.<name>.path`.
-
-```nix
-{ config, ... }:
-
-{
-  age.identityPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
-  age.secrets.example_api_token.file = ../secrets/example-api-token.age;
-}
-```
-
-After activation, `agenix` decrypts the secret to a runtime file and exposes its path as `config.age.secrets.example_api_token.path`. The important rule is to pass that path around, not the secret value. Do not use `builtins.readFile` on a decrypted secret or put the token directly in `home.sessionVariables`, because that would copy the secret into the Nix store or generated config files.
-
-For a command-line tool that can read a token from a file, pass the path:
-
-```nix
-{ config, ... }:
-
-{
-  age.identityPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
-  age.secrets.example_api_token.file = ../secrets/example-api-token.age;
-
-  home.sessionVariables.EXAMPLE_API_TOKEN_FILE = config.age.secrets.example_api_token.path;
-}
-```
-
-Then scripts can read the token at runtime:
-
-```bash
-token="$(cat "$EXAMPLE_API_TOKEN_FILE")"
-curl -H "Authorization: Bearer $token" https://api.example.com/me
-```
-
-For pi's Kagi-backed web extension, the exact same pattern becomes:
-
-```nix
-{ config, ... }:
-
-{
-  age.identityPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
-  age.secrets.pi_kagi_api_key.file = ../secrets/pi-kagi-api-key.age;
-}
-```
-
-Then `modules/home/pi.nix` automatically exports a file path from `config.age.secrets.pi_kagi_api_key.path`, typically under `"$XDG_RUNTIME_DIR/agenix/..."` on Linux, whenever `age.secrets.pi_kagi_api_key` is present. This lets the managed pi extension read the key without copying it into the Nix store. Do not point consumers at `agenix.d`; that is the backing generation directory, while `config.age.secrets.<name>.path` is the stable consumer path.
-
-For a user service that expects environment variables, store the secret as an env file (`EXAMPLE_API_TOKEN=...`) and point the service at the decrypted file:
-
-```nix
-{ config, pkgs, ... }:
-
-{
-  age.identityPaths = [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
-  age.secrets.example_api_env.file = ../secrets/example-api-token.age;
-
-  systemd.user.services.example-api-sync = {
-    Unit.Description = "Example API sync";
-    Service = {
-      EnvironmentFile = config.age.secrets.example_api_env.path;
-      ExecStart = "${pkgs.curl}/bin/curl -H \"Authorization: Bearer $EXAMPLE_API_TOKEN\" https://api.example.com/me";
-    };
-  };
-}
 ```
 
 Trade-off to keep in mind: this repo standardizes on SSH keys as age identities (see above) because every machine already has one, but it does mean SSH access and secret decryption share the same credential lifecycle. Keep the keys machine-specific and not broadly reused; rotate the corresponding recipient in `secrets.nix` whenever a machine's key changes.

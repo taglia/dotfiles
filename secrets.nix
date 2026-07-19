@@ -1,17 +1,54 @@
+# Single source of truth for agenix secrets.
+#
+# Each entry maps an .age file (payloads live under secrets/) to:
+#
+#   publicKeys  SSH recipients allowed to decrypt the secret, from
+#               secrets-machines.nix. This is where machine authorization
+#               lives: only a machine holding one of the matching private
+#               keys (the identity paths in secrets-machines.nix) can decrypt
+#               the payload.
+#
+#   envVarFile  (optional) Name of an environment variable that will contain
+#               the *path* to the decrypted file at runtime - never the secret
+#               value, so secrets stay out of the Nix store. The variable is
+#               exported via home.sessionVariables and is therefore available
+#               in bash, zsh and fish alike. Omit it for secrets consumed
+#               directly as files; reference config.age.secrets.<name>.path
+#               from a Home Manager module instead.
+#
+# The agenix CLI only reads publicKeys/armor from this file; envVarFile is
+# consumed by profiles/private.nix, which derives age.secrets and
+# home.sessionVariables automatically. To add a secret: add one entry here,
+# encrypt with `agenix -e <path>`, and rebuild - no other edits needed.
 let
-  mbp = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7IVJHXrOVQvRTdU4WFbIGLTwtsCfGym1Op4qqSZuk+G4X0/Qe6idKNPfHTJu1lqY5O8/Q7+YZ9xoJwjCZ/jDmRrd4dienTKEP31wynFWbyyiIudPE1ms8D7vvSnFQBXcF+44Bymw2iifURmL98lFcjP4rb2+l9Tv1pndMFMu5tfUox1nEkHccB3bcUSFc52rhIu2SMySLXyTSHdcihrJFsqwiYGC5MfoaG0rGOnd1jiUQzt1ipZTBvRsPlbO0wcDKMfJ85eVeszC5PI5DzrQZfS9tiaBSRaSHgxwYaSVdFmOanB9U8LgwhUSG0Gvz3UWt4SRhb+3o9mnveWCQwYiJgK+fv657KgK8HWHWz2G64mbmXB2ABNckMB5UrWLAgWHMuY/FDaZMvGZe/7auxMyNhnB5IDL57KEu6nzQTKVZUYbDJYFNEe/vA891V1XbkxsCwExcu/ZagpFEq4APiqQvKeZvZVIHibKp+AwCmfPn7PxLtID+5/7agu6WIfIqLZ8= taglia@MacBook-Pro-2.local";
-  dev-vm = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqNPpIuIKtVWWtP4mHjoMhikX12+HYXk4d3K2Plcz0e taglia@dev";
-  utm-vm = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3MgIxGv6Acv9iPDPPjuBgnwD9Laj0uUxBl1dNHyPlI taglia@utm-vm";
+  machines = import ./secrets-machines.nix;
+  mbp = machines.mbp.publicKey;
+  dev-vm = machines.dev-vm.publicKey;
+  utm-vm = machines.utm-vm.publicKey;
 in
 {
-  "secrets/pi-kagi-api-key.age".publicKeys = [
-    mbp
-    dev-vm
-    utm-vm
-  ];
-  "secrets/pi-ollama-api-key.age".publicKeys = [
-    mbp
-    dev-vm
-    utm-vm
-  ];
+  "secrets/pi-kagi-api-key.age" = {
+    publicKeys = [
+      mbp
+      dev-vm
+      utm-vm
+    ];
+    envVarFile = "KAGI_API_KEY_FILE";
+  };
+  "secrets/pi-ollama-api-key.age" = {
+    publicKeys = [
+      mbp
+      dev-vm
+      utm-vm
+    ];
+    envVarFile = "OLLAMA_API_KEY_FILE";
+  };
+  "secrets/pi-moonshot-api-key.age" = {
+    publicKeys = [
+      mbp
+      dev-vm
+      utm-vm
+    ];
+    envVarFile = "MOONSHOT_API_KEY_FILE";
+  };
 }
