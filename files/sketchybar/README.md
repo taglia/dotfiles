@@ -41,16 +41,19 @@ workspace pill.
   (`items/vpn.lua`), volume
   (`items/volume.lua`), battery (`items/battery.lua`), and calendar
   (`items/calendar.lua`) — local time + date; click for a world-clock popup
-  (Paris, London, UTC, New York, San Francisco) ordered chronologically with
-  AM/PM and day offsets.
+  (Paris, London, UTC, New York, San Francisco, Sydney, Singapore, Tokyo)
+  ordered chronologically with AM/PM and day offsets.
 
-Colors live in `colors.lua` (explicit high-contrast palette: opaque near-black
-bar, white foreground, bright yellow focused workspace).
+Colors come from `colors.lua`, which is **not in this tree**: it is generated
+at build time from `lib/catppuccin.nix` (the repo's single source of truth for
+the Catppuccin palette) and injected by `modules/home/sketchybar.nix`. The bar
+uses an explicit high-contrast style: opaque near-black bar, white foreground,
+bright yellow focused workspace.
 
 ## Local modifications (vs. upstream)
 
-- Uses an explicit high-contrast palette (hardcoded, no theme switching, no
-  `active_theme.txt`).
+- Uses an explicit high-contrast palette (no theme switching, no
+  `active_theme.txt`); `colors.lua` is generated from `lib/catppuccin.nix`.
 - Removed Spotify, the theme picker, Borders, the menus widget, the control
   center, Pomodoro timers, the network part of resources, clipboard, separators/brackets, and the
   `icon_map`.
@@ -95,12 +98,15 @@ init.lua            requires globals + items (left: spaces, resources;
                     right, left→right: front_app, VPN, volume, battery,
                     calendar)
 globals.lua         SBAR / COLORS / DEFAULT_ITEM globals
-colors.lua          high-contrast palette (hardcoded)
 default.lua         default item styling + bar
+helpers/            shell/python helpers: the VPN status probe
+                    (vpn-status.sh + tailscale-exit-node.py) and the
+                    next-DST-transition probe (next-dst-change.sh)
 items/spaces.lua    AeroSpace workspace indicator (aerospace_workspace_change)
 items/resources.lua CPU + RAM usage
-items/calendar.lua  local time/date + world-clock popup (Paris/London/UTC/NY/SF)
-items/vpn.lua       VPN status indicator
+items/calendar.lua  local time/date + world-clock popup (8 zones;
+                    DST probe: helpers/next-dst-change.sh)
+items/vpn.lua       VPN status indicator (probe: helpers/vpn-status.sh)
 items/front_app.lua frontmost-app icon (hover = red ✕ close affordance, click = quit)
 items/*.lua         battery, volume
 ```

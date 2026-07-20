@@ -1,22 +1,20 @@
-{ lib, pkgs, ... }:
+{ lib, ... }:
 
 let
   mouselessConfig = ../../files/mouseless/config.yaml;
-  mouselessConfigTarget = "$HOME/Library/Containers/net.sonuscape.mouseless/Data/.mouseless/configs/config.yaml";
-  prepareLinks = import ../../lib/prepare-links.nix { inherit lib pkgs; };
+
+  # Path of the config inside the mouseless sandbox, relative to $HOME. The
+  # single source for both the home.file entry and the per-app defaults hook
+  # below so the two can never drift. (mouseless reads its config from this
+  # sandboxed container path on macOS.)
+  mouselessConfigPath = "Library/Containers/net.sonuscape.mouseless/Data/.mouseless/configs/config.yaml";
 in
 
 {
-  home.file."Library/Containers/net.sonuscape.mouseless/Data/.mouseless/configs/config.yaml" = {
+  home.file.${mouselessConfigPath} = {
     source = mouselessConfig;
     force = true;
   };
-
-  home.activation.prepareMouselessConfigLink =
-    lib.hm.dag.entryBetween [ "linkGeneration" ] [ "checkLinkTargets" ]
-      (prepareLinks {
-        ${mouselessConfigTarget} = mouselessConfig;
-      });
 
   home.activation.configureDarwinAppDefaults = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     /usr/bin/defaults write com.superultra.Homerow auto-switch-input-source-id -string com.apple.keylayout.ABC

@@ -29,4 +29,19 @@ jobs:
         run: nix flake check
 
       - name: Shellcheck scripts
-        run: nix shell nixpkgs#shellcheck --command shellcheck scripts/*.sh
+        run: find scripts files -name '*.sh' -type f -print0 | xargs -0 nix shell nixpkgs#shellcheck --command shellcheck
+
+      - name: nixfmt check
+        run: nix fmt -- --check
+
+      - name: deadnix
+        run: nix shell nixpkgs#deadnix --command deadnix --fail .
+
+      - name: statix
+        run: nix shell nixpkgs#statix --command statix check .
+
+      - name: StyLua check
+        run: nix shell nixpkgs#stylua --command stylua --check files/sketchybar
+
+      - name: Prettier check
+        run: nix shell nixpkgs#prettier --command prettier --check "files/**/*.ts"

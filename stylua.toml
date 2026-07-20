@@ -1,0 +1,5 @@
+# StyLua config for the SketchyBar Lua config (files/sketchybar).
+# Spaces (2) to match the repo's no-tabs style; declared explicitly so the
+# CI `stylua --check` is self-documenting.
+indent_type = "Spaces"
+indent_width = 2

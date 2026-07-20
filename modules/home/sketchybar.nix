@@ -19,7 +19,10 @@
 # here as a *directory* source so the whole multi-file Lua config (sketchybarrc
 # entry + init.lua + items/ + helpers/) is installed verbatim into
 # ~/.config/sketchybar/ and require() of siblings resolves (the HM wrapper adds
-# the config dir to LUA_PATH only in the source path).
+# the config dir to LUA_PATH only in the source path). One file is injected at
+# build time: colors.lua is generated from lib/catppuccin.nix, the repo's
+# single source of truth for the Catppuccin palette, so it is deliberately
+# absent from files/sketchybar/.
 #
 # `configType = "lua"` drives the wrapper: it pulls in pkgs.sbarlua, auto-infers
 # the Lua interpreter from sbarlua.passthru.luaModule, and adds sbarlua to
@@ -32,17 +35,58 @@
 # `extraPackages` puts `aerospace` on the wrapper's PATH so the workspace
 # indicator (items/spaces.lua) can run `aerospace workspace N` (click_script)
 # and `aerospace list-workspaces --focused` without an absolute path.
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
+  catppuccin = import ../../lib/catppuccin.nix;
+  inherit (catppuccin) palette;
+
   sketchybarConfigDir = ../../files/sketchybar;
+
+  # colors.lua, generated from the shared palette. SketchyBar colors are
+  # 0xAARRGGBB (alpha in the high byte); every palette color is fully opaque.
+  colorsLua = pkgs.writeText "colors.lua" ''
+    -- GENERATED from lib/catppuccin.nix by modules/home/sketchybar.nix —
+    -- do not edit by hand. Values are 0xAARRGGBB (alpha in the high byte).
+    --
+    -- The translucent "liquid glass" colors looked reasonable in hex but
+    -- rendered as dark gray on darker gray on this MBP. This palette
+    -- intentionally favors readability over subtlety: opaque near-black bar,
+    -- pure-white text, and a bright yellow focused-workspace pill with black
+    -- text.
+    local colors = {}
+
+    -- Common
+    colors.white = 0xffffffff
+    colors.black = 0xff000000
+    colors.transparent = 0x00000000
+
+    -- Catppuccin Mocha (https://catppuccin.com/palette/)
+    -- Prefixed with mocha_ to avoid colliding with the common colors above
+    -- (red, yellow, white, black).
+    ${lib.concatStringsSep "\n" (
+      map (name: "colors.mocha_${name} = 0xff${palette.${name}}") catppuccin.names
+    )}
+
+    return colors
+  '';
+
+  # The config tree with the generated colors.lua injected (see the header
+  # comment). Plain `cp -rL` preserves the executable bits that matter
+  # (sketchybar *executes* sketchybarrc — it must stay 755); only the top
+  # directory is made writable so colors.lua can be injected into it.
+  sketchybarConfig = pkgs.runCommand "sketchybar-config" { } ''
+    cp -rL ${sketchybarConfigDir} $out
+    chmod u+w $out
+    cp ${colorsLua} $out/colors.lua
+  '';
 in
 {
   programs.sketchybar = {
     enable = true;
     configType = "lua";
     config = {
-      source = sketchybarConfigDir;
+      source = sketchybarConfig;
       recursive = true;
     };
     extraPackages = [ pkgs.aerospace ];

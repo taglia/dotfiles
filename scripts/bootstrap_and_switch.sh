@@ -21,7 +21,8 @@ usage() {
   cat <<'EOF'
 Usage: ./scripts/bootstrap_and_switch.sh [--target <name>] [--username <name>] [--github-username <name>] [--email <address>] [--backup[ <extension>] | --backup-extension <extension> | --no-backup]
 
-Updates the user identity in flake.nix, then runs standalone Home Manager from this repo.
+Writes the local identity to a git-ignored identity.nix (read by flake.nix's
+`defaultUser`), then runs standalone Home Manager from this repo.
 This script does not run nix-darwin. On macOS with nix-darwin, prefer:
   darwin-rebuild switch --flake .#mbp
 
@@ -96,7 +97,13 @@ prompt_identity_value() {
 
 current_flake_user_value() {
   local attr="$1"
-  perl -0ne 'print "$1\n" if /'"$attr"'\s*=\s*"([^"]*)"/' flake.nix | head -n 1
+  # identity.nix overrides the flake.nix defaults when present; both use the
+  # same `attr = "value";` shape.
+  local file="flake.nix"
+  if [[ -f identity.nix ]]; then
+    file="identity.nix"
+  fi
+  perl -0ne 'print "$1\n" if /'"$attr"'\s*=\s*"([^"]*)"/' "$file" | head -n 1
 }
 
 configure_target() {
@@ -166,19 +173,32 @@ EOF
   validate_nix_string_value "github username" "$github_username"
   validate_nix_string_value "email" "$email"
 
-  DOTFILES_BOOTSTRAP_USERNAME="$username" \
-  DOTFILES_BOOTSTRAP_GITHUB_USERNAME="$github_username" \
-  DOTFILES_BOOTSTRAP_EMAIL="$email" \
-    perl -0pi -e '
-      my $username = $ENV{"DOTFILES_BOOTSTRAP_USERNAME"};
-      my $github_username = $ENV{"DOTFILES_BOOTSTRAP_GITHUB_USERNAME"};
-      my $email = $ENV{"DOTFILES_BOOTSTRAP_EMAIL"};
+  # Write a git-ignored identity.nix rather than editing flake.nix: the flake
+  # imports it for `defaultUser` when present, so the committed flake stays
+  # generic across machines. Values are validated above (no quotes,
+  # backslashes or newlines), so the heredoc is safe to interpolate.
+  cat > identity.nix <<EOF
+# Local identity for this machine, written by scripts/bootstrap_and_switch.sh.
+# Git-ignored (see .gitignore); flake.nix imports this instead of its built-in
+# defaultUser when present. Delete to fall back to the defaults.
+{
+  username = "$username";
+  githubUsername = "$github_username";
+  email = "$email";
+}
+EOF
 
-      s/(defaultUser\s*=\s*\{\s*username\s*=\s*")[^"]*(";\s*githubUsername\s*=\s*")[^"]*(";\s*email\s*=\s*")[^"]*(";\s*\};)/$1$username$2$github_username$3$email$4/s
-        or die "could not update user identity in flake.nix\n";
-    ' flake.nix
+  echo "info: wrote identity.nix for $username"
 
-  echo "info: updated flake.nix identity for $username"
+  # Nix only sees files git knows about: an untracked (and git-ignored)
+  # identity.nix would be silently invisible to the flake. `git add -N -f`
+  # stages an intent-to-add entry — the file becomes visible to Nix without
+  # committing its contents. (-f is required because identity.nix is in
+  # .gitignore.)
+  if git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$repo_root" add -N -f identity.nix
+    echo "info: marked identity.nix with git intent-to-add so the flake can see it"
+  fi
 }
 
 while [[ $# -gt 0 ]]; do

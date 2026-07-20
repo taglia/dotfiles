@@ -74,7 +74,9 @@ export default function (pi: ExtensionAPI) {
       }
 
       lines.push("―".repeat(78));
-      lines.push(`${"TOTAL".padEnd(22)} ${String(stats.size).padStart(4)} models, ${`$${grandTotal.toFixed(4)}`.padStart(10)}`);
+      lines.push(
+        `${"TOTAL".padEnd(22)} ${String(stats.size).padStart(4)} models, ${`$${grandTotal.toFixed(4)}`.padStart(10)}`,
+      );
 
       ctx.ui.notify(lines.join("\n"), "info");
     },

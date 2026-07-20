@@ -22,6 +22,7 @@ tar \
   --exclude="$repo_name/*.log" \
   --exclude="$repo_name/.nvimlog" \
   --exclude="$repo_name/.DS_Store" \
+  --exclude="$repo_name/identity.nix" \
   -czf "$archive" \
   -C "$(dirname -- "$repo_dir")" \
   "$repo_name"

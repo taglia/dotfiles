@@ -28,7 +28,7 @@ in
     l = "ls -CF";
 
     vi = vim;
-    vim = vim;
+    inherit vim;
     vimdiff = "${vim} -d";
   };
 

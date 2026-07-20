@@ -85,7 +85,12 @@ class ConfirmInterruptEditor extends CustomEditor {
   private readonly ctx: ExtensionContext;
   private confirming = false;
 
-  constructor(tui: TUI, theme: EditorTheme, keybindings: KeybindingsManager, ctx: ExtensionContext) {
+  constructor(
+    tui: TUI,
+    theme: EditorTheme,
+    keybindings: KeybindingsManager,
+    ctx: ExtensionContext,
+  ) {
     super(tui, theme, keybindings);
     this.ctx = ctx;
   }

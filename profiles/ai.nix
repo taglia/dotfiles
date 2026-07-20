@@ -1,5 +1,5 @@
 {
-  nixpkgs-unstable,
+  inputs,
   pkgs,
   lib,
   ...
@@ -10,7 +10,7 @@ let
   # fast-moving tools ahead of the stable channel. Only this profile uses
   # unstable, so it is the single extra nixpkgs evaluation in the flake, and the
   # unfree allowance stays scoped to exactly the packages we opt into.
-  pkgs-unstable = import nixpkgs-unstable {
+  pkgs-unstable = import inputs.nixpkgs-unstable {
     system = pkgs.stdenv.hostPlatform.system;
 
     config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "claude-code" ];

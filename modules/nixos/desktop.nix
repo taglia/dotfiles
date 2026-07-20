@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 
 {
   # GUI workstation stack. Imported by machines that want a desktop; headless

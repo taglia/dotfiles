@@ -1,0 +1,8 @@
+# statix (https://github.com/nerdypepper/statix) config.
+#
+# `repeated_keys` is disabled deliberately. The NixOS / Home Manager module
+# system merges repeated top-level keys, and grouping settings by concern —
+# e.g. one `system.defaults.dock` block, one `system.defaults.finder` block,
+# each with its own comment — reads far better than a single giant attrset.
+# nixfmt, deadnix and every other statix lint stay on.
+disabled = ["repeated_keys", "empty_pattern"]

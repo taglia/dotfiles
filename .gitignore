@@ -1,6 +1,13 @@
 .DS_Store
 packages/*.tar.gz
 
+# Local identity override written by scripts/bootstrap_and_switch.sh and read
+# by flake.nix (defaultUser). Forks/machines override the upstream default
+# here; not tracked so the committed flake.nix stays generic. Nix only sees
+# files git knows about, so the script marks it with `git add -N -f`
+# (intent-to-add) — visible to the flake, but its contents stay uncommitted.
+/identity.nix
+
 result
 result-*
 *.log

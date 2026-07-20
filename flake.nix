@@ -37,20 +37,26 @@
   outputs =
     inputs@{
       nixpkgs,
-      nixpkgs-unstable,
-      home-manager,
-      nix-darwin,
-      nixvim,
-      agenix,
-      nix-index-database,
       ...
     }:
     let
-      defaultUser = {
-        username = "taglia";
-        githubUsername = "taglia";
-        email = "612306+taglia@users.noreply.github.com";
-      };
+      # Local identity. The attrset below is the upstream default; forks and
+      # other machines override it with an optional, git-ignored
+      # identity.nix (written by scripts/bootstrap_and_switch.sh). flake.nix
+      # imports it when present, so the tracked flake.nix stays untouched
+      # across machines. Delete identity.nix to fall back to the defaults.
+      # Note: Nix only sees files git knows about, so identity.nix must be
+      # marked with `git add -N -f` (the bootstrap script does this); a plain
+      # untracked file would be silently ignored here.
+      defaultUser =
+        if builtins.pathExists ./identity.nix then
+          import ./identity.nix
+        else
+          {
+            username = "taglia";
+            githubUsername = "taglia";
+            email = "612306+taglia@users.noreply.github.com";
+          };
 
       supportedSystems = [
         "x86_64-linux"
@@ -60,249 +66,46 @@
 
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      mkHomeModules =
-        {
-          system,
-          modules ? [ ],
-          user ? defaultUser,
-        }:
-        let
-          isDarwin = nixpkgs.lib.hasSuffix "-darwin" system;
-          platformModule = if isDarwin then ./profiles/darwin.nix else ./profiles/linux.nix;
-          username = user.username;
-        in
-        [
-          nixvim.homeModules.nixvim
-          agenix.homeManagerModules.default
-          nix-index-database.homeModules.nix-index
-
-          {
-            home.username = username;
-
-            home.homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
-
-            home.stateVersion = "25.11";
-          }
-
-          ./profiles/base.nix
-          platformModule
-        ]
-        ++ modules;
-
+      # Everything a Home Manager / nix-darwin / NixOS module might need from
+      # the flake. `inputs` carries the full bundle (agenix, nixpkgs-unstable,
+      # ...), so modules reference e.g. `inputs.agenix` / `inputs.nixpkgs-unstable`
+      # rather than receiving them as separate args.
       homeSpecialArgs = {
-        inherit
-          agenix
-          nixpkgs-unstable
-          inputs
-          ;
+        inherit inputs;
         user = defaultUser;
       };
 
-      mkHome =
-        {
-          system,
-          modules ? [ ],
-          user ? defaultUser,
-        }:
-        let
-          pkgs = import nixpkgs { inherit system; };
-        in
-        home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-
-          extraSpecialArgs = homeSpecialArgs // {
-            inherit user;
-          };
-
-          modules = mkHomeModules { inherit system modules user; };
-        };
-
-      mkDarwin =
-        {
-          system,
-          modules ? [ ],
-          user ? defaultUser,
-        }:
-        nix-darwin.lib.darwinSystem {
-          inherit system;
-
-          specialArgs = homeSpecialArgs // {
-            inherit user;
-          };
-
-          modules = [
-            home-manager.darwinModules.home-manager
-            ./modules/darwin/aerospace.nix
-            ./modules/darwin/core.nix
-            ./modules/darwin/desktop.nix
-            ./modules/darwin/homebrew.nix
-            ./modules/darwin/input.nix
-            ./modules/darwin/packages.nix
-            ./modules/darwin/system.nix
-
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                extraSpecialArgs = homeSpecialArgs // {
-                  inherit user;
-                };
-                users.${user.username}.imports = mkHomeModules { inherit system modules user; };
-              };
-            }
-          ];
-        };
-
-      mkNixos =
-        {
-          system,
-          hostModule,
-          homeModules ? fullModules,
-          user ? defaultUser,
-        }:
-        nixpkgs.lib.nixosSystem {
-          inherit system;
-
-          specialArgs = homeSpecialArgs // {
-            inherit user;
-          };
-
-          modules = [
-            hostModule
-
-            # Integrate Home Manager into the system, same as on darwin, so the
-            # user environment from this repo (fish, nvim, tmux, ...) comes along.
-            home-manager.nixosModules.home-manager
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                extraSpecialArgs = homeSpecialArgs // {
-                  inherit user;
-                };
-                users.${user.username}.imports = mkHomeModules {
-                  inherit system user;
-                  modules = homeModules;
-                };
-              };
-            }
-          ];
-        };
-
-      fullModules = [
-        ./modules/home/dev.nix
-        ./modules/home/packages-dev.nix
-        ./modules/home/media.nix
-      ];
-
-      # The Home Manager module set shared by the standalone `linux-private`
-      # configuration and the `utm-vm` NixOS host, so the VM gets the same user
-      # environment (AI tools + private agenix secrets) as `linux-private`, just
-      # built for aarch64-linux instead of x86_64-linux. Architecture is handled
-      # by mkNixos importing nixpkgs with the host's `system`, so nothing extra
-      # is needed here for ARM.
-      privateModules = fullModules ++ [
-        ./profiles/ai.nix
-        ./profiles/private.nix
-      ];
-
-      hosts = rec {
-        linux = {
-          system = "x86_64-linux";
-          modules = fullModules;
-        };
-
-        linux-ai = {
-          system = "x86_64-linux";
-          modules = fullModules ++ [ ./profiles/ai.nix ];
-        };
-
-        linux-private = {
-          system = "x86_64-linux";
-          modules = privateModules;
-        };
-
-        linux-minimal.system = "x86_64-linux";
-
-        linux-aws = {
-          system = "x86_64-linux";
-          user = defaultUser // {
-            username = "admin";
-          };
-          modules = fullModules ++ [ ./profiles/ai.nix ];
-        };
-
-        linux-openclaw = {
-          system = "x86_64-linux";
-          user = defaultUser // {
-            username = "openclaw";
-          };
-          modules = fullModules ++ [ ./profiles/ai.nix ];
-        };
-
-        linux-arm = {
-          system = "aarch64-linux";
-          modules = fullModules;
-        };
-
-        linux-minimal-arm.system = "aarch64-linux";
-
-        mbp = {
-          system = "aarch64-darwin";
-          modules = fullModules ++ [
-            ./profiles/ai.nix
-            ./profiles/private.nix
-            # Games and terminal toys (cmatrix, asciiquarium, nethack) plus
-            # chess-tui wired to gnuchess --uci as its bot engine. Kept on the
-            # mbp profile only, so the other hosts stay lean.
-            ./modules/home/entertainment.nix
-            # Darwin-only: SketchyBar runs as a user launchd agent and its HM
-            # module asserts a Darwin platform, so keep it out of the Linux
-            # homeConfigurations by importing it here rather than in
-            # profiles/base.nix or profiles/darwin.nix.
-            ./modules/home/sketchybar.nix
-          ];
-        };
-
-        mbp-home = mbp;
+      hostLib = import ./lib/hosts.nix {
+        inherit
+          nixpkgs
+          homeSpecialArgs
+          defaultUser
+          ;
+        inherit (inputs)
+          home-manager
+          nix-darwin
+          nixvim
+          agenix
+          nix-index-database
+          ;
       };
 
-      homeConfigurations = nixpkgs.lib.mapAttrs (
-        _: host:
-        mkHome {
-          inherit (host) system;
-          user = host.user or defaultUser;
-          modules = host.modules or [ ];
-        }
-      ) hosts;
+      inherit (hostLib)
+        hosts
+        darwinHosts
+        nixosHosts
+        ;
 
-      darwinHosts = {
-        mbp = hosts.mbp;
+      # `mbp-home` is an alias of the standalone Home Manager configuration for
+      # `mbp`, kept for the README's documented name. Defined separately so the
+      # checks below (derived from `hosts`) don't build the same derivation twice.
+      homeConfigurations = hostLib.homeConfigurations // {
+        mbp-home = hostLib.homeConfigurations.mbp;
       };
-
-      darwinConfigurations = nixpkgs.lib.mapAttrs (_: mkDarwin) darwinHosts;
-
-      nixosHosts = {
-        utm-vm = {
-          system = "aarch64-linux";
-          hostModule = ./hosts/utm-vm;
-          # Match the `linux-private` standalone profile (AI tools + private
-          # secrets) so the VM is a full private workstation on ARM.
-          homeModules = privateModules;
-        };
-      };
-
-      nixosConfigurations = nixpkgs.lib.mapAttrs (
-        _: host:
-        mkNixos {
-          inherit (host) system hostModule;
-          homeModules = host.homeModules or fullModules;
-          user = host.user or defaultUser;
-        }
-      ) nixosHosts;
     in
     {
-      inherit homeConfigurations darwinConfigurations nixosConfigurations;
+      inherit homeConfigurations;
+      inherit (hostLib) darwinConfigurations nixosConfigurations;
 
       formatter = forAllSystems (
         system:
@@ -313,11 +116,20 @@
           name = "nixfmt-dotfiles";
           runtimeInputs = [ pkgs.nixfmt ];
           text = ''
-            if [ "$#" -gt 0 ]; then
-              exec nixfmt "$@"
+            # `nix fmt -- --check` runs `nixfmt --check`; plain `nix fmt`
+            # formats in place. With explicit file/dir arguments nixfmt
+            # formats those paths instead of the whole repo.
+            check=""
+            if [ "''${1:-}" = "--check" ]; then
+              check="--check"
+              shift
             fi
 
-            find . -path ./.git -prune -o -name '*.nix' -type f -print0 | xargs -0 nixfmt
+            if [ "$#" -gt 0 ]; then
+              exec nixfmt $check "$@"
+            fi
+
+            find . -path ./.git -prune -o -name '*.nix' -type f -print0 | xargs -0 nixfmt $check
           '';
         }
       );
@@ -325,21 +137,22 @@
       checks = forAllSystems (
         system:
         let
-          homeChecks = nixpkgs.lib.genAttrs (builtins.filter (name: hosts.${name}.system == system) (
-            builtins.attrNames hosts
-          )) (name: homeConfigurations.${name}.activationPackage);
+          homeChecks = nixpkgs.lib.mapAttrs' (
+            name: _:
+            nixpkgs.lib.nameValuePair "home-${name}" hostLib.homeConfigurations.${name}.activationPackage
+          ) (nixpkgs.lib.filterAttrs (_: host: host.system == system) hosts);
 
-          darwinChecks = builtins.listToAttrs (
+          darwinChecks = nixpkgs.lib.listToAttrs (
             map (name: {
               name = "darwin-${name}";
-              value = darwinConfigurations.${name}.system;
+              value = hostLib.darwinConfigurations.${name}.system;
             }) (builtins.filter (name: darwinHosts.${name}.system == system) (builtins.attrNames darwinHosts))
           );
 
-          nixosChecks = builtins.listToAttrs (
+          nixosChecks = nixpkgs.lib.listToAttrs (
             map (name: {
               name = "nixos-${name}";
-              value = nixosConfigurations.${name}.config.system.build.toplevel;
+              value = hostLib.nixosConfigurations.${name}.config.system.build.toplevel;
             }) (builtins.filter (name: nixosHosts.${name}.system == system) (builtins.attrNames nixosHosts))
           );
         in

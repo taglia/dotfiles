@@ -26,38 +26,38 @@ local CORNER = 8 -- rounded-square corner radius for the hover ✕
 
 -- System / relaunch-only processes we never want to "quit" from the bar.
 local NO_QUIT = {
-	Finder = true,
-	Dock = true,
-	SystemUIServer = true,
-	ControlCenter = true,
-	Spotlight = true,
+  Finder = true,
+  Dock = true,
+  SystemUIServer = true,
+  ControlCenter = true,
+  Spotlight = true,
 }
 
 local front_app = SBAR.add("item", "front_app", {
-	position = "right",
-	padding_left = SLOT_PAD,
-	padding_right = SLOT_PAD,
-	label = { drawing = false },
-	icon = {
-		string = "",
-		width = SLOT, -- fixed square slot; image and ✕ both centered in it
-		align = "center",
-		padding_left = 0,
-		padding_right = 0,
-		background = {
-			drawing = true,
-			color = COLORS.transparent, -- transparent when showing the icon
-			border_width = 0,
-			corner_radius = CORNER,
-			height = SLOT,
-			image = {
-				drawing = true,
-				scale = ICON_SCALE,
-				padding_left = 0,
-				padding_right = 0,
-			},
-		},
-	},
+  position = "right",
+  padding_left = SLOT_PAD,
+  padding_right = SLOT_PAD,
+  label = { drawing = false },
+  icon = {
+    string = "",
+    width = SLOT, -- fixed square slot; image and ✕ both centered in it
+    align = "center",
+    padding_left = 0,
+    padding_right = 0,
+    background = {
+      drawing = true,
+      color = COLORS.transparent, -- transparent when showing the icon
+      border_width = 0,
+      corner_radius = CORNER,
+      height = SLOT,
+      image = {
+        drawing = true,
+        scale = ICON_SCALE,
+        padding_left = 0,
+        padding_right = 0,
+      },
+    },
+  },
 })
 
 local current_app = ""
@@ -67,95 +67,95 @@ local image_source = "" -- the "app.<bid>" (or "app.<name>") currently shown
 local bid_cache = {}
 
 local function set_icon_image(source)
-	image_source = source
-	front_app:set({
-		icon = {
-			string = "",
-			background = {
-				color = COLORS.transparent,
-				border_width = 0,
-				image = { drawing = true, string = source },
-			},
-		},
-	})
+  image_source = source
+  front_app:set({
+    icon = {
+      string = "",
+      background = {
+        color = COLORS.transparent,
+        border_width = 0,
+        image = { drawing = true, string = source },
+      },
+    },
+  })
 end
 
 local function show_close_affordance()
-	front_app:set({
-		icon = {
-			string = "✕",
-			color = COLORS.white,
-			font = { family = "Hack Nerd Font", style = "Bold", size = SLOT * 0.55 },
-			background = {
-				color = COLORS.mocha_red,
-				border_width = 0,
-				corner_radius = CORNER,
-				height = SLOT,
-				image = { drawing = false },
-			},
-		},
-	})
+  front_app:set({
+    icon = {
+      string = "✕",
+      color = COLORS.white,
+      font = { family = "Hack Nerd Font", style = "Bold", size = SLOT * 0.55 },
+      background = {
+        color = COLORS.mocha_red,
+        border_width = 0,
+        corner_radius = CORNER,
+        height = SLOT,
+        image = { drawing = false },
+      },
+    },
+  })
 end
 
 -- Resolve the app name to a bundle id (unique, avoids sketchybar's ambiguous
 -- name loop) and show its icon. Falls back to `app.<name>` if resolution fails.
 local function show_icon(app_name)
-	current_app = app_name or ""
-	local cached = bid_cache[app_name]
-	if cached ~= nil then
-		set_icon_image(cached and ("app." .. cached) or ("app." .. app_name))
-		return
-	end
-	local safe = app_name:gsub('"', '\\"')
-	SBAR.exec(string.format([[osascript -e 'id of app "%s"' 2>/dev/null]], safe), function(out)
-		local bid = (out or ""):match("[^\r\n]+")
-		if bid and bid ~= "" then
-			bid_cache[app_name] = bid
-			set_icon_image("app." .. bid)
-		else
-			bid_cache[app_name] = false
-			set_icon_image("app." .. app_name)
-		end
-	end)
+  current_app = app_name or ""
+  local cached = bid_cache[app_name]
+  if cached ~= nil then
+    set_icon_image(cached and ("app." .. cached) or ("app." .. app_name))
+    return
+  end
+  local safe = app_name:gsub('"', '\\"')
+  SBAR.exec(string.format([[osascript -e 'id of app "%s"' 2>/dev/null]], safe), function(out)
+    local bid = (out or ""):match("[^\r\n]+")
+    if bid and bid ~= "" then
+      bid_cache[app_name] = bid
+      set_icon_image("app." .. bid)
+    else
+      bid_cache[app_name] = false
+      set_icon_image("app." .. app_name)
+    end
+  end)
 end
 
 front_app:subscribe("front_app_switched", function(env)
-	local app_name = env.INFO or ""
-	if app_name ~= "" then
-		show_icon(app_name)
-	end
+  local app_name = env.INFO or ""
+  if app_name ~= "" then
+    show_icon(app_name)
+  end
 end)
 
 front_app:subscribe("mouse.entered", function()
-	if current_app ~= "" then
-		show_close_affordance()
-	end
+  if current_app ~= "" then
+    show_close_affordance()
+  end
 end)
 
 front_app:subscribe("mouse.exited", function()
-	if current_app ~= "" then
-		set_icon_image(image_source)
-	end
+  if current_app ~= "" then
+    set_icon_image(image_source)
+  end
 end)
 
 front_app:subscribe("mouse.clicked", function()
-	local app = current_app
-	if app == "" or NO_QUIT[app] then
-		return
-	end
-	-- Quit by localized name (matches what front_app_switched reports). Swallow
-	-- errors (unknown app -> no-op).
-	local safe = app:gsub('"', '\\"')
-	SBAR.exec(string.format([[osascript -e 'tell application "%s" to quit' 2>/dev/null; true]], safe))
+  local app = current_app
+  if app == "" or NO_QUIT[app] then
+    return
+  end
+  -- Quit by localized name (matches what front_app_switched reports). Swallow
+  -- errors (unknown app -> no-op).
+  local safe = app:gsub('"', '\\"')
+  SBAR.exec(string.format([[osascript -e 'tell application "%s" to quit' 2>/dev/null; true]], safe))
 end)
 
 -- Best-effort initial population so the icon shows on (re)load.
 SBAR.exec(
-	[[osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true']],
-	function(out)
-		local name = (out or ""):match("[^\r\n]+")
-		if name and name ~= "" then
-			show_icon(name)
-		end
-	end
+  [[osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true']],
+  function(out)
+    local name = (out or ""):match("[^\r\n]+")
+    if name and name ~= "" then
+      show_icon(name)
+    end
+  end
 )

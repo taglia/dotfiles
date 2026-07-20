@@ -1,4 +1,55 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
+
+let
+  catppuccin = import ../../lib/catppuccin.nix;
+  inherit (catppuccin) palette;
+
+  # fish color slot -> palette name, or { bg = <palette name>; } for slots
+  # that set --background= instead of a foreground color.
+  fishColors = {
+    normal = "text";
+    command = "blue";
+    param = "flamingo";
+    keyword = "red";
+    quote = "green";
+    redirection = "pink";
+    end = "peach";
+    comment = "overlay1";
+    error = "red";
+    gray = "overlay0";
+    selection.bg = "surface0";
+    search_match.bg = "surface0";
+    option = "green";
+    operator = "pink";
+    escape = "maroon";
+    autosuggestion = "overlay0";
+    cancel = "red";
+    cwd = "yellow";
+    user = "teal";
+    host = "blue";
+    host_remote = "green";
+    status = "red";
+  };
+
+  fishPagerColors = {
+    progress = "overlay0";
+    prefix = "pink";
+    completion = "text";
+    description = "overlay0";
+  };
+
+  renderFishColors =
+    prefix: colors:
+    lib.concatStringsSep "\n" (
+      lib.mapAttrsToList (
+        slot: value:
+        if builtins.isString value then
+          "set -g fish_${prefix}color_${slot} ${palette.${value}}"
+        else
+          "set -g fish_${prefix}color_${slot} --background=${palette.${value.bg}}"
+      ) colors
+    );
+in
 
 {
   programs.fish = {
@@ -90,36 +141,11 @@
       fastfetch
       set fish_greeting
 
-      # Catppuccin Mocha. The same palette is duplicated in
-      # files/kitty/current-theme.conf, files/starship.toml and
-      # files/pi/agent/themes/catppuccin-mocha.json — keep them in sync.
-      set -g fish_color_normal cdd6f4
-      set -g fish_color_command 89b4fa
-      set -g fish_color_param f2cdcd
-      set -g fish_color_keyword f38ba8
-      set -g fish_color_quote a6e3a1
-      set -g fish_color_redirection f5c2e7
-      set -g fish_color_end fab387
-      set -g fish_color_comment 7f849c
-      set -g fish_color_error f38ba8
-      set -g fish_color_gray 6c7086
-      set -g fish_color_selection --background=313244
-      set -g fish_color_search_match --background=313244
-      set -g fish_color_option a6e3a1
-      set -g fish_color_operator f5c2e7
-      set -g fish_color_escape eba0ac
-      set -g fish_color_autosuggestion 6c7086
-      set -g fish_color_cancel f38ba8
-      set -g fish_color_cwd f9e2af
-      set -g fish_color_user 94e2d5
-      set -g fish_color_host 89b4fa
-      set -g fish_color_host_remote a6e3a1
-      set -g fish_color_status f38ba8
+      # Catppuccin Mocha, generated from lib/catppuccin.nix (the repo's
+      # single source of truth for the palette).
+      ${renderFishColors "" fishColors}
 
-      set -g fish_pager_color_progress 6c7086
-      set -g fish_pager_color_prefix f5c2e7
-      set -g fish_pager_color_completion cdd6f4
-      set -g fish_pager_color_description 6c7086
+      ${renderFishColors "pager_" fishPagerColors}
 
       # Feed Starship's right prompt with either the current time or, briefly
       # after a slow command, when it started and how long it took.

@@ -79,9 +79,7 @@ export function resolveKagiApiKey(): string {
     if (fromFile) return fromFile;
   }
 
-  throw new Error(
-    "Kagi API key not configured. Set KAGI_API_KEY or KAGI_API_KEY_FILE.",
-  );
+  throw new Error("Kagi API key not configured. Set KAGI_API_KEY or KAGI_API_KEY_FILE.");
 }
 
 function combineSignals(...signals: Array<AbortSignal | undefined>): AbortSignal | undefined {
@@ -286,10 +284,7 @@ async function runKagiExtract(
 ): Promise<KagiExtractResult | null> {
   const key = resolveKagiApiKey();
   const endpoint = `${getKagiBaseUrl()}/extract`;
-  const timeoutSeconds = Math.min(
-    Math.max(1, getFetchTimeoutMs() / 1000),
-    60,
-  );
+  const timeoutSeconds = Math.min(Math.max(1, getFetchTimeoutMs() / 1000), 60);
 
   let response: Response;
   try {
@@ -509,7 +504,8 @@ export default function (pi: ExtensionAPI) {
     name: "web_fetch",
     label: "Web Fetch",
     description: "Fetch a web page directly and extract readable text content.",
-    promptSnippet: "Fetch and read a specific web page URL directly when the user wants page contents.",
+    promptSnippet:
+      "Fetch and read a specific web page URL directly when the user wants page contents.",
     promptGuidelines: [
       "Use web_fetch after web_search when you need the actual contents of a specific result page.",
       "Use web_fetch for direct URL reading, article extraction, or verifying the contents of a page.",

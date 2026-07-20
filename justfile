@@ -18,7 +18,12 @@ switch-home target:
 # for all systems first (--no-build --all-systems).
 check:
     nix flake check
-    shellcheck scripts/*.sh
+    nix fmt -- --check
+    find scripts files -name '*.sh' -type f -print0 | xargs -0 shellcheck
+    nix shell nixpkgs#deadnix --command deadnix --fail .
+    nix shell nixpkgs#statix --command statix check .
+    nix shell nixpkgs#stylua --command stylua --check files/sketchybar
+    nix shell nixpkgs#prettier --command prettier --check "files/**/*.ts"
 
 gc *args:
     scripts/gc.sh {{args}}

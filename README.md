@@ -56,7 +56,7 @@ cd ~/dotfiles
 
 ## 4) Pick a target
 
-Targets are defined in `flake.nix` under `homeConfigurations`:
+Targets are defined in `lib/hosts.nix` (the `hosts` table) and exposed by `flake.nix` under `homeConfigurations`:
 
 - `mbp` (also aliased as `mbp-home`)
 - `linux`
@@ -71,7 +71,7 @@ Targets are defined in `flake.nix` under `homeConfigurations`:
 There is also one NixOS host, `utm-vm` (`nixosConfigurations.utm-vm`, an
 aarch64-linux UTM virtual machine), switched with `just switch-utm-vm`.
 
-Each target always includes the base profile. The Linux or macOS profile is selected from the target system in `flake.nix`, and the `ai` / `private` suffixes add those extra profile layers.
+Each target always includes the base profile. The Linux or macOS profile is selected from the target system in `lib/hosts.nix`, and the `ai` / `private` suffixes add those extra profile layers.
 
 If you're not sure, start with:
 
@@ -101,8 +101,7 @@ darwin-rebuild switch --flake .#mbp
 Homebrew and Mac App Store apps are declared in `modules/darwin/homebrew.nix`. Current activation behavior is intentionally declarative:
 
 - declared brews, casks, and MAS apps are installed if missing
-- Homebrew metadata is updated during activation
-- installed Homebrew formulae and casks are upgraded during activation
+- Homebrew metadata is **not** auto-updated and formulae/casks are **not** upgraded during activation (`autoUpdate = false`, `upgrade = false`); run `just update-brew` (or `brew update && brew upgrade`) explicitly instead
 - undeclared Homebrew and MAS apps can be removed, including related support files where Homebrew supports zapping, because `cleanup = "zap"` is enabled
 
 Mac App Store apps require the Mac to be signed into an Apple ID that owns those apps. Keep `homebrew.masApps` complete when cleanup is enabled.
@@ -166,6 +165,10 @@ Some application config is managed by Home Manager from files in this repo:
 - pi: `files/pi/agent/...` → `~/.pi/agent/...` via `modules/home/pi.nix`
 
 AeroSpace is managed directly by nix-darwin through `services.aerospace`.
+
+### Theming (Catppuccin Mocha)
+
+`lib/catppuccin.nix` is the single source of truth for the Catppuccin Mocha palette. The themed configs that used to duplicate it are now generated from it: `files/starship.toml` (palette table) and the kitty theme via `modules/home/xdg-files.nix`, the fish colors via `modules/home/fish.nix`, the pi theme JSON via `modules/home/pi.nix`, and `colors.lua` (injected at build time) via `modules/home/sketchybar.nix`. tmux and Ghostty use the upstream Catppuccin plugin / built-in theme and are intentionally not wired in. Change a color once in `lib/catppuccin.nix` to update every consumer.
 
 ### pi workflow
 
@@ -293,9 +296,11 @@ just update
 
 `just switch-home` requires a target argument, e.g. `just switch-home mbp-home` or `just switch-home linux`. `just update` updates all flake inputs, Homebrew packages, and Mac App Store apps. Use `just update-nix` to update only flake inputs, `just update-unstable` to update only `nixpkgs-unstable`, and `just update-brew` to update only Homebrew and Mac App Store apps.
 
+`flake.lock` updates are intentionally manual (there is no automated dependency-update CI): run `just update-nix` (or `just update-unstable` for the unstable input) and review the diff before switching.
+
 The underlying scripts can be run from anywhere, but expect to live inside this repo (`flake.nix` next to `scripts/`):
 
-- `scripts/bootstrap_and_switch.sh`: standalone Home Manager bootstrap; update local identity in `flake.nix`, enable flakes if needed, and run `home-manager switch`
+- `scripts/bootstrap_and_switch.sh`: standalone Home Manager bootstrap; write the local identity to a git-ignored `identity.nix` (read by `flake.nix`'s `defaultUser`) and mark it with `git add -N -f` so the flake can see it, enable flakes if needed, and run `home-manager switch`
   - This is not the primary macOS nix-darwin path. Use `darwin-rebuild switch --flake .#mbp` for nix-darwin.
   - On an interactive terminal, it asks whether to pass Home Manager's backup option for conflicting files.
   - Use `--backup` for a timestamped backup extension, `--backup backup` for `.backup`, or `--no-backup` to skip the prompt.
@@ -349,6 +354,8 @@ The flake exposes a formatter for supported systems:
 ```bash
 nix fmt
 ```
+
+`nix fmt -- --check` exits non-zero if any file is unformatted. The formatter, deadnix, statix, shellcheck, StyLua and Prettier are all run by `just check` (and CI).
 
 It also exposes Home Manager activation-package checks, grouped by system:
 

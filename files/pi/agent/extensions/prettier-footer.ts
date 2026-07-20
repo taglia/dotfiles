@@ -5,7 +5,10 @@ import { isAbsolute, relative, resolve, sep } from "node:path";
 import { execFile } from "node:child_process";
 
 function sanitizeStatusText(text: string): string {
-  return text.replace(/[\r\n\t]/g, " ").replace(/ +/g, " ").trim();
+  return text
+    .replace(/[\r\n\t]/g, " ")
+    .replace(/ +/g, " ")
+    .trim();
 }
 
 function formatTokens(count: number): string {
@@ -59,7 +62,9 @@ function formatCwdForFooter(cwd: string, home: string | undefined): string {
   const relativeToHome = relative(resolvedHome, resolvedCwd);
   const isInsideHome =
     relativeToHome === "" ||
-    (relativeToHome !== ".." && !relativeToHome.startsWith(`..${sep}`) && !isAbsolute(relativeToHome));
+    (relativeToHome !== ".." &&
+      !relativeToHome.startsWith(`..${sep}`) &&
+      !isAbsolute(relativeToHome));
 
   if (!isInsideHome) return cwd;
   return relativeToHome === "" ? "~" : `~${sep}${relativeToHome}`;
@@ -117,7 +122,9 @@ export default function (pi: ExtensionAPI) {
               const latestPromptTokens =
                 message.usage.input + message.usage.cacheRead + message.usage.cacheWrite;
               latestCacheHitRate =
-                latestPromptTokens > 0 ? (message.usage.cacheRead / latestPromptTokens) * 100 : undefined;
+                latestPromptTokens > 0
+                  ? (message.usage.cacheRead / latestPromptTokens) * 100
+                  : undefined;
             }
           }
 
@@ -126,7 +133,8 @@ export default function (pi: ExtensionAPI) {
           const contextPercentValue = contextUsage?.percent ?? 0;
           // != null (loose) so both null and an absent contextUsage fall
           // back to "?" instead of a misleading 0.0%.
-          const contextPercent = contextUsage?.percent != null ? contextPercentValue.toFixed(1) : "?";
+          const contextPercent =
+            contextUsage?.percent != null ? contextPercentValue.toFixed(1) : "?";
 
           const cwd = formatCwdForFooter(
             ctx.sessionManager.getCwd(),
@@ -137,9 +145,16 @@ export default function (pi: ExtensionAPI) {
           const sessionName = ctx.sessionManager.getSessionName();
 
           const line1Segments = [label("dir") + value(cwd)];
-          if (branch) line1Segments.push(label("git") + theme.fg("accent", branch) + (dirty ? theme.fg("warning", " *") : ""));
+          if (branch)
+            line1Segments.push(
+              label("git") + theme.fg("accent", branch) + (dirty ? theme.fg("warning", " *") : ""),
+            );
           if (sessionName) line1Segments.push(label("session") + value(sessionName));
-          const line1 = truncateToWidth(line1Segments.join(separator()), width, theme.fg("dim", "..."));
+          const line1 = truncateToWidth(
+            line1Segments.join(separator()),
+            width,
+            theme.fg("dim", "..."),
+          );
 
           const modelText =
             footerData.getAvailableProviderCount() > 1 && ctx.model
@@ -169,7 +184,8 @@ export default function (pi: ExtensionAPI) {
             label("model") + theme.fg("accent", modelText),
             label("thinking") + theme.fg(thinkingColor(activeThinkingLevel), activeThinkingLevel),
             label("ctx") + coloredContextValue,
-            label("tok") + value(`in ${formatTokens(totalInput)}  out ${formatTokens(totalOutput)}`),
+            label("tok") +
+              value(`in ${formatTokens(totalInput)}  out ${formatTokens(totalOutput)}`),
             label("cache") + value(cacheValue),
             label("cost") +
               theme.fg(
@@ -178,12 +194,22 @@ export default function (pi: ExtensionAPI) {
               ),
           ];
 
-          const line2 = truncateToWidth(line2Segments.join(separator()), width, theme.fg("dim", "..."));
+          const line2 = truncateToWidth(
+            line2Segments.join(separator()),
+            width,
+            theme.fg("dim", "..."),
+          );
 
-          const statusTexts = Array.from(footerData.getExtensionStatuses().values()).map(sanitizeStatusText);
+          const statusTexts = Array.from(footerData.getExtensionStatuses().values()).map(
+            sanitizeStatusText,
+          );
           if (statusTexts.length === 0) return [line1, line2];
 
-          const line3 = truncateToWidth(statusTexts.join(theme.fg("dim", "  •  ")), width, theme.fg("dim", "..."));
+          const line3 = truncateToWidth(
+            statusTexts.join(theme.fg("dim", "  •  ")),
+            width,
+            theme.fg("dim", "..."),
+          );
           return [line1, line2, line3];
         },
       };
