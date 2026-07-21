@@ -38,9 +38,9 @@ workspace pill.
   sketchybar via `app.<bundle-id>` (the name is resolved to a bundle id first,
   to avoid sketchybar's ambiguous running-apps name match); hover swaps it for
   a red `✕` pill signaling that click quits the app. VPN indicator
-  (`items/vpn.lua`), volume
-  (`items/volume.lua`), battery (`items/battery.lua`), and calendar
-  (`items/calendar.lua`) — local time + date; click for a world-clock popup
+  (`items/vpn.lua`), battery (`items/battery.lua`), volume
+  (`items/volume.lua`), and calendar (`items/calendar.lua`) — local time +
+  date; click for a world-clock popup
   (Paris, London, UTC, New York, San Francisco, Sydney, Singapore, Tokyo)
   ordered chronologically with AM/PM and day offsets.
 
@@ -95,7 +95,7 @@ bright yellow focused workspace.
 ```
 sketchybarrc        entry point (executable, #!/usr/bin/env lua)
 init.lua            requires globals + items (left: spaces, resources;
-                    right, left→right: front_app, VPN, volume, battery,
+                    right, left→right: front_app, VPN, battery, volume,
                     calendar)
 globals.lua         SBAR / COLORS / DEFAULT_ITEM globals
 default.lua         default item styling + bar

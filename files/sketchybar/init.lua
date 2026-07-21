@@ -12,8 +12,8 @@ require("items.resources")
 
 -- Right Side (Order: Right -> Left)
 require("items.calendar")
-require("items.battery")
 require("items.volume")
+require("items.battery")
 require("items.vpn")
 require("items.front_app")
 -- Backup indicators (Time Machine, CCC) are required LAST on the right so

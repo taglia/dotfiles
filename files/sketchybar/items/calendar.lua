@@ -14,7 +14,7 @@ local ZONES = {
   { name = "Tokyo", tz = "Asia/Tokyo" },
 }
 
-local right_padding = 28 -- keep clear of macOS/SoundSource activity dot
+local right_padding = 28 -- keep clear of macOS menu-bar items / activity dot
 
 -- 1. THE TIME (Top Line)
 local cal_time = SBAR.add("item", "cal.time", {

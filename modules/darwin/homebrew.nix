@@ -104,7 +104,6 @@
       "screenflow"
       "sf-symbols"
       "signal"
-      "soundsource"
       "spamsieve"
       "tailscale-app"
       "threema@beta"
