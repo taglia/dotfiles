@@ -13,6 +13,7 @@ require("items.resources")
 -- Right Side (Order: Right -> Left)
 require("items.calendar")
 require("items.battery")
+require("items.timemachine")
 require("items.volume")
 require("items.vpn")
 -- Frontmost-app icon is required LAST on the right so it is the leftmost
