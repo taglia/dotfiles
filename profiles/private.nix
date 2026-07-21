@@ -15,7 +15,6 @@ let
   # Wire only secrets whose .age payload is present, so hosts (or forks)
   # without the payloads keep evaluating.
   active = lib.filterAttrs (path: _: builtins.pathExists (../. + "/${path}")) rules;
-  withEnvVarFile = lib.filterAttrs (_: rule: rule ? envVarFile) active;
 
   # Machines whose private identity file exists on this host: the eval-time
   # approximation of "keys this machine can decrypt with" (agenix makes the
@@ -25,15 +24,21 @@ let
     builtins.filter (m: builtins.pathExists m.identity) (builtins.attrValues machines)
   );
 
-  # Secrets this machine can actually decrypt, limited to those exporting an
-  # env var. A duplicated envVarFile here would silently pick a winner in
-  # home.sessionVariables, so it must fail the build instead (see the
-  # assertion below).
-  decryptableWithEnvVar = builtins.filter (
-    rule: builtins.any (k: builtins.elem k localPubKeys) rule.publicKeys
-  ) (builtins.attrValues withEnvVarFile);
+  # Wire only secrets this machine can actually decrypt. The agenix
+  # activation script runs with `errexit` and decrypts every wired secret, so
+  # wiring a non-recipient secret aborts activation midway (before the
+  # agenix -> agenix.d/N symlink is created) on machines holding a different
+  # key set. Filtering here keeps the recipient lists in secrets.nix as the
+  # single authorization point.
+  decryptable = lib.filterAttrs (
+    _: rule: builtins.any (k: builtins.elem k localPubKeys) rule.publicKeys
+  ) active;
+  withEnvVarFile = lib.filterAttrs (_: rule: rule ? envVarFile) decryptable;
 
-  envVarNames = map (rule: rule.envVarFile) decryptableWithEnvVar;
+  # A duplicated envVarFile among decryptable secrets would silently pick a
+  # winner in home.sessionVariables, so it must fail the build instead (see
+  # the assertion below).
+  envVarNames = map (rule: rule.envVarFile) (builtins.attrValues withEnvVarFile);
   duplicatedNames = lib.subtractLists (lib.unique envVarNames) envVarNames;
 
   # Every declared machine identity; activation silently skips paths not
@@ -61,7 +66,7 @@ in
 
   age.secrets = lib.mapAttrs' (
     path: _: lib.nameValuePair (toName path) { file = ../. + "/${path}"; }
-  ) active;
+  ) decryptable;
 
   # Export only the decrypted file *path* (never the secret value), keeping
   # secrets out of the Nix store. home.sessionVariables is shell-agnostic:
