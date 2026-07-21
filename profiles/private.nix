@@ -1,7 +1,17 @@
 # Generic agenix wiring: everything is derived from ../secrets.nix, the single
 # source of truth for secrets (see the comment there). To add a secret, edit
 # only ../secrets.nix; this file should not need per-secret changes.
-{ config, lib, ... }:
+# secretsMachine (passed via extraSpecialArgs from lib/hosts.nix) names the
+# entry in ../secrets-machines.nix this host decrypts secrets as. It is
+# declared statically per host because flakes' pure evaluation makes
+# builtins.pathExists return false for absolute paths outside the store, so
+# probing identity files at eval time silently matches nothing.
+{
+  config,
+  lib,
+  secretsMachine ? null,
+  ...
+}:
 
 let
   rules = import ../secrets.nix;
@@ -16,13 +26,9 @@ let
   # without the payloads keep evaluating.
   active = lib.filterAttrs (path: _: builtins.pathExists (../. + "/${path}")) rules;
 
-  # Machines whose private identity file exists on this host: the eval-time
-  # approximation of "keys this machine can decrypt with" (agenix makes the
-  # same determination at activation via `test -r`). Correct because switches
-  # run on the target machine itself.
-  localPubKeys = map (m: m.publicKey) (
-    builtins.filter (m: builtins.pathExists m.identity) (builtins.attrValues machines)
-  );
+  # The machine key this host decrypts secrets as, by name (see the header
+  # comment). Null = no secrets wired (hosts without a secretsMachine).
+  localPubKeys = lib.optional (secretsMachine != null) machines.${secretsMachine}.publicKey;
 
   # Wire only secrets this machine can actually decrypt. The agenix
   # activation script runs with `errexit` and decrypts every wired secret, so

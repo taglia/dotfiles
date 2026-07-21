@@ -54,6 +54,7 @@ let
       system,
       modules ? [ ],
       user ? defaultUser,
+      secretsMachine ? null,
     }:
     let
       pkgs = import nixpkgs { inherit system; };
@@ -62,7 +63,7 @@ let
       inherit pkgs;
 
       extraSpecialArgs = homeSpecialArgs // {
-        inherit user;
+        inherit user secretsMachine;
       };
 
       modules = mkHomeModules { inherit system modules user; };
@@ -73,6 +74,7 @@ let
       system,
       modules ? [ ],
       user ? defaultUser,
+      secretsMachine ? null,
     }:
     nix-darwin.lib.darwinSystem {
       inherit system;
@@ -96,7 +98,7 @@ let
             useGlobalPkgs = true;
             useUserPackages = true;
             extraSpecialArgs = homeSpecialArgs // {
-              inherit user;
+              inherit user secretsMachine;
             };
             users.${user.username}.imports = mkHomeModules { inherit system modules user; };
           };
@@ -110,6 +112,7 @@ let
       hostModule,
       homeModules ? fullModules,
       user ? defaultUser,
+      secretsMachine ? null,
     }:
     nixpkgs.lib.nixosSystem {
       inherit system;
@@ -129,7 +132,7 @@ let
             useGlobalPkgs = true;
             useUserPackages = true;
             extraSpecialArgs = homeSpecialArgs // {
-              inherit user;
+              inherit user secretsMachine;
             };
             users.${user.username}.imports = mkHomeModules {
               inherit system user;
@@ -171,6 +174,7 @@ let
     linux-private = {
       system = "x86_64-linux";
       modules = privateModules;
+      secretsMachine = "dev-vm";
     };
 
     # Minimal profiles: base profile only (no modules). Spelled out as
@@ -191,6 +195,7 @@ let
 
     linux-openclaw = {
       system = "x86_64-linux";
+      secretsMachine = "openclaw-hetzner";
       user = defaultUser // {
         username = "openclaw";
       };
@@ -212,6 +217,7 @@ let
 
     mbp = {
       system = "aarch64-darwin";
+      secretsMachine = "mbp";
       modules = fullModules ++ [
         ../profiles/ai.nix
         ../profiles/private.nix
@@ -235,6 +241,7 @@ let
   nixosHosts = {
     utm-vm = {
       system = "aarch64-linux";
+      secretsMachine = "utm-vm";
       hostModule = ../hosts/utm-vm;
       # Match the `linux-private` standalone profile (AI tools + private
       # secrets) so the VM is a full private workstation on ARM.
@@ -251,9 +258,12 @@ in
       inherit (host) system;
       user = host.user or defaultUser;
       modules = host.modules or [ ];
+      secretsMachine = host.secretsMachine or null;
     }
   ) hosts;
 
+  # mkDarwin's parameters mirror the host attrset keys (system, modules,
+  # user, secretsMachine), so the attrset can be applied directly.
   darwinConfigurations = lib.mapAttrs (_: mkDarwin) darwinHosts;
 
   nixosConfigurations = lib.mapAttrs (
@@ -262,6 +272,7 @@ in
       inherit (host) system hostModule;
       homeModules = host.homeModules or fullModules;
       user = host.user or defaultUser;
+      secretsMachine = host.secretsMachine or null;
     }
   ) nixosHosts;
 }
