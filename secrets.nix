@@ -25,6 +25,7 @@ let
   mbp = machines.mbp.publicKey;
   dev-vm = machines.dev-vm.publicKey;
   utm-vm = machines.utm-vm.publicKey;
+  openclaw-hetzner = machines.openclaw-hetzner.publicKey;
 in
 {
   "secrets/pi-kagi-api-key.age" = {
@@ -50,5 +51,23 @@ in
       utm-vm
     ];
     envVarFile = "MOONSHOT_API_KEY_FILE";
+  };
+  "secrets/openclaw-moonshot-api-key.age" = {
+    publicKeys = [
+      openclaw-hetzner
+    ];
+    envVarFile = "MOONSHOT_API_KEY_FILE";
+  };
+  "secrets/openclaw-kagi-api-key.age" = {
+    publicKeys = [
+      openclaw-hetzner
+    ];
+    envVarFile = "KAGI_API_KEY_FILE";
+  };
+  "secrets/openclaw-ollama-api-key.age" = {
+    publicKeys = [
+      openclaw-hetzner
+    ];
+    envVarFile = "OLLAMA_API_KEY_FILE";
   };
 }

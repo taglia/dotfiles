@@ -26,4 +26,8 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3MgIxGv6Acv9iPDPPjuBgnwD9Laj0uUxBl1dNHyPlI taglia@utm-vm";
     identity = "/home/taglia/.ssh/id_ed25519";
   };
+  openclaw-hetzner = {
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIqzshme24iNdkO8oN+i1/SnVcsae9wI4LD1CTmhS05B openclaw@openclaw";
+    identity = "/home/openclaw/.ssh/id_ed25519";
+  };
 }
