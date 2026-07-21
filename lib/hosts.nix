@@ -194,7 +194,7 @@ let
       user = defaultUser // {
         username = "openclaw";
       };
-      modules = fullModules ++ [ ../profiles/ai.nix ];
+      modules = fullModules ++ [ ../profiles/private.nix ];
     };
 
     linux-arm = {
