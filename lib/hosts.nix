@@ -196,7 +196,7 @@ let
       };
       modules = fullModules ++ [
         ../profiles/private.nix
-        ./profiles/ai.nix
+        ../profiles/ai.nix
       ];
     };
 
