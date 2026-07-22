@@ -121,9 +121,7 @@ volume_icon:subscribe("mouse.clicked", function()
         -- which would restore silence.
         local restore = volume > 0 and volume or DEFAULT_VOLUME
         write_state(restore, false)
-        SBAR.exec(
-          string.format("m1ddc display 1 set mute off && m1ddc display 1 set volume %d", restore)
-        )
+        SBAR.exec(string.format("m1ddc display 1 set mute off && m1ddc display 1 set volume %d", restore))
         set_icon(restore, false)
       else
         -- Mute: keep the tracked volume for restore, set the monitor to 0.

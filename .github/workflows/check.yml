@@ -9,6 +9,13 @@ on:
 jobs:
   flake:
     runs-on: ubuntu-latest
+    # GitHub-only: this same workflow file is mirrored to a Gitea remote
+    # whose host has no runner and no Nix tooling. Gitea Actions picks up
+    # `.github/workflows/*.yml` automatically; gating on `github.server_url`
+    # ("https://github.com" here, the Gitea URL on that remote) makes the job
+    # skip on Gitea, so it never queues for a runner there. To also stop Gitea
+    # from even evaluating workflows, disable Actions in the repo settings.
+    if: github.server_url == 'https://github.com'
     steps:
       - uses: actions/checkout@v4
 
