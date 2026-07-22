@@ -62,6 +62,11 @@ bright yellow focused workspace.
   every workspace change (so the highlight reflects reality on multi-monitor
   setups).
 - Replaced the calendar's "open Calendar.app" click with a world-clock popup.
+- Reworked `items/volume.lua` into a dual-backend item: CoreAudio/AppleScript
+  for normal outputs, DDC/CI via `m1ddc` (with a state file, since the
+  monitor can't be read back) when the default output is an HDMI/DisplayPort
+  monitor. Also polls every 5s (`update_freq`) to follow default-output
+  switches, which don't reliably fire `volume_change`.
 - Added a frontmost-app icon (`items/front_app.lua`), leftmost on the right
   side: native `app.<bundle-id>` icon rendering (name → bundle id via
   `id of app`, to dodge sketchybar's ambiguous name loop), hover shows a red
@@ -89,6 +94,20 @@ bright yellow focused workspace.
 - **`aerospace`** — on the wrapper's `PATH` via `programs.sketchybar.extraPackages`
   (in `modules/home/sketchybar.nix`), used by `items/spaces.lua` for the
   `aerospace workspace N` click action and `aerospace list-workspaces --focused`.
+- **`m1ddc`** — also on the wrapper's `PATH` via `extraPackages`, used by
+  `items/volume.lua` when the default audio output is an HDMI/DisplayPort
+  monitor (macOS exposes no software volume for those; AppleScript returns
+  "missing value", which is the detection signal). Click toggles mute over
+  DDC/CI. Since the Samsung C34J79x returns garbage on DDC reads, the item
+  tracks last-known volume/mute in `/tmp/sketchybar-ddc-volume-$USER`.
+  "Mute" is volume 0 (restore on unmute), NOT the hardware-mute VCP command:
+  the C34J79x stays hardware-muted until an explicit mute-off arrives, which
+  a keyboard/MonitorControl volume change never sends — so hardware mute set
+  from the bar could only be cleared from the bar. With volume-0 semantics
+  any volume change from any source restores sound; unmute also sends
+  `mute off` first in case the hardware mute was set elsewhere. Volume
+  changes made by MonitorControl via the keyboard bypass CoreAudio and
+  cannot be observed by the bar (icon may briefly show a stale state).
 
 ## Layout
 

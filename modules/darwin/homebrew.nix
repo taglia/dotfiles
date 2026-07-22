@@ -82,6 +82,7 @@
       "lingon-x"
       "little-snitch"
       "loopback"
+      "monitorcontrol"
       "moonlight"
       "mountain-duck"
       "mouseless@preview"

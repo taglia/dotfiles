@@ -66,6 +66,17 @@
     # See https://github.com/FelixKratz/JankyBorders.
     jankyborders
 
+    # CLI to control external displays (brightness, contrast, volume, mute,
+    # input source) over DDC/CI via the display cable. Needed because macOS
+    # refuses to expose volume/mute controls for HDMI/DisplayPort audio
+    # outputs (e.g. the Samsung C34J79x). Example:
+    #   m1ddc display 1 set volume 50
+    #   m1ddc display 1 set mute on|off
+    # Note: the C34J79x accepts writes but returns garbage on `get` reads, so
+    # relative `chg` commands don't work reliably; use absolute values.
+    # See https://github.com/waydabber/m1ddc.
+    m1ddc
+
     # `enableAllTerminfo` currently pulls in removed packages such as `termite`
     # from nixpkgs 26.05, which prevents the Darwin system from evaluating.
     # Keep the terminal entries we actually use here instead.
