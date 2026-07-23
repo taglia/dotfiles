@@ -18,6 +18,7 @@
 
       curl
       wget
+      lftp
       unzip
       zip
       openssl_3
