@@ -32,7 +32,16 @@ in
   };
 
   home.packages = [
-    pkgs-unstable.rtk
+    # Pinned to the stable channel, not unstable: rtk 0.43.0 (in nixos-unstable
+    # at the time of writing) fails its check build because its own
+    # `[lints.rust] warnings = "deny"` turns two dead-code items (exposed only in
+    # the test build by Rust's new dead_code_pub_in_binary analysis) into hard
+    # errors. The upstream fix (`env.RUSTFLAGS = "--cap-lints warn"`) is in
+    # nixpkgs master but had not reached `nixos-unstable` yet. Stable ships
+    # rtk 0.41.0, whose older Rust toolchain predates that analysis, so it
+    # builds cleanly. Move back to unstable once nixos-unstable carries the
+    # fix and you want the newer release.
+    pkgs.rtk
     pkgs-unstable.claude-code
     pkgs-unstable.codex
     pkgs-unstable.opencode
