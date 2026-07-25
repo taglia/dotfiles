@@ -1,0 +1,9 @@
+{
+  "name": "pi-async-bash",
+  "version": "0.1.0",
+  "description": "pi extension: run long-running shell commands in background subprocesses with LLM-driven health monitoring",
+  "type": "module",
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}
