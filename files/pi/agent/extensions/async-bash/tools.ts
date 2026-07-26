@@ -59,13 +59,13 @@ export function registerTools(pi: ExtensionAPI, getRegistry: () => Registry | nu
       if (settled.exited) {
         const output = registry.readLog(task.id, { tail: 200 });
         const trimmed = output.trim();
-        const body = trimmed
-          ? `\n\nOutput:\n${trimmed}`
-          : "\n\n(no output)";
-        return textResult(
-          `Command finished (exit ${task.exitCode}) in ${elapsed(task)}s.${body}`,
-          { task_id: task.id, status: task.status, exit_code: task.exitCode, log_path: task.logPath },
-        );
+        const body = trimmed ? `\n\nOutput:\n${trimmed}` : "\n\n(no output)";
+        return textResult(`Command finished (exit ${task.exitCode}) in ${elapsed(task)}s.${body}`, {
+          task_id: task.id,
+          status: task.status,
+          exit_code: task.exitCode,
+          log_path: task.logPath,
+        });
       }
 
       return textResult(
@@ -80,7 +80,13 @@ export function registerTools(pi: ExtensionAPI, getRegistry: () => Registry | nu
         ]
           .filter(Boolean)
           .join("\n"),
-        { task_id: task.id, status: "running", pid: task.pid, log_path: task.logPath, soft_deadline_ms: softDeadlineMs },
+        {
+          task_id: task.id,
+          status: "running",
+          pid: task.pid,
+          log_path: task.logPath,
+          soft_deadline_ms: softDeadlineMs,
+        },
       );
     },
   });
@@ -102,7 +108,7 @@ export function registerTools(pi: ExtensionAPI, getRegistry: () => Registry | nu
       const registry = getRegistry();
       if (!registry) return textResult("No active session registry.");
       const { task_id } = params as { task_id?: string };
-      const tasks = task_id ? [registry.get(task_id)].filter(Boolean) as Task[] : registry.list();
+      const tasks = task_id ? ([registry.get(task_id)].filter(Boolean) as Task[]) : registry.list();
       if (tasks.length === 0) return textResult("No matching background tasks.");
       for (const t of tasks) registry.refresh(t);
       const lines = tasks.map(formatStatusLine);
@@ -122,7 +128,9 @@ export function registerTools(pi: ExtensionAPI, getRegistry: () => Registry | nu
     ],
     parameters: Type.Object({
       task_id: Type.String({ description: "The task id to read" }),
-      tail: Type.Optional(Type.Number({ description: "Number of trailing lines to return (default 50)" })),
+      tail: Type.Optional(
+        Type.Number({ description: "Number of trailing lines to return (default 50)" }),
+      ),
       full: Type.Optional(Type.Boolean({ description: "Return the full log (truncated to 50KB)" })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
@@ -150,7 +158,9 @@ export function registerTools(pi: ExtensionAPI, getRegistry: () => Registry | nu
     ],
     parameters: Type.Object({
       task_id: Type.String({ description: "The task id to kill" }),
-      reason: Type.Optional(Type.String({ description: "Why the task is being killed (for the log)" })),
+      reason: Type.Optional(
+        Type.String({ description: "Why the task is being killed (for the log)" }),
+      ),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       const registry = getRegistry();
@@ -180,11 +190,7 @@ function formatStatusLine(t: Task): string {
   const runtime = elapsed(t);
   const sinceOutput = Math.max(0, Math.round((Date.now() - t.lastOutputAt) / 1000));
   const state =
-    t.status === "running"
-      ? "running"
-      : t.exitCode === null
-        ? "done(?)"
-        : `exit ${t.exitCode}`;
+    t.status === "running" ? "running" : t.exitCode === null ? "done(?)" : `exit ${t.exitCode}`;
   const cmd = t.command.replace(/\s+/g, " ").trim().slice(0, 60);
   return [
     `• ${t.id} [${state}] ${runtime}s`,

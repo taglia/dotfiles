@@ -297,8 +297,7 @@ export class Registry {
       const bytes = Buffer.byteLength(content, "utf-8");
       if (bytes > MAX_LOG_BYTES) {
         content =
-          content.slice(0, MAX_LOG_BYTES) +
-          `\n\n[Output truncated at ${MAX_LOG_BYTES} bytes]`;
+          content.slice(0, MAX_LOG_BYTES) + `\n\n[Output truncated at ${MAX_LOG_BYTES} bytes]`;
       }
       return content;
     }

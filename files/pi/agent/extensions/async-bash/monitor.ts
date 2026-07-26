@@ -86,13 +86,16 @@ export function startMonitor(
     }
   };
 
-  function wake(task: Task, event: "completion" | "stall" | "deadline", deliverAs: "followUp" | "steer") {
+  function wake(
+    task: Task,
+    event: "completion" | "stall" | "deadline",
+    deliverAs: "followUp" | "steer",
+  ) {
     const tail = safeTail(task);
     const runtime = Math.round(((task.endedAt ?? Date.now()) - task.startedAt) / 1000);
     let headline: string;
     if (event === "completion") {
-      const code =
-        task.exitCode === null ? "unknown" : task.exitCode;
+      const code = task.exitCode === null ? "unknown" : task.exitCode;
       headline = `async-bash task ${task.id} finished (exit ${code}) after ${runtime}s.`;
     } else if (event === "stall") {
       const since = Math.round((Date.now() - task.lastOutputAt) / 1000);
