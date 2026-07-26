@@ -1,5 +1,8 @@
-{ ... }:
+{ lib, config, ... }:
 
+let
+  manageMasApps = false;
+in
 {
   # nix-darwin generates a Brewfile from this module and runs `brew bundle`
   # during `darwin-rebuild switch`.
@@ -17,6 +20,13 @@
       # Homebrew Bundle 4.7 requires an explicit noninteractive confirmation
       # when `--cleanup` is used during activation.
       extraFlags = [ "--force-cleanup" ];
+      extraEnv = lib.optionalAttrs (!manageMasApps) {
+        HOMEBREW_BUNDLE_MAS_SKIP = lib.concatStringsSep " " (
+          map toString (builtins.attrValues config.homebrew.masApps)
+        );
+
+        HOMEBREW_BUNDLE_CLEANUP_NO_MAS = "1";
+      };
     };
 
     taps = [
