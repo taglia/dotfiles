@@ -26,6 +26,7 @@ export function registerTools(pi: ExtensionAPI, getRegistry: () => Registry | nu
     promptGuidelines: [
       "Use bash_async for commands that may run longer than ~30s (builds, test suites, package installs, dev servers, long scripts). Use bash for quick commands so you don't add round-trips.",
       "After calling bash_async you get a task_id; use bash_status and bash_output to inspect progress, and bash_kill to stop it. You will also be notified automatically on completion, stall, or soft-deadline.",
+      "Do not poll a running task more often than every 30s; for long-running tasks, wait progressively longer between checks, up to 10 minutes for very long builds.",
     ],
     parameters: Type.Object({
       command: Type.String({ description: "The shell command to run" }),

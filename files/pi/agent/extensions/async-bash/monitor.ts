@@ -11,9 +11,26 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Registry, type Task } from "./registry";
 
-export const MONITOR_INTERVAL_MS = 15_000;
+/** Minimum time between output checks for any task. */
+export const MONITOR_INITIAL_INTERVAL_MS = 30_000;
+/** Long-running tasks are never checked less often than this. */
+export const MONITOR_MAX_INTERVAL_MS = 10 * 60_000;
+/** Double the task-specific interval every two minutes of runtime. */
+const MONITOR_BACKOFF_WINDOW_MS = 2 * 60_000;
 export const STALL_THRESHOLD_MS = 60_000;
 const TAIL_LINES = 30;
+
+/**
+ * Return the minimum interval between checks for a task at a given time.
+ *
+ * The scheduler itself may wake more often to notice newly started tasks, but
+ * callers must not refresh a task's log more often than this interval.
+ */
+export function monitorIntervalMs(task: Pick<Task, "startedAt">, now = Date.now()): number {
+  const age = Math.max(0, now - task.startedAt);
+  const doublings = Math.floor(age / MONITOR_BACKOFF_WINDOW_MS);
+  return Math.min(MONITOR_MAX_INTERVAL_MS, MONITOR_INITIAL_INTERVAL_MS * 2 ** doublings);
+}
 
 interface Flags {
   completionFired: boolean;
@@ -27,6 +44,7 @@ export function startMonitor(
   getRegistry: () => Registry | null,
 ): () => void {
   const flags = new Map<string, Flags>();
+  const lastCheckedAt = new Map<string, number>();
   let stopped = false;
 
   const tick = () => {
@@ -34,16 +52,35 @@ export function startMonitor(
     const registry = getRegistry();
     if (!registry) return;
 
-    for (const task of registry.list()) {
-      registry.refresh(task);
+    const now = Date.now();
+    const tasks = registry.list();
+    const activeIds = new Set(tasks.map((task) => task.id));
+    for (const id of lastCheckedAt.keys()) {
+      if (!activeIds.has(id)) lastCheckedAt.delete(id);
+    }
+
+    for (const task of tasks) {
       const f = flags.get(task.id) ?? {
         completionFired: false,
         stalled: false,
         deadlineFired: false,
       };
+      // Completion is checked on every scheduler tick, but running-task log
+      // refreshes are throttled using the adaptive interval below.
+      if (task.status !== "running" && f.completionFired) continue;
+      const lastChecked = lastCheckedAt.get(task.id);
+      if (
+        task.status === "running" &&
+        lastChecked !== undefined &&
+        now - lastChecked < monitorIntervalMs(task, now)
+      ) {
+        continue;
+      }
+      lastCheckedAt.set(task.id, now);
+      registry.refresh(task);
 
       // Reset stall flag when output resumes.
-      if (f.stalled && Date.now() - task.lastOutputAt < STALL_THRESHOLD_MS) {
+      if (f.stalled && now - task.lastOutputAt < STALL_THRESHOLD_MS) {
         f.stalled = false;
       }
 
@@ -53,8 +90,8 @@ export function startMonitor(
       } else if (
         task.status === "running" &&
         !f.stalled &&
-        Date.now() - task.lastOutputAt > STALL_THRESHOLD_MS &&
-        Date.now() - task.startedAt > STALL_THRESHOLD_MS
+        now - task.lastOutputAt > STALL_THRESHOLD_MS &&
+        now - task.startedAt > STALL_THRESHOLD_MS
       ) {
         f.stalled = true;
         wake(task, "stall", "steer");
@@ -130,11 +167,11 @@ export function startMonitor(
     }
   }
 
-  const handle = setInterval(tick, MONITOR_INTERVAL_MS);
+  // Wake periodically to notice newly launched tasks, but each task's output
+  // is refreshed only when its own adaptive interval has elapsed.
+  const handle = setInterval(tick, MONITOR_INITIAL_INTERVAL_MS);
   // Don't keep pi alive for the monitor alone.
   if (typeof (handle as any).unref === "function") (handle as any).unref();
-  // Fire once shortly after start so the footer is accurate immediately.
-  setTimeout(tick, 1000);
 
   return () => {
     stopped = true;
