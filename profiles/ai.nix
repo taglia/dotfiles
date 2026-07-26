@@ -15,6 +15,13 @@ let
 
     config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "claude-code" ];
   };
+
+  # Keep Pi's package-manager Node runtime aligned with the Node runtime used
+  # by the unstable Pi package. This avoids PATH-dependent npm resolution and
+  # native-module/SQLite ABI mismatches when Pi installs extensions.
+  pi-npm = pkgs-unstable.writeShellScriptBin "pi-npm" ''
+    exec ${pkgs-unstable.nodejs}/bin/npm "$@"
+  '';
 in
 
 {
@@ -46,5 +53,6 @@ in
     pkgs-unstable.codex
     pkgs-unstable.opencode
     pkgs-unstable.pi-coding-agent
+    pi-npm
   ];
 }
