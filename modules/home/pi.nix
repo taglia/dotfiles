@@ -116,18 +116,15 @@ let
     # with LLM-driven health monitoring. No npm deps (Node built-ins +
     # pi-provided packages only), so plain symlinks suffice — no
     # minimal-web-style activation script needed.
-    ".pi/agent/extensions/async-bash/index.ts" =
-      ../../files/pi/agent/extensions/async-bash/index.ts;
+    ".pi/agent/extensions/async-bash/index.ts" = ../../files/pi/agent/extensions/async-bash/index.ts;
     ".pi/agent/extensions/async-bash/registry.ts" =
       ../../files/pi/agent/extensions/async-bash/registry.ts;
     ".pi/agent/extensions/async-bash/monitor.ts" =
       ../../files/pi/agent/extensions/async-bash/monitor.ts;
-    ".pi/agent/extensions/async-bash/tools.ts" =
-      ../../files/pi/agent/extensions/async-bash/tools.ts;
+    ".pi/agent/extensions/async-bash/tools.ts" = ../../files/pi/agent/extensions/async-bash/tools.ts;
     ".pi/agent/extensions/async-bash/package.json" =
       ../../files/pi/agent/extensions/async-bash/package.json;
-    ".pi/agent/extensions/async-bash/README.md" =
-      ../../files/pi/agent/extensions/async-bash/README.md;
+    ".pi/agent/extensions/async-bash/README.md" = ../../files/pi/agent/extensions/async-bash/README.md;
   };
 in
 {
