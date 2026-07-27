@@ -176,7 +176,6 @@ in
       "Save to Reader" = 1640236961;
       "Screens 5" = 1663047912;
       "ScreenFloat" = 414528154;
-      "Secure ShellFish" = 1336634154;
       "Shapr3D" = 1091675654;
       "SponsorBlock for Safari" = 1573461917;
       "StopTheMadness Pro" = 6471380298;
