@@ -54,6 +54,19 @@ let
   # public key, readable without the passphrase) before touching a private
   # key.
   identities = lib.unique (map (m: m.identity) (builtins.attrValues machines));
+
+  # Resolve a secrets.nix `path` (which may be $HOME-relative, to keep
+  # secrets.nix portable across /Users/* and /home/* hosts) to an absolute
+  # path. agenix's Darwin activation runs from a launchd agent whose CWD is
+  # / (read-only on modern macOS), so a bare relative path would make its
+  # `mkdir -p`/`ln -sfT` abort under errexit. Absolute paths are passed
+  # through unchanged.
+  resolvePath =
+    rulePath:
+    if lib.hasPrefix "/" rulePath then
+      rulePath
+    else
+      "${config.home.homeDirectory}/${rulePath}";
 in
 {
   assertions = [
@@ -70,8 +83,17 @@ in
 
   age.identityPaths = identities;
 
+  # A `path` field in secrets.nix deploys a secret to a fixed filesystem
+  # location (as a force-symlink) rather than agenix's default runtime dir;
+  # resolvePath (defined in the let above) makes that absolute so Darwin's
+  # launchd-activated mount script (CWD /) can `mkdir -p`/`ln -sfT` it without
+  # aborting under errexit.
   age.secrets = lib.mapAttrs' (
-    path: _: lib.nameValuePair (toName path) { file = ../. + "/${path}"; }
+    path: rule:
+    lib.nameValuePair (toName path) (
+      { file = ../. + "/${path}"; }
+      // lib.optionalAttrs (rule ? path) { path = resolvePath rule.path; }
+    )
   ) decryptable;
 
   # Export only the decrypted file *path* (never the secret value), keeping

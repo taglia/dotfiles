@@ -16,6 +16,15 @@
 #               directly as files; reference config.age.secrets.<name>.path
 #               from a Home Manager module instead.
 #
+#   path        (optional) Custom deployment path for the decrypted secret,
+#               relative to $HOME. When set, agenix symlinks the secret to
+#               this location at activation with `ln -sfT`, atomically
+#               replacing any existing file or symlink on every switch. Use
+#               for secrets that must live at a fixed filesystem location
+#               (e.g. "~/.ssh/config"). Omit it to keep agenix's default
+#               runtime location; the secret is then reachable only via
+#               envVarFile or config.age.secrets.<name>.path.
+#
 # The agenix CLI only reads publicKeys/armor from this file; envVarFile is
 # consumed by profiles/private.nix, which derives age.secrets and
 # home.sessionVariables automatically. To add a secret: add one entry here,
@@ -28,6 +37,16 @@ let
   openclaw-hetzner = machines.openclaw-hetzner.publicKey;
 in
 {
+  "secrets/ssh-config.age" = {
+    publicKeys = [
+      mbp
+      dev-vm
+      utm-vm
+    ];
+    # Deployed in place as ~/.ssh/config (agenix force-symlinks it on every
+    # switch via ln -sfT; SSH follows the symlink). See the header for `path`.
+    path = ".ssh/config";
+  };
   "secrets/pi-kagi-api-key.age" = {
     publicKeys = [
       mbp
