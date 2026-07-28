@@ -63,10 +63,7 @@ let
   # through unchanged.
   resolvePath =
     rulePath:
-    if lib.hasPrefix "/" rulePath then
-      rulePath
-    else
-      "${config.home.homeDirectory}/${rulePath}";
+    if lib.hasPrefix "/" rulePath then rulePath else "${config.home.homeDirectory}/${rulePath}";
 in
 {
   assertions = [
@@ -91,8 +88,7 @@ in
   age.secrets = lib.mapAttrs' (
     path: rule:
     lib.nameValuePair (toName path) (
-      { file = ../. + "/${path}"; }
-      // lib.optionalAttrs (rule ? path) { path = resolvePath rule.path; }
+      { file = ../. + "/${path}"; } // lib.optionalAttrs (rule ? path) { path = resolvePath rule.path; }
     )
   ) decryptable;
 
