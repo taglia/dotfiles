@@ -15,10 +15,21 @@ status="$(tmutil status 2>/dev/null)"
 
 if printf '%s\n' "$status" | grep -q 'Running = 1;'; then
   printf 'running\t1\n'
-  # Top-level keys are indented 4 spaces; the Progress sub-dictionary also
-  # contains a Percent key, so anchor on the 4-space indent and take the
-  # first match. Percent is a fraction (0-1).
-  percent="$(printf '%s\n' "$status" | awk -F'"' '/^    Percent = / { printf "%d", $2 * 100 + 0.5; exit }')"
+  # The menu bar shows cumulative progress across backup phases, not just
+  # the current phase. FractionOfProgressBar is the fraction of the total
+  # progress bar that the current phase occupies; earlier phases (scanning,
+  # preparing) already filled (1 - FractionOfProgressBar) of it. Percent is
+  # progress *within* the current phase (a 0-1 fraction, nested in the
+  # Progress sub-dictionary). So overall:
+  #   (1 - FractionOfProgressBar) + FractionOfProgressBar * Percent
+  # Both values are quoted fractions. Default FractionOfProgressBar to 1 so
+  # the formula degrades to the raw Percent if the key is ever absent.
+  percent="$(printf '%s\n' "$status" | awk -F'"' '
+    BEGIN { frac = 1 }
+    /[[:space:]]FractionOfProgressBar = / { frac = $2 }
+    /[[:space:]]Percent = / { pct = $2 }
+    END { printf "%d", ((1 - frac) + frac * pct) * 100 + 0.5 }
+  ')"
   printf 'percent\t%s\n' "${percent:-0}"
 else
   printf 'running\t0\n'
