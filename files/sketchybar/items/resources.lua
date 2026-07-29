@@ -36,6 +36,41 @@ local memory = SBAR.add("item", "memory", {
   popup = { align = "left" },
 })
 
+-- Internal SSD usage: percentage of the root volume's APFS container, which
+-- is the internal SSD (`diskutil info /` reports `Device Location: Internal`
+-- and `Solid State: Yes`). Detected dynamically from the root mount — no
+-- device id or mount path is hardcoded, so it survives disk id changes.
+-- Placed between `memory` and the network widget.
+local disk = SBAR.add("item", "disk", {
+  position = "left",
+  update_freq = 30,
+  icon = {
+    string = "􀥾", -- placeholder glyph (replace with the real SF Symbol)
+    padding_right = DEFAULT_ITEM.icon.padding_right * 0.5,
+  },
+  label = { padding_right = DEFAULT_ITEM.label.padding_right * 0.6 },
+})
+
+local function disk_update()
+  SBAR.exec(
+    [[diskutil info / 2>/dev/null | awk '
+    /Container Total Space:/ { split($0, p, "("); split(p[2], b, " "); total=b[1]+0 }
+    /Container Free Space:/   { split($0, p, "("); split(p[2], b, " "); free=b[1]+0 }
+    END { if (total>0) printf "%.1f\n", (total-free)/total*100 }
+  ']],
+    function(result)
+      local used = tonumber(result) or 0
+      local color = (used > 80 and COLORS.mocha_red) or (used > 60 and COLORS.mocha_peach) or nil
+      disk:set({
+        icon = { color = color or DEFAULT_ITEM.icon.color },
+        label = { string = math.floor(used) .. "%", color = color or DEFAULT_ITEM.label.color },
+      })
+    end
+  )
+end
+
+disk:subscribe("routine", disk_update)
+
 -- Network bandwidth: 2-line upload/download rate indicator. Added after
 -- `memory` so it renders directly to the right of the RAM item on the left
 -- side, and included in the resources bracket below for a unified pill.
@@ -375,6 +410,7 @@ end)
 SBAR.add("bracket", "resources.bracket", {
   "cpu",
   "memory",
+  "disk",
   "bandwidth.up",
   "bandwidth.down",
 }, {
@@ -391,4 +427,5 @@ SBAR.add("bracket", "resources.bracket", {
 -- Call these immediately so we don't wait 2-5s for the first numbers
 cpu_update()
 memory_update()
+disk_update()
 bandwidth_update()
