@@ -52,6 +52,9 @@ export interface SpawnResult {
   exitPromise: Promise<number | null>;
 }
 
+/** Called synchronously when a task's process exits or errors out. */
+export type FinishedListener = (task: Task) => void;
+
 export const MAX_LOG_BYTES = 50 * 1024;
 const MANIFEST = "tasks.json";
 
@@ -62,6 +65,7 @@ function nowMs() {
 export class Registry {
   private tasks = new Map<string, Task>();
   private children = new Map<string, ChildProcess>();
+  private finishedListeners = new Set<FinishedListener>();
   private dir: string;
 
   constructor(dir: string) {
@@ -70,6 +74,28 @@ export class Registry {
 
   private ensureDir() {
     if (!existsSync(this.dir)) mkdirSync(this.dir, { recursive: true });
+  }
+
+  /**
+   * Subscribe to task-finished events. Fired from the child's `exit`/`error`
+   * handlers, i.e. immediately when a same-session process ends — no polling
+   * involved. Returns an unsubscribe function.
+   */
+  onFinished(cb: FinishedListener): () => void {
+    this.finishedListeners.add(cb);
+    return () => {
+      this.finishedListeners.delete(cb);
+    };
+  }
+
+  private emitFinished(task: Task): void {
+    for (const cb of this.finishedListeners) {
+      try {
+        cb(task);
+      } catch {
+        /* listener errors must not break the exit handler */
+      }
+    }
   }
 
   spawn(opts: SpawnOptions): SpawnResult {
@@ -163,6 +189,7 @@ export class Registry {
           t.exitCode = code;
           t.endedAt = nowMs();
           this.refresh(t);
+          this.emitFinished(t);
         }
         this.children.delete(id);
         resolve(code);
@@ -174,11 +201,34 @@ export class Registry {
         t.status = "exited";
         t.exitCode = -1;
         t.endedAt = nowMs();
+        this.emitFinished(t);
       }
       this.children.delete(id);
     });
 
     return { task, exitPromise };
+  }
+
+  /** True while we still hold the ChildProcess handle for this task. */
+  hasHandle(id: string): boolean {
+    return this.children.has(id);
+  }
+
+  /**
+   * Polling fallback for tasks whose ChildProcess handle is gone (restored
+   * after a pi restart): if the pid is dead, mark the task exited and notify
+   * listeners. Same-session tasks never need this — their `exit` event fires
+   * on its own. Returns true when the task transitioned out of "running".
+   */
+  detectExit(task: Task): boolean {
+    if (task.status !== "running" || this.children.has(task.id)) return false;
+    if (this.pidAlive(task.pid)) return false;
+    task.status = "exited";
+    task.exitCode = null;
+    task.endedAt = nowMs();
+    this.refresh(task);
+    this.emitFinished(task);
+    return true;
   }
 
   /** Stat the log file to update size + last-output time. */
@@ -276,6 +326,9 @@ export class Registry {
         task.exitCode = null;
         task.endedAt = nowMs();
         this.children.delete(id);
+        // Restored tasks have no ChildProcess handle, so no `exit` event
+        // will fire — notify listeners directly.
+        if (!child) this.emitFinished(task);
         return { ok: true, message: `Task ${id} terminated (SIGTERM).` };
       }
     }
@@ -284,6 +337,7 @@ export class Registry {
     task.exitCode = null;
     task.endedAt = nowMs();
     this.children.delete(id);
+    if (!child) this.emitFinished(task);
     return { ok: true, message: `Task ${id} killed (SIGKILL after timeout).` };
   }
 

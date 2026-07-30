@@ -26,16 +26,22 @@ The LLM picks `bash` or `bash_async` per command.
 
 ## Monitor behaviour
 
-- The monitor scheduler wakes every 30s to notice newly launched tasks.
-- Each task's output is checked no more often than every 30s initially.
-- Per-task checks back off exponentially with runtime: 30s for the first 2m,
-  60s through 4m, 2m through 8m, 4m through 16m, and 8m through 32m.
-  Checks are capped at once every 10m for longer-running tasks.
-- Wakes the agent with a factual status message (incl. a log tail) on:
-  - **completion** → `deliverAs: "followUp"`,
-  - **stall** (no log growth for `STALL_THRESHOLD_MS`, 60s) → `deliverAs: "steer"`,
-  - **soft deadline exceeded** (if `bash_async` was given `timeout`) → `deliverAs: "steer"`.
-- The monitor never kills anything itself — it only reports; the LLM decides.
+- **Completion is event-driven**: the registry fires an `onFinished` callback
+  from the child's `exit` handler, and the monitor wakes the agent ~250ms
+  later (just enough for the final log flush). No polling delay — a 3s task
+  notifies ~0.3s after it ends, regardless of how far the monitoring
+  intervals have backed off.
+- The periodic tick (every 30s) only handles things that genuinely require
+  polling:
+  - **stall detection** (no log growth for `STALL_THRESHOLD_MS`, 60s) → `steer`,
+  - **soft-deadline overruns** (if `bash_async` was given `timeout`) → `steer`,
+  - **restored tasks** (still-running children rediscovered after a pi
+    restart, for which no `exit` event is available): pid-liveness probes,
+    throttled with exponential backoff — 30s for the first 2m, doubling every
+    2m of runtime up to a 10m cap.
+- Completion wakes use `deliverAs: "followUp"`; stall/deadline wakes use
+  `"steer"`. The monitor never kills anything itself — it only reports; the
+  LLM decides.
 
 ## Run / test
 
@@ -59,5 +65,5 @@ Tasks survive a pi restart; still-running children keep appending to their log f
 ## Tunables
 
 `monitor.ts` top: `MONITOR_INITIAL_INTERVAL_MS`, `MONITOR_MAX_INTERVAL_MS`,
-`STALL_THRESHOLD_MS`, `TAIL_LINES`. `tools.ts` top: `GRACE_MS`. `registry.ts` top:
+`STALL_THRESHOLD_MS`, `COMPLETION_FLUSH_MS`, `TAIL_LINES`. `tools.ts` top: `GRACE_MS`. `registry.ts` top:
 `MAX_LOG_BYTES`.

@@ -1,10 +1,15 @@
 /**
  * Background monitor for async-bash.
  *
- * Polls every task periodically and wakes the agent (via an injected message)
- * when something interesting happens: the task finished, stalled (no log
- * growth for a while), or exceeded its soft deadline. The monitor never kills
- * anything — it only reports; the LLM makes the judgement call.
+ * Completion of a same-session task is event-driven: the registry fires a
+ * `onFinished` callback from the child's `exit` handler, and the monitor
+ * wakes the agent immediately (small debounce for the final log flush).
+ *
+ * The periodic tick only handles things that genuinely require polling:
+ * stall detection (no log growth for a while), soft-deadline overruns, and
+ * tasks restored after a pi restart (no ChildProcess handle -> pid liveness
+ * polling with exponential backoff). The monitor never kills anything — it
+ * only reports; the LLM makes the judgement call.
  *
  * Tunables live at the top.
  */
@@ -19,6 +24,9 @@ export const MONITOR_MAX_INTERVAL_MS = 10 * 60_000;
 const MONITOR_BACKOFF_WINDOW_MS = 2 * 60_000;
 export const STALL_THRESHOLD_MS = 60_000;
 const TAIL_LINES = 30;
+/** Delay between a task's `exit` event and the completion wake-up, so the
+ *  final log bytes land in the file before we tail it. */
+const COMPLETION_FLUSH_MS = 250;
 
 /**
  * Return the minimum interval between checks for a task at a given time.
@@ -46,9 +54,47 @@ export function startMonitor(
   const flags = new Map<string, Flags>();
   const lastCheckedAt = new Map<string, number>();
   let stopped = false;
+  let unsubscribe: (() => void) | null = null;
+
+  const getFlags = (id: string): Flags => {
+    let f = flags.get(id);
+    if (!f) {
+      f = { completionFired: false, stalled: false, deadlineFired: false };
+      flags.set(id, f);
+    }
+    return f;
+  };
+
+  /**
+   * Event-driven completion path: the registry fires this synchronously from
+   * the child's `exit` handler. Wake the agent after a short flush delay.
+   */
+  const onFinished = (task: Task) => {
+    if (stopped) return;
+    const f = getFlags(task.id);
+    if (f.completionFired) return;
+    f.completionFired = true;
+    const timer = setTimeout(() => {
+      if (stopped) return;
+      getRegistry()?.refresh(task); // pick up the flushed log tail
+      wake(task, "completion", "followUp");
+    }, COMPLETION_FLUSH_MS);
+    if (typeof (timer as any).unref === "function") (timer as any).unref();
+  };
+
+  /**
+   * The registry is only available once a session is active; subscribe the
+   * first time we see it (and re-subscribe if the instance changes).
+   */
+  const ensureSubscription = () => {
+    if (unsubscribe) return;
+    const registry = getRegistry();
+    if (registry) unsubscribe = registry.onFinished(onFinished);
+  };
 
   const tick = () => {
     if (stopped) return;
+    ensureSubscription();
     const registry = getRegistry();
     if (!registry) return;
 
@@ -58,36 +104,42 @@ export function startMonitor(
     for (const id of lastCheckedAt.keys()) {
       if (!activeIds.has(id)) lastCheckedAt.delete(id);
     }
+    for (const id of flags.keys()) {
+      if (!activeIds.has(id)) flags.delete(id);
+    }
 
     for (const task of tasks) {
-      const f = flags.get(task.id) ?? {
-        completionFired: false,
-        stalled: false,
-        deadlineFired: false,
-      };
-      // Completion is checked on every scheduler tick, but running-task log
-      // refreshes are throttled using the adaptive interval below.
-      if (task.status !== "running" && f.completionFired) continue;
+      const f = getFlags(task.id);
+      if (task.status !== "running") {
+        // Completion is normally delivered immediately via onFinished; this
+        // is just the backstop (e.g. task already dead when the monitor
+        // started and no exit event ever fired).
+        if (!f.completionFired) {
+          f.completionFired = true;
+          getRegistry()?.refresh(task);
+          wake(task, "completion", "followUp");
+        }
+        continue;
+      }
+
+      // Still running. Log-stat refreshes (for stall/deadline detection) and
+      // pid-liveness probes (for handle-less restored tasks) are throttled
+      // by the adaptive interval — completion itself is event-driven and
+      // never waits on this loop.
       const lastChecked = lastCheckedAt.get(task.id);
-      if (
-        task.status === "running" &&
-        lastChecked !== undefined &&
-        now - lastChecked < monitorIntervalMs(task, now)
-      ) {
+      if (lastChecked !== undefined && now - lastChecked < monitorIntervalMs(task, now)) {
         continue;
       }
       lastCheckedAt.set(task.id, now);
       registry.refresh(task);
+      if (!registry.hasHandle(task.id)) registry.detectExit(task);
 
       // Reset stall flag when output resumes.
       if (f.stalled && now - task.lastOutputAt < STALL_THRESHOLD_MS) {
         f.stalled = false;
       }
 
-      if (task.status !== "running" && !f.completionFired) {
-        f.completionFired = true;
-        wake(task, "completion", "followUp");
-      } else if (
+      if (
         task.status === "running" &&
         !f.stalled &&
         now - task.lastOutputAt > STALL_THRESHOLD_MS &&
@@ -99,13 +151,11 @@ export function startMonitor(
         task.status === "running" &&
         task.softDeadlineMs &&
         !f.deadlineFired &&
-        Date.now() - task.startedAt > task.softDeadlineMs
+        now - task.startedAt > task.softDeadlineMs
       ) {
         f.deadlineFired = true;
         wake(task, "deadline", "steer");
       }
-
-      flags.set(task.id, f);
     }
 
     // Footer status (best effort, both TUI + RPC).
@@ -167,8 +217,11 @@ export function startMonitor(
     }
   }
 
-  // Wake periodically to notice newly launched tasks, but each task's output
-  // is refreshed only when its own adaptive interval has elapsed.
+  // Wake periodically to notice newly launched tasks, subscribe to the
+  // registry's finished events, and run the health checks above. Completion
+  // of same-session tasks is NOT gated on this interval — it is delivered
+  // immediately via onFinished.
+  ensureSubscription();
   const handle = setInterval(tick, MONITOR_INITIAL_INTERVAL_MS);
   // Don't keep pi alive for the monitor alone.
   if (typeof (handle as any).unref === "function") (handle as any).unref();
@@ -176,6 +229,8 @@ export function startMonitor(
   return () => {
     stopped = true;
     clearInterval(handle);
+    unsubscribe?.();
+    unsubscribe = null;
     if (ui) {
       try {
         ui.setStatus("async-bash", "");

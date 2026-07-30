@@ -25,8 +25,10 @@ export function registerTools(pi: ExtensionAPI, getRegistry: () => Registry | nu
     promptSnippet: "Run a long-running shell command in the background and return a task_id",
     promptGuidelines: [
       "Use bash_async for commands that may run longer than ~30s (builds, test suites, package installs, dev servers, long scripts). Use bash for quick commands so you don't add round-trips.",
-      "After calling bash_async you get a task_id; use bash_status and bash_output to inspect progress, and bash_kill to stop it. You will also be notified automatically on completion, stall, or soft-deadline.",
+      "You will be woken immediately when a task finishes (event-driven, no polling delay), and also on stall or soft-deadline. There is no need to sleep or busy-poll for completion.",
+      "Use bash_status and bash_output only when you need progress information, not to wait for completion.",
       "Do not poll a running task more often than every 30s; for long-running tasks, wait progressively longer between checks, up to 10 minutes for very long builds.",
+      "Use bash_kill to stop a task that is stalled, taking too long, or no longer needed.",
     ],
     parameters: Type.Object({
       command: Type.String({ description: "The shell command to run" }),
