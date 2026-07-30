@@ -1,7 +1,7 @@
 { lib, config, ... }:
 
 let
-  manageMasApps = false;
+  manageMasApps = true;
 in
 {
   # nix-darwin generates a Brewfile from this module and runs `brew bundle`
