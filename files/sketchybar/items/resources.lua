@@ -60,7 +60,7 @@ local function disk_update()
   ']],
     function(result)
       local used = tonumber(result) or 0
-      local color = (used > 80 and COLORS.mocha_red) or (used > 60 and COLORS.mocha_peach) or nil
+      local color = (used > 80 and COLORS.mocha_red) or (used > 70 and COLORS.mocha_peach) or nil
       disk:set({
         icon = { color = color or DEFAULT_ITEM.icon.color },
         label = { string = math.floor(used) .. "%", color = color or DEFAULT_ITEM.label.color },
