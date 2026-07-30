@@ -82,36 +82,22 @@
             "high": "high",
             "xhigh": "high"
           }
-        }
-      ]
-    },
-    "moonshot": {
-      "api": "openai-completions",
-      "apiKey": "!cat \"$MOONSHOT_API_KEY_FILE\"",
-      "authHeader": true,
-      "baseUrl": "https://api.kimi.com/coding/v1",
-      "compat": {
-        "supportsDeveloperRole": false
-      },
-      "models": [
+        },
         {
           "contextWindow": 262144,
           "id": "k3",
           "input": [
-            "text",
-            "image"
+            "text"
           ],
-          "maxTokens": 16384,
-          "name": "Kimi K3 (Moonshot)",
+          "name": "Kimi K3 (Ollama Cloud)",
           "reasoning": true,
           "thinkingLevelMap": {
             "off": null,
             "minimal": "low",
             "low": "low",
-            "medium": "high",
+            "medium": "medium",
             "high": "high",
-            "xhigh": "max",
-            "max": "max"
+            "xhigh": "high"
           }
         }
       ]
