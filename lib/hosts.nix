@@ -251,10 +251,9 @@ let
       system = "x86_64-linux";
       secretsMachine = "ec2-vm";
       hostModule = ../hosts/ec2-x86-vm;
-      # Match the `linux-private` standalone profile (AI tools + private
-      # secrets) so the VM is a full private workstation on ARM.
-      modules = fullModules;
-      homeModules = [ ../profiles/ai.nix ];
+      # Dev tooling + AI tools (no private secrets), so the VM is a full
+      # workstation without the private agenix profile.
+      homeModules = fullModules ++ [ ../profiles/ai.nix ];
     };
   };
 in
