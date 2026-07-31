@@ -26,6 +26,12 @@
 -- keyboard bypass CoreAudio entirely (no `volume_change` event, unreadable
 -- via DDC), so the icon cannot track them and may briefly show a stale state;
 -- clicking the icon re-syncs.
+--
+-- EVERY `set volume` is preceded by `set mute off`: the C34J79x can end up
+-- hardware-muted by MonitorControl's keyboard mute without any software being
+-- able to see it (DDC reads are garbage), and volume writes do NOT clear the
+-- hardware mute — the screen then stays silently stuck until an explicit
+-- mute-off arrives. Prepending it always is cheap and self-healing.
 
 local icons = {
   _100 = "􀊩",
@@ -126,7 +132,7 @@ volume_icon:subscribe("mouse.clicked", function()
       else
         -- Mute: keep the tracked volume for restore, set the monitor to 0.
         write_state(volume, true)
-        SBAR.exec("m1ddc display 1 set volume 0")
+        SBAR.exec("m1ddc display 1 set mute off && m1ddc display 1 set volume 0")
         set_icon(volume, true)
       end
       return
