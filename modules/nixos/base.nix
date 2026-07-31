@@ -75,4 +75,6 @@
     ];
     shell = pkgs.fish;
   };
+  # Passwordless sudo for wheel — convenient on personal machines/VMs.
+  security.sudo.wheelNeedsPassword = false;
 }

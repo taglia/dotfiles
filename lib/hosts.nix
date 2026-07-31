@@ -247,6 +247,15 @@ let
       # secrets) so the VM is a full private workstation on ARM.
       homeModules = privateModules;
     };
+    ec2-x86-vm = {
+      system = "x86_64-linux";
+      secretsMachine = "ec2-vm";
+      hostModule = ../hosts/ec2-x86-vm;
+      # Match the `linux-private` standalone profile (AI tools + private
+      # secrets) so the VM is a full private workstation on ARM.
+      modules = fullModules;
+      homeModules = [ ../profiles/ai.nix ];
+    };
   };
 in
 {
