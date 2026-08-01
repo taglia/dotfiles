@@ -96,7 +96,8 @@ local function open_finetune()
   -- synthesize its global "Toggle FineTune Popup" hotkey instead. Requires
   -- Accessibility permission for SketchyBar (osascript keystrokes are
   -- otherwise auto-denied with error 1002).
-  SBAR.exec("pgrep -qx FineTune && osascript -e 'tell application \"System Events\" to keystroke \"s\" using {command down, option down, shift down}' || echo not-running",
+  SBAR.exec(
+    'pgrep -qx FineTune && osascript -e \'tell application "System Events" to keystroke "s" using {command down, option down, shift down}\' || echo not-running',
     function(out)
       if (out or ""):match("not%-running") then
         toggle_coreaudio_mute()
