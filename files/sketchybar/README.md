@@ -62,11 +62,26 @@ bright yellow focused workspace.
   every workspace change (so the highlight reflects reality on multi-monitor
   setups).
 - Replaced the calendar's "open Calendar.app" click with a world-clock popup.
-- Reworked `items/volume.lua` into a dual-backend item: CoreAudio/AppleScript
-  for normal outputs, DDC/CI via `m1ddc` (with a state file, since the
-  monitor can't be read back) when the default output is an HDMI/DisplayPort
-  monitor. Also polls every 5s (`update_freq`) to follow default-output
-  switches, which don't reliably fire `volume_change`.
+- Reworked `items/volume.lua` into a display-only item: it reads volume/mute
+  from CoreAudio/AppleScript (built-in speakers, Bluetooth, …) and falls back
+  to a neutral icon for HDMI/DisplayPort outputs (which expose no software
+  volume to CoreAudio). All volume control — including the external monitor's
+  DDC volume and the F10–F12 media keys — is delegated to **FineTune**
+  (installed via the `finetune` cask in `modules/darwin/homebrew.nix`):
+  left-click toggles FineTune's popup by synthesizing its global "Toggle
+  FineTune Popup" hotkey (⌃⇧⌘-s, bound in FineTune's settings) —
+  FineTune's menu bar popup only responds to raw mouse events
+  (FluidMenuBarExtra `LocalEventMonitor`), so an accessibility (AXPress)
+  click on its menu bar item does nothing, and the hotkey is the reliable
+  path. Requires SketchyBar in System Settings → Privacy & Security →
+  Accessibility (add the sketchybar binary via Cmd+Shift+G; the grant
+  needs redoing when the nix store path of sketchybar changes). Also polls every 5s (`update_freq`) to follow
+  default-output switches, which don't reliably fire `volume_change`.
+  History: this item previously had a DDC backend using `m1ddc` on the
+  wrapper's PATH plus a `/tmp` state file and a sketchybar-side safety net,
+  paired with MonitorControl handling the media keys — all removed when
+  FineTune (software volume-0 mute semantics, no hardware-mute VCP, so the
+  C34J79x's garbage DDC readback can't wedge it) took over that job.
 - Added a frontmost-app icon (`items/front_app.lua`), leftmost on the right
   side: native `app.<bundle-id>` icon rendering (name → bundle id via
   `id of app`, to dodge sketchybar's ambiguous name loop), hover shows a red
@@ -94,20 +109,10 @@ bright yellow focused workspace.
 - **`aerospace`** — on the wrapper's `PATH` via `programs.sketchybar.extraPackages`
   (in `modules/home/sketchybar.nix`), used by `items/spaces.lua` for the
   `aerospace workspace N` click action and `aerospace list-workspaces --focused`.
-- **`m1ddc`** — also on the wrapper's `PATH` via `extraPackages`, used by
-  `items/volume.lua` when the default audio output is an HDMI/DisplayPort
-  monitor (macOS exposes no software volume for those; AppleScript returns
-  "missing value", which is the detection signal). Click toggles mute over
-  DDC/CI. Since the Samsung C34J79x returns garbage on DDC reads, the item
-  tracks last-known volume/mute in `/tmp/sketchybar-ddc-volume-$USER`.
-  "Mute" is volume 0 (restore on unmute), NOT the hardware-mute VCP command:
-  the C34J79x stays hardware-muted until an explicit mute-off arrives, which
-  a keyboard/MonitorControl volume change never sends — so hardware mute set
-  from the bar could only be cleared from the bar. With volume-0 semantics
-  any volume change from any source restores sound; unmute also sends
-  `mute off` first in case the hardware mute was set elsewhere. Volume
-  changes made by MonitorControl via the keyboard bypass CoreAudio and
-  cannot be observed by the bar (icon may briefly show a stale state).
+- **`FineTune`** — Homebrew cask (open source, GPL-3.0), not on the wrapper's
+  PATH: `items/volume.lua` opens its menu-bar popup on click. Owns all
+  volume/mute control including the monitor's DDC volume and the F10–F12
+  media keys.
 
 ## Layout
 

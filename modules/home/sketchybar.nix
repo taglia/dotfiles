@@ -32,12 +32,9 @@
 # for that exact name) is executable and carries its own shebang, since the
 # directory-source copy is verbatim.
 #
-# `extraPackages` puts tools on the wrapper's PATH: `aerospace` so the
-# workspace indicator (items/spaces.lua) can run `aerospace workspace N`
-# (click_script) and `aerospace list-workspaces --focused` without an absolute
-# path, and `m1ddc` so the volume item (items/volume.lua) can drive the
-# external monitor's hardware volume/mute over DDC/CI when the default output
-# is an HDMI/DisplayPort display (which macOS exposes no software volume for).
+# `extraPackages` puts `aerospace` on the wrapper's PATH so the workspace
+# indicator (items/spaces.lua) can run `aerospace workspace N` (click_script)
+# and `aerospace list-workspaces --focused` without an absolute path.
 { lib, pkgs, ... }:
 
 let
@@ -94,7 +91,6 @@ in
     };
     extraPackages = [
       pkgs.aerospace
-      pkgs.m1ddc
     ];
   };
 }
