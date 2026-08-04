@@ -15,7 +15,6 @@
       vim
       gnupg
       tree
-      diffoscope
 
       curl
       wget
