@@ -7,7 +7,7 @@ local battery = SBAR.add("item", "battery", {
       style = "Regular",
     },
   },
-  label = { drawing = false }, -- Hidden by default
+  label = { drawing = true }, -- Percentage always visible (no slideover)
 })
 
 local function battery_update()
@@ -16,27 +16,35 @@ local function battery_update()
 
     if found then
       local charge_num = tonumber(charge)
-      local is_charging = batt_info:find("AC Power")
 
-      -- 1. COLOR & LABEL LOGIC
-      local color = COLORS.mocha_text
-      local should_draw_label = false
+      -- Power state. `pmset -g batt` prints either "Now drawing from
+      -- 'AC Power'" or, on newer macOS, "AC attached" on the battery line.
+      -- The battery line distinguishes "charging" / "not charging" /
+      -- "charged", which is what lets us tell the plugged-in sub-states
+      -- apart (e.g. AlDente holding a cap reports "not charging").
+      local is_plugged = batt_info:find("AC Power") ~= nil or batt_info:find("AC attached") ~= nil
+      local is_full = charge_num >= 100 or batt_info:find("charged") ~= nil
+      local is_charging = is_plugged
+        and not is_full
+        and batt_info:find("not charging") == nil
+        and batt_info:find("charging") ~= nil
 
-      if charge_num < 10 then
-        color = COLORS.mocha_red
-        should_draw_label = true
-      elseif charge_num < 30 then
-        color = COLORS.mocha_peach
-        should_draw_label = true
-      end
-
-      -- 2. ICON LOGIC
+      local color
       local icon
-      if is_charging then
-        icon = ""
-        color = (charge_num < 20) and COLORS.mocha_yellow or DEFAULT_ITEM.icon.color
-        should_draw_label = false
+
+      if is_plugged then
+        icon = "􂬹"
+        if is_full then
+          color = COLORS.mocha_green
+        elseif is_charging then
+          color = COLORS.mocha_peach
+        else
+          -- Plugged in but neither full nor actively charging (AlDente cap,
+          -- or "AC attached; not charging"). Keep the previous plugged color.
+          color = (charge_num < 20) and COLORS.mocha_yellow or DEFAULT_ITEM.icon.color
+        end
       else
+        -- On battery: icon + color track the charge level.
         if charge_num > 90 then
           icon = "󰁹"
         elseif charge_num > 60 then
@@ -48,38 +56,30 @@ local function battery_update()
         else
           icon = "󰂎"
         end
+
+        if charge_num < 10 then
+          color = COLORS.mocha_red
+        elseif charge_num < 30 then
+          color = COLORS.mocha_peach
+        else
+          color = COLORS.mocha_text
+        end
       end
 
-      local icon_padding = DEFAULT_ITEM.icon.padding_right * (should_draw_label and 0.5 or 1.0)
+      -- Label is always drawn, so always use the tightened icon padding.
+      local icon_padding = DEFAULT_ITEM.icon.padding_right * 0.5
 
-      -- Apply the updates
       battery:set({
         icon = {
           string = icon,
           color = color,
-          padding_right = icon_padding, -- Apply the dynamic padding here
+          padding_right = icon_padding,
         },
-        label = { string = charge .. "%", color = color, drawing = should_draw_label },
+        label = { string = charge .. "%", color = color, drawing = true },
       })
     end
   end)
 end
-
--- 4. INTERACTION
--- Show percentage when hovering, hide when leaving
-battery:subscribe("mouse.entered", function()
-  -- When hovering, we force the label ON, so we must force the padding SMALL
-  battery:set({
-    icon = { padding_right = DEFAULT_ITEM.icon.padding_right * 0.5 },
-    label = { drawing = true },
-  })
-end)
-
-battery:subscribe("mouse.exited", function()
-  -- Re-run the update logic. This will reset the padding to normal
-  -- unless the battery is low (label stays on).
-  battery_update()
-end)
 
 -- AlDente is a menu-bar app. Opening the app bundle directly shows its popup;
 -- the registered `aldente://` URL scheme exists but appears to be a no-op here.
