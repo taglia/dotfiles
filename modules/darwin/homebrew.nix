@@ -104,7 +104,6 @@ in
       "permute"
       "portfolioperformance"
       "proton-drive"
-      "protonvpn"
       "qflipper"
       "raspberry-pi-imager"
       "raycast"
