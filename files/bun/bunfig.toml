@@ -1,0 +1,3 @@
+[install]
+# Ten days, expressed in Bun's seconds-based setting.
+minimumReleaseAge = 864000

@@ -18,9 +18,11 @@ let
 
   # Keep Pi's package-manager Node runtime aligned with the Node runtime used
   # by the unstable Pi package. This avoids PATH-dependent npm resolution and
-  # native-module/SQLite ABI mismatches when Pi installs extensions.
+  # native-module/SQLite ABI mismatches when Pi installs extensions. Put the
+  # release-age policy on the command line so project-level npm configuration
+  # cannot silently relax it for packages installed by Pi.
   pi-npm = pkgs-unstable.writeShellScriptBin "pi-npm" ''
-    exec ${pkgs-unstable.nodejs}/bin/npm "$@"
+    exec ${pkgs-unstable.nodejs}/bin/npm --min-release-age=10 "$@"
   '';
 in
 

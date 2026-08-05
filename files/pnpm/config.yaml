@@ -1,0 +1,7 @@
+# Ten days, expressed in pnpm's minutes-based setting.
+minimumReleaseAge: 14400
+
+# Do not fall back to a too-new version, or accept registry packages whose
+# metadata omits the publication timestamp.
+minimumReleaseAgeStrict: true
+minimumReleaseAgeIgnoreMissingTime: false

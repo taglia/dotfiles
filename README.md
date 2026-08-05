@@ -177,6 +177,56 @@ AeroSpace is managed directly by nix-darwin through `services.aerospace`.
 - When an extension is ready, promote it by moving it into `files/pi/agent/extensions/` and rebuilding once.
 - Keep pi runtime state unmanaged: `~/.pi/agent/auth.json`, `sessions/`, `npm/`, and similar mutable directories stay outside Home Manager.
 
+## Package release cooling-off policy
+
+Home Manager installs a ten-day minimum release age for package managers that
+support a rolling cutoff:
+
+| Manager | Managed configuration | Policy value |
+| --- | --- | --- |
+| npm | `~/.npmrc` | `min-release-age=10` |
+| pnpm | `~/.config/pnpm/config.yaml` | `minimumReleaseAge: 14400` minutes, strict and fail-closed on missing timestamps |
+| Yarn 4.12+ | `~/.yarnrc.yml` | `npmMinimalAgeGate: "10d"` |
+| Bun | `~/.config/.bunfig.toml` | `minimumReleaseAge = 864000` seconds |
+| uv | `~/.config/uv/uv.toml` | `exclude-newer = "10 days"` |
+| mise | `~/.config/mise/config.toml` | `minimum_release_age = "10d"` |
+
+Pi uses the `pi-npm` wrapper, which also supplies npm's ten-day policy on the
+command line. This gives Pi's npm packages the policy even when a project has
+an `.npmrc` that would otherwise override the user configuration. The
+`minimal-web` extension remains lockfile-based and installs with
+`npm ci --ignore-scripts`.
+
+The policy applies when a package manager resolves a registry version. It does
+not establish that an older package is trustworthy, replace lockfiles or hash
+verification, or consistently cover Git dependencies, direct URLs and versions
+whose source does not publish a usable timestamp. Existing installed versions
+are not automatically changed.
+
+For an urgent security fix, make the narrowest temporary exception supported
+by that manager and remove it immediately afterwards. Examples include npm's
+`--min-release-age-exclude=<package>`, Yarn's one-shot `--no-time-gate`, uv's
+`--exclude-newer-package <package>=false`, or an exact mise version (exact
+versions intentionally bypass mise's fuzzy-version cutoff). Avoid disabling
+the global policy for every package.
+
+Nix is handled differently: `flake.lock` remains the version and integrity
+boundary, and temporary check tools use `nix shell --inputs-from .` so they
+resolve from that same lock. There is no additional ten-day Nix cutoff.
+Homebrew and Mac App Store updates also remain explicit and manual because
+neither exposes a supported, reliable per-release age gate. In particular,
+Homebrew casks with their own updater can still update outside Homebrew.
+
+The first switch upgrades the Home Manager-provided mise binary, but mise does
+not automatically replace tools already installed in its mutable data
+directory. On an existing machine, run this once after switching so the
+currently old Node/npm and uv clients gain native cooldown support while the
+new mise policy is active:
+
+```bash
+mise upgrade node uv
+```
+
 ## Secrets
 
 This repo uses `agenix` for encrypted secrets. Two files are the source of

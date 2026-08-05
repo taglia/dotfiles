@@ -1,4 +1,5 @@
 {
+  inputs,
   lib,
   pkgs,
   ...
@@ -7,6 +8,8 @@
 let
   minimalWebSource = ../../files/pi/agent/extensions/minimal-web;
   settingsSource = ../../files/pi/agent/settings.json;
+  piPackageManagerNodejs =
+    inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.nodejs;
 
   catppuccin = import ../../lib/catppuccin.nix;
   inherit (catppuccin) palette;
@@ -163,8 +166,9 @@ in
     if [ "$minimalWebNeedsInstall" = 1 ]; then
       # npm ci needs the network; a failure (e.g. an offline switch) must not
       # abort activation — the extension can install its dependencies later.
-      if ! $DRY_RUN_CMD ${pkgs.nodejs}/bin/npm ci --prefix "$minimalWebTarget" --omit=dev; then
-        echo "warning: npm ci failed for the minimal-web pi extension; run 'npm ci --omit=dev' in $minimalWebTarget later" >&2
+      if ! $DRY_RUN_CMD ${piPackageManagerNodejs}/bin/npm ci \
+        --prefix "$minimalWebTarget" --omit=dev --ignore-scripts; then
+        echo "warning: npm ci failed for the minimal-web pi extension; run 'npm ci --omit=dev --ignore-scripts' in $minimalWebTarget later" >&2
       fi
     fi
   '';
@@ -176,7 +180,7 @@ in
   # active. On hosts that manage Node via mise, mise's shims stay ahead of the
   # Nix profile in PATH, so this only fills the gap on hosts without a
   # mise-installed Node (e.g. a fresh VM).
-  home.packages = [ pkgs.nodejs ];
+  home.packages = [ piPackageManagerNodejs ];
 
   # All entries use `force = true`, so Home Manager's checkLinkTargets skips
   # the collision check and linkGeneration replaces any pre-existing file.

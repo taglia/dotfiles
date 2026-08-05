@@ -1,0 +1,4 @@
+# Ignore npm package versions until they have been available for ten days.
+# A narrowly scoped emergency exception can be supplied on the command line:
+#   npm --min-release-age-exclude=<package> install
+min-release-age=10

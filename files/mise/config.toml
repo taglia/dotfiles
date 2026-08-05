@@ -7,3 +7,7 @@ uv = "latest"
 python.uv_venv_auto = true
 experimental = true
 idiomatic_version_file_enable_tools = ["python"]
+
+# Delay fuzzy tool-version resolution so newly published runtimes and tools
+# have a ten-day observation window before mise will select them.
+minimum_release_age = "10d"

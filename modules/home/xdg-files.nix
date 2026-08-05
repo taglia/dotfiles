@@ -18,8 +18,11 @@ let
     "kitty/kitty.conf" = ../../files/kitty/kitty.conf;
     "linearmouse/linearmouse.json" = ../../files/linearmouse/linearmouse.json;
     "mise/config.toml" = ../../files/mise/config.toml;
+    "pnpm/config.yaml" = ../../files/pnpm/config.yaml;
     "starship.toml" = ../../files/starship.toml;
     "tmux/os-icon.sh" = ../../files/tmux/os-icon.sh;
+    "uv/uv.toml" = ../../files/uv/uv.toml;
+    ".bunfig.toml" = ../../files/bun/bunfig.toml;
   };
 
   # Extra xdg.configFile attributes for specific entries, merged over the
@@ -144,6 +147,17 @@ in
   };
   home.file.".terminfo/78/xterm-ghostty" = {
     source = ghosttyTerminfoSource;
+  };
+
+  # Package-manager release-age policies that conventionally live directly
+  # under $HOME rather than under the XDG configuration directory.
+  home.file.".npmrc" = {
+    source = ../../files/npm/npmrc;
+    force = true;
+  };
+  home.file.".yarnrc.yml" = {
+    source = ../../files/yarn/.yarnrc.yml;
+    force = true;
   };
 
   # Every entry uses `force = true`, so Home Manager's checkLinkTargets skips

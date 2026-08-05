@@ -1,0 +1,3 @@
+# Apply a rolling ten-day cutoff to registry distributions. Direct Git and URL
+# dependencies are outside uv's release-age policy.
+exclude-newer = "10 days"

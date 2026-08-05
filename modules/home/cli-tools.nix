@@ -1,4 +1,9 @@
-{ lib, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   programs.zoxide = {
@@ -23,6 +28,11 @@
 
   programs.mise = {
     enable = true;
+
+    # Stable nixpkgs currently carries a mise release from before the native
+    # minimum_release_age setting. Use the already-locked unstable input until
+    # the next stable release contains that support.
+    package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.mise;
 
     enableFishIntegration = true;
     enableBashIntegration = true;
