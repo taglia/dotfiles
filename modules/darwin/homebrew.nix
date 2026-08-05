@@ -84,7 +84,6 @@ in
       "brave-browser"
       "calibre"
       "carbon-copy-cloner"
-      "cheetah3d"
       "chronosync"
       "coconutbattery"
       "cookie"
