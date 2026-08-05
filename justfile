@@ -37,18 +37,22 @@ update-nix:
 check-brew-updates:
     brew update
     brew outdated --formula --verbose
-    brew outdated --cask --greedy --verbose
+    brew outdated --cask --verbose
     mas outdated
 
 update-brew:
     brew update
     brew upgrade --formula
-    brew upgrade --cask --greedy --force
+    brew upgrade --cask
     sudo mas upgrade
 
-update:
-    nix flake update
-    just update-brew
+# Review self-updating and unversioned casks monthly.
+check-brew-greedy:
+    brew outdated --cask --greedy --verbose
+
+# Requiring at least one cask prevents a global greedy upgrade.
+update-brew-greedy +casks:
+    brew upgrade --cask --greedy {{casks}}
 
 update-unstable:
     nix flake update nixpkgs-unstable

@@ -13,6 +13,7 @@
   nixvim,
   agenix,
   nix-index-database,
+  nix-homebrew,
   homeSpecialArgs,
   defaultUser,
 }:
@@ -85,6 +86,7 @@ let
 
       modules = [
         home-manager.darwinModules.home-manager
+        nix-homebrew.darwinModules.nix-homebrew
         ../modules/darwin/aerospace.nix
         ../modules/darwin/core.nix
         ../modules/darwin/desktop.nix

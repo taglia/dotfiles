@@ -1,25 +1,49 @@
-{ lib, config, ... }:
+{
+  lib,
+  config,
+  inputs,
+  user,
+  ...
+}:
 
 let
   manageMasApps = true;
 in
 {
+  # Pin the Homebrew client and the only third-party tap in flake.lock. Keep
+  # official formulae/casks on Homebrew's signed JSON API by deliberately not
+  # declaring homebrew/core or homebrew/cask as Nix-managed taps.
+  nix-homebrew = {
+    enable = true;
+    user = user.username;
+    autoMigrate = true;
+    mutableTaps = false;
+
+    taps = {
+      "kitknox/homebrew-rootshell" = inputs.homebrew-rootshell;
+    };
+
+    # Trust only the cask that is used, never every item in the tap.
+    trust.casks = [ "kitknox/rootshell/rootshell" ];
+  };
+
   # nix-darwin generates a Brewfile from this module and runs `brew bundle`
   # during `darwin-rebuild switch`.
   #
-  # Homebrew package versions are not pinned by flake.lock. Formulae, casks,
-  # and Mac App Store apps come from the Homebrew/App Store metadata available
-  # on the machine at activation time.
+  # Formulae, official casks and Mac App Store apps still come from the signed
+  # Homebrew API / App Store metadata available at activation time. Their
+  # package versions are not pinned by flake.lock.
   homebrew = {
     enable = true;
+
+    # Manual `brew install` / `brew upgrade` commands must not silently refresh
+    # metadata first. Updates happen only in the explicit just recipes.
+    global.autoUpdate = false;
 
     onActivation = {
       autoUpdate = false;
       upgrade = false;
       cleanup = "zap";
-      # Homebrew Bundle 4.7 requires an explicit noninteractive confirmation
-      # when `--cleanup` is used during activation.
-      extraFlags = [ "--force-cleanup" ];
       extraEnv = lib.optionalAttrs (!manageMasApps) {
         HOMEBREW_BUNDLE_MAS_SKIP = lib.concatStringsSep " " (
           map toString (builtins.attrValues config.homebrew.masApps)
@@ -29,11 +53,9 @@ in
       };
     };
 
-    taps = [
-      # "marsanne/cask" # This is the licensed version of Cork (GUI for brew)
-      "kitknox/rootshell" # rootshell terminal; cask trusted individually below (not whole-tap)
-
-    ];
+    # Keep nix-darwin's generated Brewfile aligned with nix-homebrew's immutable
+    # taps so cleanup never tries to remove a Nix-managed tap.
+    taps = builtins.attrNames config.nix-homebrew.taps;
 
     brews = [
       "mas" # Required for `homebrew.masApps`.
@@ -49,7 +71,6 @@ in
       "acorn"
       "affinity"
       "airbuddy"
-      "airfoil"
       "aldente"
       "alfred"
       "arduino-ide"

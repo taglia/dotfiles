@@ -101,12 +101,14 @@ darwin-rebuild switch --flake .#mbp
 Homebrew and Mac App Store apps are declared in `modules/darwin/homebrew.nix`. Current activation behavior is intentionally declarative:
 
 - declared brews, casks, and MAS apps are installed if missing
-- Homebrew metadata is **not** auto-updated and formulae/casks are **not** upgraded during activation (`autoUpdate = false`, `upgrade = false`); run `just update-brew` (or `brew update && brew upgrade`) explicitly instead
+- `nix-homebrew` pins the Homebrew client and the third-party Rootshell tap in `flake.lock`; taps are immutable and trust is limited to the Rootshell cask
+- official formulae and casks continue to use Homebrew's signed JSON API rather than Nix-pinned `homebrew/core` / `homebrew/cask` taps
+- Homebrew metadata is **not** auto-updated and formulae/casks are **not** upgraded during activation or ordinary manual commands; run `just update-brew` explicitly instead
 - undeclared Homebrew and MAS apps can be removed, including related support files where Homebrew supports zapping, because `cleanup = "zap"` is enabled
 
 Mac App Store apps require the Mac to be signed into an Apple ID that owns those apps. Keep `homebrew.masApps` complete when cleanup is enabled.
 
-Possible future improvement: `nix-homebrew` can make the Homebrew installation and taps more reproducible while still using the official Homebrew taps.
+Routine update steps are in [`UPDATE-RUNBOOK.md`](UPDATE-RUNBOOK.md). Normal cask upgrades intentionally omit `--greedy` and `--force`; use the selective monthly recipe for a self-updating or unversioned cask that still needs Homebrew to update it.
 
 Native Nix packages, fonts, and terminfo installed into the nix-darwin system profile live in `modules/darwin/packages.nix`. macOS system preferences are split by concern: Dock/Finder/Spaces in `modules/darwin/desktop.nix`, keyboard/trackpad/text input in `modules/darwin/input.nix`, and the remaining `system.defaults.*` (power, login window, control center, per-app defaults, environment) in `modules/darwin/system.nix`. AeroSpace and its native-tiling-disabling companion settings live in `modules/darwin/aerospace.nix`.
 
@@ -215,7 +217,9 @@ boundary, and temporary check tools use `nix shell --inputs-from .` so they
 resolve from that same lock. There is no additional ten-day Nix cutoff.
 Homebrew and Mac App Store updates also remain explicit and manual because
 neither exposes a supported, reliable per-release age gate. In particular,
-Homebrew casks with their own updater can still update outside Homebrew.
+the Homebrew client and Rootshell tap are flake-pinned, while official package
+metadata still comes from Homebrew's signed API. Casks with their own updater
+can still update outside Homebrew.
 
 The first switch upgrades the Home Manager-provided mise binary, but mise does
 not automatically replace tools already installed in its mutable data
@@ -340,11 +344,11 @@ just switch-home linux
 just check
 just check-brew-declared
 just check-brew-updates
+just check-brew-greedy
 just gc --dry-run
-just update
 ```
 
-`just switch-home` requires a target argument, e.g. `just switch-home mbp-home` or `just switch-home linux`. `just update` updates all flake inputs, Homebrew packages, and Mac App Store apps. Use `just update-nix` to update only flake inputs, `just update-unstable` to update only `nixpkgs-unstable`, and `just update-brew` to update only Homebrew and Mac App Store apps.
+`just switch-home` requires a target argument, e.g. `just switch-home mbp-home` or `just switch-home linux`. Update domains stay separate so `flake.lock` can be reviewed and checked before it changes the active Homebrew client or third-party tap. Use `just update-nix` for all flake inputs, `just update-unstable` for only `nixpkgs-unstable`, and `just update-brew` for routine Homebrew and Mac App Store updates. Follow [`UPDATE-RUNBOOK.md`](UPDATE-RUNBOOK.md) for the complete sequence.
 
 `flake.lock` updates are intentionally manual (there is no automated dependency-update CI): run `just update-nix` (or `just update-unstable` for the unstable input) and review the diff before switching.
 

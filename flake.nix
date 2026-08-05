@@ -16,6 +16,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-homebrew.url = "github:zhaofengli/nix-homebrew";
+
+    # The only non-official Homebrew tap. Keep it locked separately from the
+    # signed Homebrew API used for official formulae and casks.
+    homebrew-rootshell = {
+      url = "github:kitknox/homebrew-rootshell";
+      flake = false;
+    };
+
     nixvim = {
       url = "github:nix-community/nixvim/nixos-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -87,6 +96,7 @@
           nixvim
           agenix
           nix-index-database
+          nix-homebrew
           ;
       };
 
