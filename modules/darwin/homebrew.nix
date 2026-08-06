@@ -2,12 +2,12 @@
   lib,
   config,
   inputs,
-  user,
   ...
 }:
 
 let
   manageMasApps = true;
+  homebrewAdmin = "richie";
 in
 {
   # Pin the Homebrew client and the only third-party tap in flake.lock. Keep
@@ -15,7 +15,7 @@ in
   # declaring homebrew/core or homebrew/cask as Nix-managed taps.
   nix-homebrew = {
     enable = true;
-    user = user.username;
+    user = homebrewAdmin;
     autoMigrate = true;
     mutableTaps = false;
 
@@ -35,6 +35,7 @@ in
   # package versions are not pinned by flake.lock.
   homebrew = {
     enable = true;
+    user = homebrewAdmin;
 
     # Manual `brew install` / `brew upgrade` commands must not silently refresh
     # metadata first. Updates happen only in the explicit just recipes.

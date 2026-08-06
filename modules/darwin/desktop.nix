@@ -193,6 +193,7 @@ in
       <true/>
       <key>WatchPaths</key>
       <array>
+        <string>${stateFile}</string>
         <string>/Library/Preferences/com.apple.windowserver.displays.plist</string>
       </array>
       <key>StandardOutPath</key>

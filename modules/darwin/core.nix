@@ -43,11 +43,11 @@
   programs.fish.enable = true;
 
   security.pam.services.sudo_local = {
-    # Use Touch ID and Apple Watch for sudo when macOS allows it.
-    touchIdAuth = true;
+    # Keep biometric sudo disabled while the daily account is a standard user.
+    touchIdAuth = false;
 
-    # Keep biometric sudo working from inside tmux/screen sessions.
-    reattach = true;
+    # Re-enable alongside touchIdAuth for biometric sudo inside tmux/screen.
+    reattach = false;
   };
 
   environment.shells = [
@@ -58,6 +58,8 @@
 
   environment.systemPackages = [
     inputs.home-manager.packages.${pkgs.stdenv.hostPlatform.system}.home-manager
+    pkgs.just
+    pkgs.nh
   ];
 
   users.users.${user.username} = {
