@@ -84,7 +84,6 @@ in
       "brave-browser"
       "calibre"
       "carbon-copy-cloner"
-      "chronosync"
       "coconutbattery"
       "cookie"
       "cryptomator"
@@ -134,9 +133,7 @@ in
       "screenflow"
       "sf-symbols"
       "signal"
-      "spamsieve"
       "tailscale-app"
-      "threema@beta"
       "trader-workstation"
       "trezor-suite"
       "utm"
@@ -160,9 +157,7 @@ in
       "Actions For Obsidian" = 1659667937;
       "AutoMounter" = 1160435653;
       "Blackmagic Disk Speed Test" = 425264550;
-      "DaVinci Resolve" = 571213070;
       "Drafts" = 1435957248;
-      "DS Manager / NAS Pro" = 1435876433;
       "Due" = 524373870;
       "Endurance" = 1590043284;
       "GarageBand" = 682658836;
