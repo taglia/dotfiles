@@ -44,7 +44,7 @@ update-brew:
     brew update
     brew upgrade --formula
     brew upgrade --cask
-    sudo mas upgrade
+    mas upgrade
 
 # Review self-updating and unversioned casks monthly.
 check-brew-greedy:
