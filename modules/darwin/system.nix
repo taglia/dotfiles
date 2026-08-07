@@ -8,9 +8,6 @@
   power.restartAfterFreeze = true;
   power.sleep.display = 5;
 
-  # Export to the per-user launchd session so GUI apps inherit it too.
-  launchd.user.envVariables.XDG_CONFIG_HOME = "/Users/${user.username}/.config";
-
   system.defaults.NSGlobalDomain = {
     AppleTemperatureUnit = "Celsius";
     AppleShowAllExtensions = true;
@@ -57,6 +54,12 @@
   # askForPassword is on. No screensaver animation is ever shown; the screen
   # still locks at the 5-minute display-sleep boundary.
   system.activationScripts.postActivation.text = lib.mkAfter ''
+    # nix-darwin's launchd.user.envVariables uses `sudo --user`, which does not
+    # enter the target user's launchd domain when another user runs the switch.
+    # Enter the GUI user's bootstrap domain explicitly so GUI apps inherit XDG.
+    launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
+      launchctl setenv XDG_CONFIG_HOME /Users/${user.username}/.config
+
     launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
       defaults -currentHost write com.apple.screensaver idleTime -int 0
     # Require the password immediately on wake (no grace window) so the login
