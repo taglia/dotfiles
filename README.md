@@ -312,7 +312,10 @@ derived from the file name, e.g. `secrets/example-api-token.age` becomes
 
 The important rule is to pass the decrypted file *path* around, never the secret value. Do not use `builtins.readFile` on a decrypted secret or put the value directly in `home.sessionVariables`, because that would copy the secret into the Nix store or generated config files.
 
-- With `envVarFile` set, activation exports that variable containing the decrypted file path (via `home.sessionVariables`, so it reaches bash, zsh and fish alike). Scripts read the token at runtime:
+- With `envVarFile` set, activation creates a stable per-user symlink at
+  `~/.local/share/agenix/<secret-name>` and exports that path (via
+  `home.sessionVariables`, so it reaches bash, zsh and fish alike). Scripts
+  read the token at runtime:
 
   ```bash
   token="$(cat "$EXAMPLE_API_TOKEN_FILE")"
@@ -321,7 +324,12 @@ The important rule is to pass the decrypted file *path* around, never the secret
 
 - Without `envVarFile`, the secret is just decrypted to a file. Reference `config.age.secrets.<name>.path` from any Home Manager module, e.g. a `home.file` symlink where an app expects a fixed location, or a user service that expects environment variables (store the secret as an env file, `EXAMPLE_API_TOKEN=...`, and set `EnvironmentFile = config.age.secrets.example_api_env.path;`).
 
-After activation, `agenix` decrypts secrets to runtime files, typically under `$XDG_RUNTIME_DIR/agenix/` on Linux. Do not point consumers at `agenix.d`; that is the backing generation directory, while `config.age.secrets.<name>.path` is the stable consumer path.
+After activation, `agenix` keeps the decrypted backing files in an OS-specific
+runtime directory, typically under `$XDG_RUNTIME_DIR/agenix.d/` on Linux.
+Secrets with `envVarFile` use the stable symlinks above, so consumers do not
+depend on `XDG_RUNTIME_DIR` being present in their shell. Do not point consumers
+at `agenix.d`; it is the private generation directory, while
+`config.age.secrets.<name>.path` is the stable consumer path.
 
 ### Rotating recipients
 

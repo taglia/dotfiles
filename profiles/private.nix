@@ -64,6 +64,15 @@ let
   resolvePath =
     rulePath:
     if lib.hasPrefix "/" rulePath then rulePath else "${config.home.homeDirectory}/${rulePath}";
+
+  # agenix's Home Manager module deliberately keeps $XDG_RUNTIME_DIR as a
+  # shell expression in its default Linux path.  That works in the systemd
+  # user service, but exporting the resulting path through
+  # home.sessionVariables is fragile: shells without XDG_RUNTIME_DIR turn
+  # `${XDG_RUNTIME_DIR}/agenix/foo` into `/agenix/foo`.  Give secrets exposed
+  # through envVarFile a stable, cross-platform consumer symlink while their
+  # decrypted backing files remain in agenix's per-OS runtime directory.
+  envFilePath = name: "${config.home.homeDirectory}/.local/share/agenix/${name}";
 in
 {
   assertions = [
@@ -87,8 +96,15 @@ in
   # aborting under errexit.
   age.secrets = lib.mapAttrs' (
     path: rule:
-    lib.nameValuePair (toName path) (
-      { file = ../. + "/${path}"; } // lib.optionalAttrs (rule ? path) { path = resolvePath rule.path; }
+    let
+      name = toName path;
+    in
+    lib.nameValuePair name (
+      {
+        file = ../. + "/${path}";
+      }
+      // lib.optionalAttrs (rule ? path) { path = resolvePath rule.path; }
+      // lib.optionalAttrs (!(rule ? path) && rule ? envVarFile) { path = envFilePath name; }
     )
   ) decryptable;
 

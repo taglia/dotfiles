@@ -12,7 +12,9 @@
 #               the *path* to the decrypted file at runtime - never the secret
 #               value, so secrets stay out of the Nix store. The variable is
 #               exported via home.sessionVariables and is therefore available
-#               in bash, zsh and fish alike. Omit it for secrets consumed
+#               in bash, zsh and fish alike. Its value is a stable symlink at
+#               ~/.local/share/agenix/<name>; the decrypted backing file stays
+#               in agenix's runtime directory. Omit it for secrets consumed
 #               directly as files; reference config.age.secrets.<name>.path
 #               from a Home Manager module instead.
 #
