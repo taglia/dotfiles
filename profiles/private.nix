@@ -9,6 +9,7 @@
 {
   config,
   lib,
+  pkgs,
   secretsMachine ? null,
   ...
 }:
@@ -88,6 +89,23 @@ in
   ];
 
   age.identityPaths = identities;
+
+  # agenix currently sets both `Crashed = false` and
+  # `SuccessfulExit = false` in its macOS KeepAlive dictionary. launchd
+  # treats those as independent conditions, so `Crashed = false` restarts
+  # the one-shot agent after every clean exit. Keep only the intended retry
+  # condition: restart after a failed decryption, but stop after success.
+  launchd.agents.activate-agenix.config.KeepAlive = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
+    lib.mkForce { SuccessfulExit = false; }
+  );
+
+  # On Linux the agenix unit is a one-shot service. Without RemainAfterExit it
+  # immediately becomes inactive, so Home Manager's sd-switch can miss that
+  # its ExecStart changed when an encrypted input gets a new store path. Keep
+  # the successful unit active so later switches restart it and decrypt the
+  # new generation.
+  systemd.user.services.agenix.Service.RemainAfterExit =
+    lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
 
   # A `path` field in secrets.nix deploys a secret to a fixed filesystem
   # location (as a force-symlink) rather than agenix's default runtime dir;
