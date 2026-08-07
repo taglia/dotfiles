@@ -8,6 +8,7 @@ in
 {
   programs.tmux = {
     enable = true;
+    baseIndex = 1;
 
     # catppuccin and cpu are intentionally NOT in this list: they must run
     # after the @catppuccin_* options set in tmux.conf, so they are sourced
