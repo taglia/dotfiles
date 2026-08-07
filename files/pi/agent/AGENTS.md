@@ -11,6 +11,7 @@ Cross-project instructions for pi. Read on every session.
 - **CRITICAL: Do NOT commit or push code without authorization**: never, never commit or push code without asking for approval first.
 - **CRITICAL: Never do `find /`**: always narrow down your search path to something manageable; for any large tree, ASK THE USER.
 - **CRITICAL: Never `find` or `grep` the entire home folder** (`~`, `$HOME`, `/Users/<user>`): it is far too large and slow. Always narrow the search path — target a specific project directory, use `--maxdepth`, or search a known subdirectory. If a genuinely broad home-wide search is needed, ASK THE USER first.
+- **CRITICAL: Run any `find` via `bash_async`**: any command that includes a `find` (or other potentially slow filesystem walk like `grep -r` on a large tree) MUST be run through `bash_async`, never the synchronous `bash` tool. This keeps the agent responsive and avoids blocking on a slow search. Always narrow the scope first — never run a `find` with a huge/unbounded scope regardless of which tool runs it.
 - **Use small scripts whenever you can rather than push large contexts**: if you need to process large amounts of data, NEVER push that to the LLM, write a script to process the data.
 - **Cleanup temporary files**: if you create temporary documents or scripts, clean them up once you have completed the work and do not need them anymore.
 
