@@ -16,11 +16,6 @@ in
     # the plugin packages in the closure). Listing them here as well would
     # load each of them twice.
     plugins = with pkgs.tmuxPlugins; [
-      sensible
-      resurrect
-      continuum
-      copycat
-      yank
       vim-tmux-navigator
       tmux-toggle-popup
     ];
