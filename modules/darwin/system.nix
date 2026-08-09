@@ -13,10 +13,12 @@
     AppleShowAllExtensions = true;
     AppleMetricUnits = 1;
     AppleMeasurementUnits = "Centimeters";
-    AppleInterfaceStyleSwitchesAutomatically = true;
     AppleICUForce24HourTime = false;
     NSNavPanelExpandedStateForSaveMode = true;
     NSNavPanelExpandedStateForSaveMode2 = true;
+    AppleInterfaceStyleSwitchesAutomatically = false;
+    AppleInterfaceStyle = "Dark";
+    AppleIconAppearanceTheme = "RegularDark";
   };
   system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
 
