@@ -135,7 +135,6 @@ in
       "sf-symbols"
       "signal"
       "tailscale-app"
-      "trader-workstation"
       "trezor-suite"
       "utm"
       "virtualhereserver"
