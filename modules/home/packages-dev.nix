@@ -8,6 +8,7 @@
     docker-compose
     fx
     gitleaks
+    gh
     glow
     lima
     sqlite
