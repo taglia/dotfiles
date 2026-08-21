@@ -164,20 +164,21 @@ Log out and back in (or restart your terminal) to fully apply.
 Some application config is managed by Home Manager from files in this repo:
 
 - Ghostty: `files/ghostty/config`
-- pi: `files/pi/agent/...` → `~/.pi/agent/...` via `modules/home/pi.nix`
+- OpenCode: `modules/home/opencode.nix` and `files/opencode/AGENTS.md` → `~/.config/opencode/`
 
 AeroSpace is managed directly by nix-darwin through `services.aerospace`.
 
 ### Theming (Catppuccin Mocha)
 
-`lib/catppuccin.nix` is the single source of truth for the Catppuccin Mocha palette. The themed configs that used to duplicate it are now generated from it: `files/starship.toml` (palette table) and the kitty theme via `modules/home/xdg-files.nix`, the fish colors via `modules/home/fish.nix`, the pi theme JSON via `modules/home/pi.nix`, and `colors.lua` (injected at build time) via `modules/home/sketchybar.nix`. tmux and Ghostty use the upstream Catppuccin plugin / built-in theme and are intentionally not wired in. Change a color once in `lib/catppuccin.nix` to update every consumer.
+`lib/catppuccin.nix` is the single source of truth for the Catppuccin Mocha palette. The themed configs that used to duplicate it are now generated from it: `files/starship.toml` (palette table) and the kitty theme via `modules/home/xdg-files.nix`, the fish colors via `modules/home/fish.nix`, and `colors.lua` (injected at build time) via `modules/home/sketchybar.nix`. tmux, Ghostty, and OpenCode use an upstream Catppuccin plugin or built-in theme and are intentionally not wired in. Change a color once in `lib/catppuccin.nix` to update every generated consumer.
 
-### pi workflow
+### OpenCode security model
 
-- Stable/global pi config is managed in Home Manager under `files/pi/agent/...`.
-- New extension development happens project-locally in `.pi/extensions/` so you can edit and test with `/reload` without running `home-manager switch` or `darwin-rebuild switch`.
-- When an extension is ready, promote it by moving it into `files/pi/agent/extensions/` and rebuilding once.
-- Keep pi runtime state unmanaged: `~/.pi/agent/auth.json`, `sessions/`, `npm/`, and similar mutable directories stay outside Home Manager.
+- OpenCode and its provider adapter come from the flake-pinned Nix package. Automatic updates, external plugins, external skills, LSP downloads, and project-local OpenCode configuration are disabled.
+- Home Manager links the complete `~/.config/opencode` directory to the read-only Nix store. This also prevents OpenCode from implicitly installing `@opencode-ai/plugin` into that directory.
+- The provider allowlist contains only Ollama Cloud. Its API key is read directly from the file named by `OLLAMA_API_KEY_FILE`; plaintext is not placed in the Nix store or exported to agent subprocesses.
+- Built-in web search uses Exa and built-in web fetch connects directly to the requested URL. Both require tool approval and neither installs a local plugin or MCP server.
+- Keep OpenCode sessions and other runtime state under `~/.local/share/opencode` unmanaged.
 
 ## Package release cooling-off policy
 
@@ -192,12 +193,6 @@ support a rolling cutoff:
 | Bun | `~/.config/.bunfig.toml` | `minimumReleaseAge = 864000` seconds |
 | uv | `~/.config/uv/uv.toml` | `exclude-newer = "10 days"` |
 | mise | `~/.config/mise/config.toml` | `minimum_release_age = "10d"` |
-
-Pi uses the `pi-npm` wrapper, which also supplies npm's ten-day policy on the
-command line. This gives Pi's npm packages the policy even when a project has
-an `.npmrc` that would otherwise override the user configuration. The
-`minimal-web` extension remains lockfile-based and installs with
-`npm ci --ignore-scripts`.
 
 The policy applies when a package manager resolves a registry version. It does
 not establish that an older package is trustworthy, replace lockfiles or hash
