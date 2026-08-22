@@ -73,6 +73,14 @@ in
     ];
     envVarFile = "MOONSHOT_API_KEY_FILE";
   };
+  "secrets/opencode-zen-api-key.age" = {
+    publicKeys = [
+      mbp
+      dev-vm
+      utm-vm
+    ];
+    envVarFile = "ZEN_API_KEY_FILE";
+  };
   "secrets/openclaw-moonshot-api-key.age" = {
     publicKeys = [
       openclaw-hetzner
