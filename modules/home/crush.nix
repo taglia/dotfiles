@@ -95,7 +95,7 @@ let
       };
     };
 
-    providers.ollama-cloud = {
+    providers = {
       ollama-cloud = {
         name = "Ollama Cloud";
         type = "openai-compat";
