@@ -37,6 +37,7 @@ in
   imports = [
     ../modules/home/opencode.nix
     ../modules/home/pi.nix
+    ../modules/home/crush.nix
   ];
 
   # `services.ollama` installs the `ollama` package itself and runs
