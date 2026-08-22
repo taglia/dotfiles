@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Block any staged change to identity.nix. The file is machine-local
+# (see .gitignore) and is marked with `git add -N -f` by
+# scripts/bootstrap_and_switch.sh so the flake can see it; that also makes a
+# careless `git add .` / `git commit -a` stage its contents. This hook makes
+# committing it fail loudly instead.
+# --ita-visible-in-index: intent-to-add entries (staged by
+# scripts/bootstrap_and_switch.sh) are invisible to plain `git diff --cached`.
+if git diff --cached --name-only --ita-visible-in-index | grep -qx 'identity\.nix'; then
+  echo "error: refusing to commit identity.nix (machine-local, see .gitignore)" >&2
+  echo "hint: git restore --staged identity.nix" >&2
+  exit 1
+fi

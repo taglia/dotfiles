@@ -201,6 +201,18 @@ EOF
   fi
 }
 
+ensure_git_hooks() {
+  # .githooks/pre-commit blocks committing the machine-local identity.nix.
+  # core.hooksPath is a local-only git setting, so point it at the repo's
+  # hooks dir on every run (relative path: survives repo relocation).
+  if git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if [[ "$(git -C "$repo_root" config --local core.hooksPath || true)" != ".githooks" ]]; then
+      git -C "$repo_root" config --local core.hooksPath .githooks
+      echo "info: enabled repo hooks (.githooks)"
+    fi
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target)
@@ -346,6 +358,7 @@ ensure_flakes_enabled() {
 configure_target
 configure_identity
 ensure_flakes_enabled
+ensure_git_hooks
 
 home_manager_args=(switch --flake "${bootstrap_flake_dir}#${target}")
 

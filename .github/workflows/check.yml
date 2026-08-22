@@ -17,9 +17,12 @@ jobs:
     # from even evaluating workflows, disable Actions in the repo settings.
     if: github.server_url == 'https://github.com'
     steps:
-      - uses: actions/checkout@v4
+      # Actions are pinned to commit SHAs (tags are mutable; a retargeted tag
+      # would run attacker-controlled code with the job's token). Update by
+      # resolving the new tag's commit and refreshing both the SHA and comment.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: cachix/install-nix-action@v30
+      - uses: cachix/install-nix-action@08dcb3a5e62fa31e2da3d490afc4176ef55ecd72 # v30
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
