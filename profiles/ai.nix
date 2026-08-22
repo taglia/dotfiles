@@ -13,12 +13,31 @@ let
   pkgs-unstable = import inputs.nixpkgs-unstable {
     system = pkgs.stdenv.hostPlatform.system;
 
-    config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "claude-code" ];
+    # crush is FSL-1.1-MIT: unfree per nixpkgs (non-compete clause) but
+    # redistributable, so it must be opted into here like claude-code.
+    config.allowUnfreePredicate =
+      pkg:
+      builtins.elem (lib.getName pkg) [
+        "claude-code"
+        "crush"
+      ];
   };
+
+  # Keep Pi's package-manager Node runtime aligned with the Node runtime used
+  # by the unstable Pi package. This avoids PATH-dependent npm resolution and
+  # native-module/SQLite ABI mismatches when Pi installs extensions. Put the
+  # release-age policy on the command line so project-level npm configuration
+  # cannot silently relax it for packages installed by Pi.
+  pi-npm = pkgs-unstable.writeShellScriptBin "pi-npm" ''
+    exec ${pkgs-unstable.nodejs}/bin/npm --min-release-age=10 "$@"
+  '';
 in
 
 {
-  imports = [ ../modules/home/opencode.nix ];
+  imports = [
+    ../modules/home/opencode.nix
+    ../modules/home/pi.nix
+  ];
 
   # `services.ollama` installs the `ollama` package itself and runs
   # `ollama serve` as a managed background service: a user LaunchAgent
@@ -45,5 +64,9 @@ in
     pkgs-unstable.claude-code
     pkgs-unstable.codex
     pkgs-unstable.opencode
+    pkgs-unstable.crush
+    pkgs-unstable.nono
+    pkgs-unstable.pi-coding-agent
+    pi-npm
   ];
 }
