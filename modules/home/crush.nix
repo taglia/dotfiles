@@ -121,7 +121,7 @@ let
       openrouter = {
         name = "OpenRouter";
         type = "openai-compat";
-        api_key = "$(cat \"$HOME\"/.local/share/agenix/openrouter-api-key)";
+        api_key = "$(cat \"$HOME\"/.local/share/agenix/openrouter_api_key)";
         base_url = "https://openrouter.ai/api/v1";
       };
 
