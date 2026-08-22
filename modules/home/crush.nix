@@ -7,10 +7,49 @@
 # startup with shell commands that read the agenix-deployed symlinks under
 # ~/.local/share/agenix/ directly, so no environment variables need to reach
 # Crush; the nono profile only needs a narrow read_file grant per key file.
-{ pkgs, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 let
   json = pkgs.formats.json { };
+
+  # Wrapper that blocks on any local Crush config files (crushrc or
+  # crush.json) found between cwd and the git root. crushrc files are
+  # executed as shell scripts (arbitrary code); crush.json files merge
+  # over the global config and can add providers, MCPs, hooks, or widen
+  # permissions. CRUSH_ALLOW_LOCAL=1 bypasses the block for trusted
+  # repos. nono is invoked manually when sandboxing is needed.
+  crushWrapper = pkgs.writeShellScriptBin "crush" ''
+    set -euo pipefail
+
+    if [[ "''${CRUSH_ALLOW_LOCAL:-}" != "1" ]]; then
+      root=""
+      if root_str="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+        root="$root_str"
+      fi
+      dir="$(pwd)"
+      while [[ "$dir" != "/" && ( "$root" == "" || "$dir" != "$root" ) ]]; do
+        for f in .crushrc crushrc .crush.json crush.json; do
+          if [[ -f "$dir/$f" ]]; then
+            echo "error: refusing to start Crush: local config found at $dir/$f" >&2
+            echo "hint: inspect the file, then set CRUSH_ALLOW_LOCAL=1 if you trust it" >&2
+            exit 1
+          fi
+        done
+        dir="$(dirname "$dir")"
+      done
+      if [[ -n "$root" ]]; then
+        for f in .crushrc crushrc .crush.json crush.json; do
+          if [[ -f "$root/$f" ]]; then
+            echo "error: refusing to start Crush: local config found at $root/$f" >&2
+            echo "hint: inspect the file, then set CRUSH_ALLOW_LOCAL=1 if you trust it" >&2
+            exit 1
+          fi
+        done
+      fi
+    fi
+
+    exec ${pkgs-unstable.crush}/bin/crush "$@"
+  '';
 
   ollamaModel =
     id: name: contextWindow: extra:
@@ -113,4 +152,8 @@ in
 {
   xdg.configFile."crush/crush.json".source = crushConfig;
   xdg.configFile."nono/profiles/crush-base.json".source = nonoBaseProfile;
+
+  # The wrapper shadows the real crush binary via PATH precedence so every
+  # invocation runs sandboxed under nono with the pinned profile.
+  home.packages = [ crushWrapper ];
 }

@@ -37,7 +37,7 @@ in
   imports = [
     ../modules/home/opencode.nix
     ../modules/home/pi.nix
-    ../modules/home/crush.nix
+    (import ../modules/home/crush.nix { inherit pkgs pkgs-unstable; })
   ];
 
   # `services.ollama` installs the `ollama` package itself and runs
@@ -65,7 +65,9 @@ in
     pkgs-unstable.claude-code
     pkgs-unstable.codex
     pkgs-unstable.opencode
-    pkgs-unstable.crush
+    # crush is installed via the wrapper in modules/home/crush.nix, which
+    # references the real binary by absolute store path and shadows it in
+    # PATH so every invocation runs under nono.
     pkgs-unstable.nono
     pkgs-unstable.pi-coding-agent
     pi-npm
