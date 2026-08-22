@@ -129,7 +129,7 @@ let
     # host of its choosing. With this override the endpoint only ever changes
     # through a reviewed commit here.
     providers.opencode-zen = {
-      base_url = "https://opencode.ai/zen/v1";
+      base_url = "https://opencode.ai/zen/v1/models";
       api_key = "$(cat \"$HOME\"/.local/share/agenix/opencode_zen_api_key)";
     };
   };
