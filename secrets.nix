@@ -81,6 +81,14 @@ in
     ];
     envVarFile = "ZEN_API_KEY_FILE";
   };
+  "secrets/openrouter-api-key.age" = {
+    publicKeys = [
+      mbp
+      dev-vm
+      utm-vm
+    ];
+    envVarFile = "OPENROUTER_API_KEY_FILE";
+  };
   "secrets/openclaw-moonshot-api-key.age" = {
     publicKeys = [
       openclaw-hetzner

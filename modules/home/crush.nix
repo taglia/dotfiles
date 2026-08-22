@@ -96,41 +96,50 @@ let
     };
 
     providers.ollama-cloud = {
-      name = "Ollama Cloud";
-      type = "openai-compat";
-      base_url = "https://ollama.com/v1";
-      api_key = "$(cat \"$HOME\"/.local/share/agenix/pi_ollama_api_key)";
-      # Only the explicitly listed models below; no /v1/models discovery
-      # against the cloud endpoint.
-      discover_models = false;
-      models = [
-        (ollamaModel "glm-5.2" "GLM-5.2 (Ollama Cloud)" 1000000 { })
-        (ollamaModel "kimi-k3" "Kimi K3 (Ollama Cloud)" 1000000 {
-          supports_attachments = true;
-          cost_per_1m_in = 3;
-          cost_per_1m_out = 15;
-          cost_per_1m_in_cached = 0.3;
-          cost_per_1m_out_cached = 0;
-        })
-        (ollamaModel "deepseek-v4-pro" "DeepSeek V4 Pro (Ollama Cloud)" 262144 { })
-        (ollamaModel "minimax-m3" "MiniMax M3 (Ollama Cloud)" 524288 { })
-      ];
-    };
+      ollama-cloud = {
+        name = "Ollama Cloud";
+        type = "openai-compat";
+        base_url = "https://ollama.com/v1";
+        api_key = "$(cat \"$HOME\"/.local/share/agenix/pi_ollama_api_key)";
+        # Only the explicitly listed models below; no /v1/models discovery
+        # against the cloud endpoint.
+        discover_models = false;
+        models = [
+          (ollamaModel "glm-5.2" "GLM-5.2 (Ollama Cloud)" 1000000 { })
+          (ollamaModel "kimi-k3" "Kimi K3 (Ollama Cloud)" 1000000 {
+            supports_attachments = true;
+            cost_per_1m_in = 3;
+            cost_per_1m_out = 15;
+            cost_per_1m_in_cached = 0.3;
+            cost_per_1m_out_cached = 0;
+          })
+          (ollamaModel "deepseek-v4-pro" "DeepSeek V4 Pro (Ollama Cloud)" 262144 { })
+          (ollamaModel "minimax-m3" "MiniMax M3 (Ollama Cloud)" 524288 { })
+        ];
+      };
 
-    # OpenCode Zen: the id must be exactly "opencode-zen" so Crush recognizes
-    # it as a known provider. The model catalog (all currently supported Zen
-    # models, their costs, context windows, and per-model API protocol) comes
-    # from the catwalk snapshot embedded in each Crush release and is
-    # maintained upstream; here we only supply credentials.
-    #
-    # base_url is pinned explicitly even though the catalog provides one: the
-    # catalog's api_endpoint would otherwise be trusted wholesale, and a
-    # compromised upstream could redirect requests (and the Bearer key) to a
-    # host of its choosing. With this override the endpoint only ever changes
-    # through a reviewed commit here.
-    providers.opencode-zen = {
-      base_url = "https://opencode.ai/zen/v1/models";
-      api_key = "$(cat \"$HOME\"/.local/share/agenix/opencode_zen_api_key)";
+      openrouter = {
+        name = "OpenRouter";
+        type = "openai-compat";
+        api_key = "$(cat \"$HOME\"/.local/share/agenix/openrouter-api-key)";
+        base_url = "https://openrouter.ai/api/v1";
+      };
+
+      # OpenCode Zen: the id must be exactly "opencode-zen" so Crush recognizes
+      # it as a known provider. The model catalog (all currently supported Zen
+      # models, their costs, context windows, and per-model API protocol) comes
+      # from the catwalk snapshot embedded in each Crush release and is
+      # maintained upstream; here we only supply credentials.
+      #
+      # base_url is pinned explicitly even though the catalog provides one: the
+      # catalog's api_endpoint would otherwise be trusted wholesale, and a
+      # compromised upstream could redirect requests (and the Bearer key) to a
+      # host of its choosing. With this override the endpoint only ever changes
+      # through a reviewed commit here.
+      opencode-zen = {
+        base_url = "https://opencode.ai/zen/v1/models";
+        api_key = "$(cat \"$HOME\"/.local/share/agenix/opencode_zen_api_key)";
+      };
     };
   };
   # nono base profile: sets the security posture (deny credentials, open
