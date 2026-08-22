@@ -16,3 +16,4 @@ result-*
 # Extension build/test artifacts (package-lock.json stays tracked so the
 # minimal-web install in modules/home/pi.nix can use `npm ci`)
 files/pi/agent/extensions/*/node_modules/
+crush.json

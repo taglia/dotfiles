@@ -26,7 +26,10 @@ let
     "$schema" = "https://charm.land/crush.json";
 
     options = {
-      tui.transparent = true;
+      tui = {
+        transparent = true;
+        compact_mode = true;
+      };
 
       # Hardening: no telemetry, and do not let Crush rewrite its provider
       # catalog behind the pinned configuration below.
@@ -91,7 +94,23 @@ let
       api_key = "$(cat \"$HOME\"/.local/share/agenix/opencode_zen_api_key)";
     };
   };
+  # nono base profile: sets the security posture (deny credentials, open
+  # network, readwrite workdir) but leaves filesystem grants empty. The
+  # user-authored draft profile (outside HM, writable by nono's save prompt)
+  # extends this and accumulates grants through real usage. When the draft
+  # stabilizes, promote its grants here to enforce them declaratively.
+  nonoBaseProfile = json.generate "crush-base.json" {
+    extends = "default";
+    meta = {
+      name = "crush-base";
+      description = "Security baseline for Crush; extend with per-machine grants";
+    };
+    groups.include = [ "deny_credentials" ];
+    workdir.access = "readwrite";
+    network.block = false;
+  };
 in
 {
   xdg.configFile."crush/crush.json".source = crushConfig;
+  xdg.configFile."nono/profiles/crush-base.json".source = nonoBaseProfile;
 }
