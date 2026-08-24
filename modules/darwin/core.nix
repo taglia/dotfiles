@@ -1,7 +1,8 @@
 # Baseline nix-darwin configuration shared by every Darwin host: nix daemon
 # settings, GC, the Linux remote builder, shells and the primary user. Host
-# lists and Home Manager wiring stay in flake.nix.
+# lists and Home Manager wiring stay in lib/hosts.nix.
 {
+  lib,
   pkgs,
   inputs,
   user,
@@ -69,8 +70,12 @@
   # Keep the primary user's login shell on the stable nix-darwin
   # system profile path. The old standalone Home Manager path
   # under ~/.nix-profile can disappear once Home Manager is
-  # integrated into nix-darwin.
-  system.activationScripts.primaryUserShell.text = ''
+  # integrated into nix-darwin. This must live in postActivation:
+  # nix-darwin only executes its predefined activation slots, so a
+  # custom-named activationScripts entry (as this once was) is
+  # silently ignored. Extra home users get the same shell from
+  # mkDarwin in lib/hosts.nix.
+  system.activationScripts.postActivation.text = lib.mkAfter ''
     dscl . -create /Users/${user.username} UserShell /run/current-system/sw/bin/fish
   '';
 }

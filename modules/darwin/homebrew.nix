@@ -2,12 +2,18 @@
   lib,
   config,
   inputs,
+  user,
   ...
 }:
 
 let
   manageMasApps = true;
-  homebrewAdmin = "richie";
+  # The Homebrew prefix is owned by the separate macOS admin account, not the
+  # daily (deliberately non-admin) user: code running as the daily user cannot
+  # tamper with installed casks/binaries under /opt/homebrew, and admin
+  # escalation stays behind that account's own password. Forks override the
+  # name via `adminUsername` in identity.nix (see flake.nix).
+  homebrewAdmin = user.adminUsername or "richie";
 in
 {
   # Pin the Homebrew client and the only third-party tap in flake.lock. Keep

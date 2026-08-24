@@ -28,6 +28,8 @@
     nixvim = {
       url = "github:nix-community/nixvim/nixos-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
+      # Share agenix's nix-systems node instead of locking a duplicate copy.
+      inputs.systems.follows = "agenix/systems";
     };
 
     agenix = {
@@ -65,6 +67,10 @@
             username = "taglia";
             githubUsername = "taglia";
             email = "612306+taglia@users.noreply.github.com";
+            # Separate macOS admin account; owns the Homebrew prefix (see
+            # modules/darwin/homebrew.nix) and gets its own Home Manager
+            # target (mbp-admin in lib/hosts.nix). Optional in identity.nix.
+            adminUsername = "richie";
           };
 
       supportedSystems = [
@@ -76,10 +82,11 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
       # Everything a Home Manager / nix-darwin / NixOS module might need from
-      # the flake. `inputs` carries the full bundle (agenix, nixpkgs-unstable,
+      # the flake, used as (extra)specialArgs for all three configuration
+      # kinds. `inputs` carries the full bundle (agenix, nixpkgs-unstable,
       # ...), so modules reference e.g. `inputs.agenix` / `inputs.nixpkgs-unstable`
       # rather than receiving them as separate args.
-      homeSpecialArgs = {
+      commonSpecialArgs = {
         inherit inputs;
         user = defaultUser;
       };
@@ -87,7 +94,7 @@
       hostLib = import ./lib/hosts.nix {
         inherit
           nixpkgs
-          homeSpecialArgs
+          commonSpecialArgs
           defaultUser
           ;
         inherit (inputs)

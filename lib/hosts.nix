@@ -2,7 +2,7 @@
 # nix-darwin or NixOS configuration. Kept out of flake.nix so the flake outputs
 # stay thin; flake.nix wires inputs in and re-exports the results.
 #
-# `defaultUser` and `homeSpecialArgs` are passed in from flake.nix (the flake
+# `defaultUser` and `commonSpecialArgs` are passed in from flake.nix (the flake
 # owns identity, via the optional git-ignored identity.nix, and the inputs
 # bundle). All relative paths here are relative to this file (lib/), so they
 # point at ../profiles, ../modules and ../hosts.
@@ -14,7 +14,7 @@
   agenix,
   nix-index-database,
   nix-homebrew,
-  homeSpecialArgs,
+  commonSpecialArgs,
   defaultUser,
 }:
 
@@ -43,12 +43,26 @@ let
         home.homeDirectory = if isDarwin then "/Users/${username}" else "/home/${username}";
 
         home.stateVersion = "25.11";
+
+        # Supply `user` per Home Manager user rather than through
+        # (extra)specialArgs: specialArgs are shared by every HM user inside
+        # one darwin system eval, so a multi-user host (mkDarwin's
+        # extraHomeUsers) would leak the primary identity into the other
+        # users' modules. specialArgs shadow _module.args, so mkDarwin must
+        # not put `user` in extraSpecialArgs.
+        _module.args.user = user;
       }
 
       ../profiles/base.nix
       platformModule
     ]
     ++ modules;
+
+  # `user` deliberately stays out of the Home Manager (extra)specialArgs in
+  # all three builders: HM modules receive it per user via _module.args (see
+  # mkHomeModules), which a `user` in specialArgs would shadow — with the
+  # primary identity — for every user of a multi-user darwin host.
+  homeExtraSpecialArgs = builtins.removeAttrs commonSpecialArgs [ "user" ];
 
   mkHome =
     {
@@ -63,8 +77,8 @@ let
     home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
 
-      extraSpecialArgs = homeSpecialArgs // {
-        inherit user secretsMachine;
+      extraSpecialArgs = homeExtraSpecialArgs // {
+        inherit secretsMachine;
       };
 
       modules = mkHomeModules { inherit system modules user; };
@@ -76,11 +90,16 @@ let
       modules ? [ ],
       user ? defaultUser,
       secretsMachine ? null,
+      # Additional Home Manager users switched together with the system
+      # (username -> { user, modules ? [ ] }), so one `darwin-rebuild switch`
+      # updates every account's home from the same generation: package sets
+      # stay aligned and a single GC root covers them all.
+      extraHomeUsers ? { },
     }:
     nix-darwin.lib.darwinSystem {
       inherit system;
 
-      specialArgs = homeSpecialArgs // {
+      specialArgs = commonSpecialArgs // {
         inherit user;
       };
 
@@ -96,13 +115,36 @@ let
         ../modules/darwin/system.nix
 
         {
+          # useUserPackages installs each user's home.packages through
+          # users.users.<name>.packages, so every HM user needs a (metadata
+          # only, account creation is not attempted) users.users entry;
+          # core.nix declares the primary user's.
+          users.users = lib.mapAttrs (username: _: {
+            home = "/Users/${username}";
+          }) extraHomeUsers;
+
+          # Same fish login shell for the extra home users as core.nix sets
+          # for the primary user (dscl as root, so /etc/shells is not
+          # consulted; fish is on the system profile path either way).
+          system.activationScripts.postActivation.text = lib.mkAfter (
+            lib.concatMapStrings (username: ''
+              dscl . -create /Users/${username} UserShell /run/current-system/sw/bin/fish
+            '') (builtins.attrNames extraHomeUsers)
+          );
+
           home-manager = {
             useGlobalPkgs = true;
             useUserPackages = true;
-            extraSpecialArgs = homeSpecialArgs // {
-              inherit user secretsMachine;
+            extraSpecialArgs = homeExtraSpecialArgs // {
+              inherit secretsMachine;
             };
-            users.${user.username}.imports = mkHomeModules { inherit system modules user; };
+            users = lib.mapAttrs (_: u: {
+              imports = mkHomeModules {
+                inherit system;
+                inherit (u) user;
+                modules = u.modules or [ ];
+              };
+            }) ({ ${user.username} = { inherit user modules; }; } // extraHomeUsers);
           };
         }
       ];
@@ -119,7 +161,7 @@ let
     nixpkgs.lib.nixosSystem {
       inherit system;
 
-      specialArgs = homeSpecialArgs // {
+      specialArgs = commonSpecialArgs // {
         inherit user;
       };
 
@@ -133,8 +175,8 @@ let
           home-manager = {
             useGlobalPkgs = true;
             useUserPackages = true;
-            extraSpecialArgs = homeSpecialArgs // {
-              inherit user secretsMachine;
+            extraSpecialArgs = homeExtraSpecialArgs // {
+              inherit secretsMachine;
             };
             users.${user.username}.imports = mkHomeModules {
               inherit system user;
@@ -162,7 +204,15 @@ let
     ../profiles/private.nix
   ];
 
-  hosts = rec {
+  # The separate macOS admin account (owns the Homebrew prefix, see
+  # modules/darwin/homebrew.nix). Its home rides along with the mbp system
+  # switch (darwinHosts.mbp.extraHomeUsers below); the standalone mbp-admin
+  # target exists for switching it on its own.
+  adminUser = defaultUser // {
+    username = defaultUser.adminUsername or "richie";
+  };
+
+  hosts = {
     linux = {
       system = "x86_64-linux";
       modules = fullModules;
@@ -217,6 +267,21 @@ let
       modules = [ ];
     };
 
+    # Standalone Home Manager target for the admin account (adminUser above):
+    # the daily dev setup without private secrets or the mbp-only extras
+    # (sketchybar, entertainment). Normally not needed — `darwin-rebuild
+    # switch` already switches this home via darwinHosts.mbp.extraHomeUsers —
+    # but usable on its own while logged in as that user. A per-host user
+    # override like this (not identity.nix, which redefines the identity for
+    # EVERY target and breaks the primary user's switches while present) is
+    # the mechanism for a second user on the same machine, like linux-aws and
+    # linux-openclaw below.
+    mbp-admin = {
+      system = "aarch64-darwin";
+      user = adminUser;
+      modules = fullModules;
+    };
+
     mbp = {
       system = "aarch64-darwin";
       secretsMachine = "mbp";
@@ -237,7 +302,17 @@ let
   };
 
   darwinHosts = {
-    inherit (hosts) mbp;
+    # The admin account's home is switched together with the system (same
+    # module set as the standalone mbp-admin target), keeping both users'
+    # package sets aligned in one generation and under one GC root.
+    mbp = hosts.mbp // {
+      extraHomeUsers = {
+        ${adminUser.username} = {
+          user = adminUser;
+          modules = fullModules;
+        };
+      };
+    };
   };
 
   nixosHosts = {
@@ -251,7 +326,9 @@ let
     };
     ec2-x86-vm = {
       system = "x86_64-linux";
-      secretsMachine = "ec2-vm";
+      # No secretsMachine: this host does not import profiles/private.nix. If
+      # it ever gets private secrets, add a machine entry to
+      # secrets-machines.nix and set secretsMachine to its name here.
       hostModule = ../hosts/ec2-x86-vm;
       # Dev tooling + AI tools (no private secrets), so the VM is a full
       # workstation without the private agenix profile.
