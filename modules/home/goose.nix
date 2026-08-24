@@ -221,10 +221,37 @@ let
       OPENAI_HOST \
       OPENAI_BASE_PATH
 
-    # Environment values outrank config.yaml, so force the reviewed defaults
+    # The dedicated launchers pass a private selector rather than relying on
+    # caller-controlled provider environment variables. Interactive sessions
+    # take their provider and model from this environment.
+    provider="ollama-cloud"
+    model="glm-5.2"
+    if [[ "''${1-}" == "--hardened-provider" ]]; then
+      case "''${2-}" in
+        codex)
+          provider="codex-acp"
+          model="gpt-5.2-codex"
+          ;;
+        claude)
+          provider="claude-acp"
+          model="default"
+          ;;
+        chatgpt)
+          provider="chatgpt_codex"
+          model="gpt-5.1-codex"
+          ;;
+        *)
+          echo "error: unknown hardened Goose provider selector" >&2
+          exit 2
+          ;;
+      esac
+      shift 2
+    fi
+
+    # Environment values outrank config.yaml, so force the reviewed selection
     # and endpoint rather than inheriting potentially hostile shell values.
-    export GOOSE_PROVIDER="ollama-cloud"
-    export GOOSE_MODEL="glm-5.2"
+    export GOOSE_PROVIDER="$provider"
+    export GOOSE_MODEL="$model"
     export GOOSE_FAST_MODEL="minimax-m3"
     export GOOSE_MODE="smart_approve"
     export GOOSE_TELEMETRY_OFF="1"
@@ -241,13 +268,13 @@ let
 
   # Explicit launchers use the ACP providers recommended by Goose.
   gooseCodex = pkgs.writeShellScriptBin "goose-codex" ''
-    exec ${gooseWrapper}/bin/goose run --interactive --provider codex-acp --model gpt-5.2-codex "$@"
+    exec ${gooseWrapper}/bin/goose --hardened-provider codex session "$@"
   '';
   gooseClaude = pkgs.writeShellScriptBin "goose-claude" ''
-    exec ${gooseWrapper}/bin/goose run --interactive --provider claude-acp --model default "$@"
+    exec ${gooseWrapper}/bin/goose --hardened-provider claude session "$@"
   '';
   gooseChatgpt = pkgs.writeShellScriptBin "goose-chatgpt" ''
-    exec ${gooseWrapper}/bin/goose run --interactive --provider chatgpt_codex --model gpt-5.1-codex "$@"
+    exec ${gooseWrapper}/bin/goose --hardened-provider chatgpt session "$@"
   '';
 in
 {
