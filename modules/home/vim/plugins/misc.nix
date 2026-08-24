@@ -1,3 +1,6 @@
+let
+  inherit (import ../../../../lib/catppuccin.nix) palette;
+in
 {
   extraConfigLuaPre = ''
     -- Neovim 0.12 installs a default <C-l> redraw/nohlsearch mapping that
@@ -24,7 +27,7 @@
             end
           '';
           color = {
-            fg = "#f9e2af";
+            fg = "#${palette.yellow}";
             gui = "bold";
           };
         }

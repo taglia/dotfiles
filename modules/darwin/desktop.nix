@@ -6,13 +6,18 @@
 }:
 
 let
-  wallpaperDir = "/Users/${user.username}/Pictures/Wallpapers";
-  # The activation script pins the chosen wallpaper path here so the
-  # LaunchAgent can re-apply the *same* image to hot-plugged displays without
-  # re-picking a random one. Lives under the user's state dir, never in the
-  # Nix store, so private/paid images stay out of the store and the repo.
-  stateDir = "/Users/${user.username}/.local/state/dotfiles";
-  stateFile = "${stateDir}/wallpaper";
+  # Shared with the `wallpaper-switch` user command in
+  # modules/home/darwin-apps.nix; lib/wallpaper.nix owns the picker script
+  # and the state-file protocol. The state file pins the chosen wallpaper so
+  # the LaunchAgent can re-apply the *same* image to hot-plugged displays
+  # without re-picking a random one. It lives under the user's state dir,
+  # never in the Nix store, so private/paid images stay out of the store and
+  # the repo.
+  wallpaperLib = import ../../lib/wallpaper.nix;
+  wallpaperSwitch = wallpaperLib.mkSwitchScript pkgs;
+  wallpaperDir = "/Users/${user.username}/${wallpaperLib.wallpaperDirRel}";
+  stateDir = "/Users/${user.username}/${wallpaperLib.stateDirRel}";
+  stateFile = "/Users/${user.username}/${wallpaperLib.stateFileRel}";
   logFile = "${stateDir}/wallpaper.log";
 
   # Reads the pinned wallpaper path and applies it to every currently
@@ -130,37 +135,19 @@ in
   # Takes effect after logout.
   system.defaults.spaces.spans-displays = false;
 
-  # Pick a random private local wallpaper on every `darwin-rebuild switch`,
-  # pin its path to a state file, and apply it to all displays. The directory
-  # is intentionally not a Nix path so paid/private images never enter the
-  # store or the public repository. The random pick happens only here (on
-  # switch); the LaunchAgent below re-applies the *pinned* path on display
-  # changes without re-picking.
+  # Pick a random private local wallpaper on every `darwin-rebuild switch`
+  # (excluding the current one), pin its path to the state file, and apply it
+  # to all displays — all via the shared switcher script, run as the user.
+  # The random pick happens only here (on switch); the LaunchAgent below
+  # re-applies the *pinned* path on display changes without re-picking. A
+  # wallpaper failure must not abort the system switch, hence the warning
+  # fallback.
   system.activationScripts.postActivation.text = lib.mkAfter ''
     if [ -d "${wallpaperDir}" ]; then
-      wallpaper="$(
-        /usr/bin/find "${wallpaperDir}" -type f \( \
-          -iname '*.jpg' -o \
-          -iname '*.jpeg' -o \
-          -iname '*.png' -o \
-          -iname '*.heic' -o \
-          -iname '*.webp' \
-        \) | /usr/bin/sort | /usr/bin/awk '
-          BEGIN { srand() }
-          { lines[NR] = $0 }
-          END { if (NR > 0) print lines[int(rand() * NR) + 1] }
-        '
-      )"
-
-      if [ -n "$wallpaper" ]; then
-        echo >&2 "setting random wallpaper: $wallpaper"
-        # Pin the chosen path so the LaunchAgent can re-apply it later.
-        launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
-          /bin/sh -c 'mkdir -p "$1" && printf "%s\n" "$2" > "$3"' _ \
-          "${stateDir}" "$wallpaper" "${stateFile}"
-        launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
-          ${applyWallpaper}
-      fi
+      echo >&2 "setting random wallpaper"
+      launchctl asuser "$(id -u -- ${user.username})" sudo --user=${user.username} -- \
+        ${wallpaperSwitch}/bin/wallpaper-switch \
+        || echo >&2 "warning: wallpaper-switch failed"
     fi
   '';
 

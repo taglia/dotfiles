@@ -13,61 +13,10 @@ let
   # sandboxed container path on macOS.)
   mouselessConfigPath = "Library/Containers/net.sonuscape.mouseless/Data/.mouseless/configs/config.yaml";
 
-  # Set the desktop wallpaper, mirroring the logic in
-  # modules/darwin/desktop.nix. With an argument, apply that image; without
-  # one, pick a random image from ~/Pictures/Wallpapers (excluding the
-  # current one). In both cases the chosen path is pinned to the state file
-  # so the LaunchAgent in desktop.nix re-applies it after reboot.
-  wallpaperSwitch = pkgs.writeShellScriptBin "wallpaper-switch" ''
-    set -eu
-
-    wallpaperDir="$HOME/Pictures/Wallpapers"
-    stateDir="$HOME/.local/state/dotfiles"
-    stateFile="$stateDir/wallpaper"
-
-    mkdir -p "$stateDir"
-
-    if [ $# -gt 0 ]; then
-      wallpaper="$1"
-      if [ ! -f "$wallpaper" ]; then
-        echo "error: file not found: $wallpaper" >&2
-        exit 1
-      fi
-    else
-      current=""
-      if [ -f "$stateFile" ]; then
-        current="$(cat "$stateFile")"
-      fi
-
-      wallpaper="$(
-        find "$wallpaperDir" -type f \( \
-          -iname '*.jpg' -o \
-          -iname '*.jpeg' -o \
-          -iname '*.png' -o \
-          -iname '*.heic' -o \
-          -iname '*.webp' \
-        \) | sort | awk -v current="$current" '
-          BEGIN { srand() }
-          {
-            all[++total] = $0
-            if ($0 != current) lines[++n] = $0
-          }
-          END {
-            if (n > 0) print lines[int(rand() * n) + 1]
-            else if (total > 0) print all[int(rand() * total) + 1]
-          }
-        '
-      )"
-
-      if [ -z "$wallpaper" ]; then
-        echo "error: no wallpapers found in $wallpaperDir" >&2
-        exit 1
-      fi
-    fi
-
-    printf '%s\n' "$wallpaper" > "$stateFile"
-    exec ${pkgs.desktoppr}/bin/desktoppr "$wallpaper"
-  '';
+  # The shared wallpaper switcher (see lib/wallpaper.nix); the same script is
+  # invoked by the activation hook in modules/darwin/desktop.nix, whose
+  # LaunchAgent re-applies the pinned image after reboots and display changes.
+  wallpaperSwitch = (import ../../lib/wallpaper.nix).mkSwitchScript pkgs;
 in
 
 {

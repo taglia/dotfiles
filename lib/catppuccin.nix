@@ -4,10 +4,12 @@
 # SketchyBar, bare hex for fish).
 #
 # Consumers:
-#   - modules/home/fish.nix        (fish_color_* / fish_pager_color_*)
-#   - modules/home/xdg-files.nix   (starship.toml palette table, kitty theme)
-#   - modules/home/pi.nix          (pi theme JSON)
-#   - modules/home/sketchybar.nix  (colors.lua)
+#   - modules/home/fish.nix          (fish_color_* / fish_pager_color_*)
+#   - modules/home/xdg-files.nix     (starship.toml palette table, kitty theme)
+#   - modules/home/pi.nix            (pi theme JSON)
+#   - modules/home/sketchybar.nix    (colors.lua)
+#   - modules/home/vim/plugins/misc.nix (lualine recording indicator)
+#   - modules/darwin/aerospace.nix   (JankyBorders active/inactive colors)
 #
 # tmux (catppuccin plugin) and ghostty (built-in "Catppuccin Mocha" theme)
 # track the upstream palette on their own and are intentionally not wired here.
