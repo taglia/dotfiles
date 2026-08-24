@@ -9,7 +9,7 @@
 # modules/darwin/aerospace.nix via nix-darwin, while SketchyBar (user-level
 # status bar) lives here under modules/home.
 #
-# Imported only for the `mbp` darwin host (see flake.nix hosts.mbp.modules), so
+# Imported only for the `mbp` darwin host (see hosts.mbp in lib/hosts.nix), so
 # it never reaches the Linux homeConfigurations. The HM module also asserts a
 # Darwin platform as a backstop.
 #

@@ -43,9 +43,10 @@
   i18n.defaultLocale = "en_SG.UTF-8";
 
   # glibc only has the locales we generate. en_US is needed because the Home
-  # Manager shells force LANG/LC_ALL=en_US.UTF-8; en_SG is the system default;
-  # C.UTF-8 is the always-safe fallback. Without en_US you'd get
-  # "cannot change locale" warnings from that forced LC_ALL.
+  # Manager shells set LANG=en_US.UTF-8 (deliberately no LC_ALL, see
+  # modules/home/shells.nix); en_SG is the system default; C.UTF-8 is the
+  # always-safe fallback. Without en_US you'd get "cannot change locale"
+  # warnings from that LANG.
   i18n.supportedLocales = [
     "C.UTF-8/UTF-8"
     "en_US.UTF-8/UTF-8"

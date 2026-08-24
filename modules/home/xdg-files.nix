@@ -19,7 +19,8 @@ let
     "linearmouse/linearmouse.json" = ../../files/linearmouse/linearmouse.json;
     "mise/config.toml" = ../../files/mise/config.toml;
     "pnpm/config.yaml" = ../../files/pnpm/config.yaml;
-    "starship.toml" = ../../files/starship.toml;
+    # starship.toml is NOT listed here: the generated entry below (source file
+    # plus appended palette table) would shadow it in the merge anyway.
     "tmux/os-icon.sh" = ../../files/tmux/os-icon.sh;
     "uv/uv.toml" = ../../files/uv/uv.toml;
     ".bunfig.toml" = ../../files/bun/bunfig.toml;

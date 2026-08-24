@@ -37,56 +37,39 @@ let
   dev-vm = machines.dev-vm.publicKey;
   utm-vm = machines.utm-vm.publicKey;
   openclaw-hetzner = machines.openclaw-hetzner.publicKey;
+
+  # The personal-workstation recipient set shared by most secrets below.
+  workstations = [
+    mbp
+    dev-vm
+    utm-vm
+  ];
 in
 {
   "secrets/ssh-config.age" = {
-    publicKeys = [
-      mbp
-      dev-vm
-      utm-vm
-    ];
+    publicKeys = workstations;
     # Deployed in place as ~/.ssh/config (agenix force-symlinks it on every
     # switch via ln -sfT; SSH follows the symlink). See the header for `path`.
     path = ".ssh/config";
   };
   "secrets/pi-kagi-api-key.age" = {
-    publicKeys = [
-      mbp
-      dev-vm
-      utm-vm
-    ];
+    publicKeys = workstations;
     envVarFile = "KAGI_API_KEY_FILE";
   };
   "secrets/pi-ollama-api-key.age" = {
-    publicKeys = [
-      mbp
-      dev-vm
-      utm-vm
-    ];
+    publicKeys = workstations;
     envVarFile = "OLLAMA_API_KEY_FILE";
   };
   "secrets/pi-moonshot-api-key.age" = {
-    publicKeys = [
-      mbp
-      dev-vm
-      utm-vm
-    ];
+    publicKeys = workstations;
     envVarFile = "MOONSHOT_API_KEY_FILE";
   };
   "secrets/opencode-zen-api-key.age" = {
-    publicKeys = [
-      mbp
-      dev-vm
-      utm-vm
-    ];
+    publicKeys = workstations;
     envVarFile = "ZEN_API_KEY_FILE";
   };
   "secrets/openrouter-api-key.age" = {
-    publicKeys = [
-      mbp
-      dev-vm
-      utm-vm
-    ];
+    publicKeys = workstations;
     envVarFile = "OPENROUTER_API_KEY_FILE";
   };
   "secrets/openclaw-moonshot-api-key.age" = {
