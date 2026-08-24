@@ -1,11 +1,22 @@
 # Global configuration for Goose CLI (aaif-goose/goose). Provider credentials
 # stay in agenix files and are read only when the wrapper starts Goose; neither
 # the keys nor their values enter the Nix store.
+#
+# Residual risk, accepted until Goose grows file-based provider credentials:
+# custom providers take their key from an environment variable (api_key_env),
+# so the wrapper must export the decrypted values, and every subprocess the
+# developer extension spawns inherits them — a smart-approved shell command
+# can read them. The subscription-CLI wrappers below unset the variables for
+# their children, which limits the exposure to the API-provider sessions.
 { pkgs, pkgs-unstable, ... }:
 
 let
   yaml = pkgs.formats.yaml { };
   json = pkgs.formats.json { };
+
+  aiProviders = import ../../lib/ai-providers.nix;
+  secretsRuntime = import ../../lib/secrets-runtime.nix;
+  inherit (aiProviders) defaultModels;
 
   platformExtension = enabled: name: display_name: description: {
     inherit
@@ -30,6 +41,19 @@ let
     exec ${pkgs-unstable.claude-code}/bin/claude --safe-mode --print "$@"
   '';
 
+  # Shared by both Codex wrappers below: run with an ephemeral HOME that
+  # contains only the subscription token, so project/user Codex state stays
+  # invisible and nothing the session writes survives it.
+  codexEphemeralHome = ''
+    isolated_home="$(mktemp -d)"
+    cleanup() { rm -rf -- "$isolated_home"; }
+    trap cleanup EXIT HUP INT TERM
+
+    if [[ -f "$HOME/.codex/auth.json" ]]; then
+      ln -s "$HOME/.codex/auth.json" "$isolated_home/auth.json"
+    fi
+  '';
+
   # Goose's CLI provider can use the current, separately packaged Codex CLI.
   # Give it only the subscription token in an ephemeral home and put the
   # security overrides before Goose's arguments so they apply to subcommands.
@@ -39,13 +63,7 @@ let
       OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY \
       OPENAI_API_KEY CODEX_API_KEY CODEX_CONFIG MODEL_PROVIDER
 
-    isolated_home="$(mktemp -d)"
-    cleanup() { rm -rf -- "$isolated_home"; }
-    trap cleanup EXIT HUP INT TERM
-
-    if [[ -f "$HOME/.codex/auth.json" ]]; then
-      ln -s "$HOME/.codex/auth.json" "$isolated_home/auth.json"
-    fi
+    ${codexEphemeralHome}
 
     # Goose 1.28 calls the current smart-approval mode --full-auto. Current
     # Codex renamed that option to --approve-for-me; translate it without
@@ -85,13 +103,7 @@ let
       exit 2
     fi
 
-    isolated_home="$(mktemp -d)"
-    cleanup() { rm -rf -- "$isolated_home"; }
-    trap cleanup EXIT HUP INT TERM
-
-    if [[ -f "$HOME/.codex/auth.json" ]]; then
-      ln -s "$HOME/.codex/auth.json" "$isolated_home/auth.json"
-    fi
+    ${codexEphemeralHome}
 
     CODEX_HOME="$isolated_home" ${pkgs-unstable.codex-acp}/bin/codex-acp \
       "$@" \
@@ -126,8 +138,8 @@ let
     # Goose 1.28 (currently in nixpkgs unstable) uses these flat keys. They
     # remain supported by newer Goose versions as migration-compatible input.
     GOOSE_PROVIDER = "ollama-cloud";
-    GOOSE_MODEL = "glm-5.2";
-    GOOSE_FAST_MODEL = "minimax-m3";
+    GOOSE_MODEL = defaultModels.large;
+    GOOSE_FAST_MODEL = defaultModels.small;
     # Resolve subscription-backed CLI providers only to reviewed Nix-store
     # wrappers, never to a project-local or package-manager-installed binary.
     CODEX_COMMAND = "${codexCliSafe}/bin/codex-goose";
@@ -179,7 +191,15 @@ let
     };
   };
 
-  model = name: context_limit: { inherit name context_limit; };
+  # Goose's provider JSON wants { name; context_limit; } per model. The ids
+  # exposed per provider are chosen here; the facts (context windows,
+  # endpoints) come from lib/ai-providers.nix.
+  gooseModels =
+    provider: ids:
+    map (id: {
+      name = id;
+      context_limit = provider.models.${id}.context;
+    }) ids;
 
   # Goose's catalog can create this provider interactively, but managing the
   # JSON here pins the endpoint and exposes exactly the same Ollama Cloud model
@@ -187,15 +207,15 @@ let
   ollamaCloudProvider = json.generate "ollama-cloud.json" {
     name = "ollama-cloud";
     engine = "openai";
-    display_name = "Ollama Cloud";
+    display_name = aiProviders.ollamaCloud.name;
     description = "Ollama hosted models";
     api_key_env = "OLLAMA_API_KEY";
-    base_url = "https://ollama.com/v1";
-    models = [
-      (model "glm-5.2" 1000000)
-      (model "kimi-k3" 1000000)
-      (model "deepseek-v4-pro" 262144)
-      (model "minimax-m3" 524288)
+    base_url = aiProviders.ollamaCloud.baseUrl;
+    models = gooseModels aiProviders.ollamaCloud [
+      "glm-5.2"
+      "kimi-k3"
+      "deepseek-v4-pro"
+      "minimax-m3"
     ];
     supports_streaming = true;
     requires_auth = true;
@@ -207,14 +227,14 @@ let
   opencodeProvider = json.generate "opencode.json" {
     name = "opencode";
     engine = "openai";
-    display_name = "OpenCode Zen";
+    display_name = aiProviders.opencodeZen.name;
     description = "OpenCode Zen model gateway";
     api_key_env = "OPENCODE_API_KEY";
-    base_url = "https://opencode.ai/zen/v1";
-    models = [
-      (model "glm-5" 204800)
-      (model "kimi-k2.5" 262144)
-      (model "minimax-m2.5" 204800)
+    base_url = aiProviders.opencodeZen.baseUrl;
+    models = gooseModels aiProviders.opencodeZen [
+      "glm-5"
+      "kimi-k2.5"
+      "minimax-m2.5"
     ];
     supports_streaming = true;
     requires_auth = true;
@@ -288,7 +308,7 @@ let
     # caller-controlled provider environment variables. Interactive sessions
     # take their provider and model from this environment.
     provider="ollama-cloud"
-    model="glm-5.2"
+    model="${defaultModels.large}"
     if [[ "''${1-}" == "--hardened-provider" ]]; then
       case "''${2-}" in
         codex)
@@ -325,16 +345,16 @@ let
     # and endpoint rather than inheriting potentially hostile shell values.
     export GOOSE_PROVIDER="$provider"
     export GOOSE_MODEL="$model"
-    export GOOSE_FAST_MODEL="minimax-m3"
+    export GOOSE_FAST_MODEL="${defaultModels.small}"
     export GOOSE_MODE="smart_approve"
     export GOOSE_TELEMETRY_OFF="1"
     export SECURITY_PROMPT_ENABLED="true"
     export CONTEXT_FILE_NAMES="[]"
     export OPENROUTER_HOST="https://openrouter.ai"
 
-    export OLLAMA_API_KEY="$(<"$HOME/.local/share/agenix/pi_ollama_api_key")"
-    export OPENROUTER_API_KEY="$(<"$HOME/.local/share/agenix/openrouter_api_key")"
-    export OPENCODE_API_KEY="$(<"$HOME/.local/share/agenix/opencode_zen_api_key")"
+    export OLLAMA_API_KEY="$(<"${secretsRuntime.shellFile "pi_ollama_api_key"}")"
+    export OPENROUTER_API_KEY="$(<"${secretsRuntime.shellFile "openrouter_api_key"}")"
+    export OPENCODE_API_KEY="$(<"${secretsRuntime.shellFile "opencode_zen_api_key"}")"
 
     exec ${pkgs-unstable.goose-cli}/bin/goose "$@"
   '';
@@ -342,59 +362,29 @@ let
   # The primary launchers use the separately packaged proprietary CLIs so new
   # subscription models are not limited by the older runtime embedded in an
   # ACP adapter. Explicit ACP launchers remain available for compatibility
-  # testing and can become primary once the adapters catch up.
-  gooseCodex = pkgs.writeShellScriptBin "goose-codex" ''
-    set -euo pipefail
-    model="gpt-5.6-sol"
-    if [[ "''${1-}" == "--model" ]]; then
-      [[ -n "''${2-}" ]] || { echo "error: --model requires a value" >&2; exit 2; }
-      model="$2"
-      shift 2
-    elif [[ "''${1-}" == --model=* ]]; then
-      model="''${1#--model=}"
-      shift
-    fi
-    exec ${gooseWrapper}/bin/goose --hardened-provider codex "$model" session "$@"
-  '';
-  gooseClaude = pkgs.writeShellScriptBin "goose-claude" ''
-    set -euo pipefail
-    model="claude-sonnet-5"
-    if [[ "''${1-}" == "--model" ]]; then
-      [[ -n "''${2-}" ]] || { echo "error: --model requires a value" >&2; exit 2; }
-      model="$2"
-      shift 2
-    elif [[ "''${1-}" == --model=* ]]; then
-      model="''${1#--model=}"
-      shift
-    fi
-    exec ${gooseWrapper}/bin/goose --hardened-provider claude "$model" session "$@"
-  '';
-  gooseCodexAcp = pkgs.writeShellScriptBin "goose-codex-acp" ''
-    set -euo pipefail
-    model="gpt-5.4"
-    if [[ "''${1-}" == "--model" ]]; then
-      [[ -n "''${2-}" ]] || { echo "error: --model requires a value" >&2; exit 2; }
-      model="$2"
-      shift 2
-    elif [[ "''${1-}" == --model=* ]]; then
-      model="''${1#--model=}"
-      shift
-    fi
-    exec ${gooseWrapper}/bin/goose --hardened-provider codex-acp "$model" session "$@"
-  '';
-  gooseClaudeAcp = pkgs.writeShellScriptBin "goose-claude-acp" ''
-    set -euo pipefail
-    model="claude-sonnet-5"
-    if [[ "''${1-}" == "--model" ]]; then
-      [[ -n "''${2-}" ]] || { echo "error: --model requires a value" >&2; exit 2; }
-      model="$2"
-      shift 2
-    elif [[ "''${1-}" == --model=* ]]; then
-      model="''${1#--model=}"
-      shift
-    fi
-    exec ${gooseWrapper}/bin/goose --hardened-provider claude-acp "$model" session "$@"
-  '';
+  # testing and can become primary once the adapters catch up. All four share
+  # this template: an optional leading --model flag, then a session started
+  # through the hardened wrapper's private selector.
+  mkGooseLauncher =
+    name: selector: defaultModel:
+    pkgs.writeShellScriptBin name ''
+      set -euo pipefail
+      model="${defaultModel}"
+      if [[ "''${1-}" == "--model" ]]; then
+        [[ -n "''${2-}" ]] || { echo "error: --model requires a value" >&2; exit 2; }
+        model="$2"
+        shift 2
+      elif [[ "''${1-}" == --model=* ]]; then
+        model="''${1#--model=}"
+        shift
+      fi
+      exec ${gooseWrapper}/bin/goose --hardened-provider ${selector} "$model" session "$@"
+    '';
+
+  gooseCodex = mkGooseLauncher "goose-codex" "codex" "gpt-5.6-sol";
+  gooseClaude = mkGooseLauncher "goose-claude" "claude" "claude-sonnet-5";
+  gooseCodexAcp = mkGooseLauncher "goose-codex-acp" "codex-acp" "gpt-5.4";
+  gooseClaudeAcp = mkGooseLauncher "goose-claude-acp" "claude-acp" "claude-sonnet-5";
   gooseChatgpt = pkgs.writeShellScriptBin "goose-chatgpt" ''
     exec ${gooseWrapper}/bin/goose --hardened-provider chatgpt gpt-5.1-codex session "$@"
   '';

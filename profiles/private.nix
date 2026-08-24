@@ -73,7 +73,10 @@ let
   # `${XDG_RUNTIME_DIR}/agenix/foo` into `/agenix/foo`.  Give secrets exposed
   # through envVarFile a stable, cross-platform consumer symlink while their
   # decrypted backing files remain in agenix's per-OS runtime directory.
-  envFilePath = name: "${config.home.homeDirectory}/.local/share/agenix/${name}";
+  # The directory constant is shared with the runtime consumers (goose.nix,
+  # crush.nix) through ../lib/secrets-runtime.nix.
+  secretsRuntime = import ../lib/secrets-runtime.nix;
+  envFilePath = name: "${config.home.homeDirectory}/${secretsRuntime.dir}/${name}";
 in
 {
   assertions = [
@@ -134,8 +137,16 @@ in
     path: rule: lib.nameValuePair rule.envVarFile config.age.secrets.${toName path}.path
   ) withEnvVarFile;
 
+  # Host-scoped extra for private machines, not agenix wiring: atuin sync is
+  # configured only where this profile is imported, because those are the
+  # machines that get logged into the sync server (syncing is ultimately
+  # gated by that login, not by this block). History leaves the machine
+  # end-to-end encrypted; secrets_filter is atuin's built-in skip of
+  # commands that look like they contain credentials — its current default,
+  # pinned here because history is synced off-machine.
   programs.atuin.settings = {
     auto_sync = true;
     sync_frequency = "5m";
+    secrets_filter = true;
   };
 }

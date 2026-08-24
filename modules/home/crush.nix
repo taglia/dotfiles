@@ -7,10 +7,24 @@
 # startup with shell commands that read the agenix-deployed symlinks under
 # ~/.local/share/agenix/ directly, so no environment variables need to reach
 # Crush; the nono profile only needs a narrow read_file grant per key file.
-{ pkgs, pkgs-unstable, ... }:
+{
+  lib,
+  pkgs,
+  pkgs-unstable,
+  ...
+}:
 
 let
   json = pkgs.formats.json { };
+
+  aiProviders = import ../../lib/ai-providers.nix;
+  secretsRuntime = import ../../lib/secrets-runtime.nix;
+  inherit (aiProviders) defaultModels;
+
+  # Startup shell expansion reading an agenix-deployed secret; see the header
+  # comment. The path constant is shared with profiles/private.nix through
+  # lib/secrets-runtime.nix.
+  secretExpand = name: ''$(cat "${secretsRuntime.shellFile name}")'';
 
   # Wrapper that blocks on any local Crush config files (crushrc or
   # crush.json) found between cwd and the git root. crushrc files are
@@ -51,15 +65,27 @@ let
     exec ${pkgs-unstable.crush}/bin/crush "$@"
   '';
 
+  # Crush's model schema, filled from the shared catalog in
+  # lib/ai-providers.nix; the ids exposed here are chosen per tool.
   ollamaModel =
-    id: name: contextWindow: extra:
+    id:
+    let
+      m = aiProviders.ollamaCloud.models.${id};
+    in
     {
-      inherit id name;
-      context_window = contextWindow;
+      inherit id;
+      inherit (m) name;
+      context_window = m.context;
       default_max_tokens = 65536;
       can_reason = true;
     }
-    // extra;
+    // lib.optionalAttrs (m ? attachments) { supports_attachments = m.attachments; }
+    // lib.optionalAttrs (m ? cost) {
+      cost_per_1m_in = m.cost.input;
+      cost_per_1m_out = m.cost.output;
+      cost_per_1m_in_cached = m.cost.cacheRead;
+      cost_per_1m_out_cached = m.cost.cacheWrite;
+    };
 
   crushConfig = json.generate "crush.json" {
     "$schema" = "https://charm.land/crush.json";
@@ -86,42 +112,36 @@ let
 
     models = {
       large = {
-        model = "glm-5.2";
+        model = defaultModels.large;
         provider = "ollama-cloud";
       };
       small = {
-        model = "minimax-m3";
+        model = defaultModels.small;
         provider = "ollama-cloud";
       };
     };
 
     providers = {
       ollama-cloud = {
-        name = "Ollama Cloud";
+        inherit (aiProviders.ollamaCloud) name;
         type = "openai-compat";
-        base_url = "https://ollama.com/v1";
-        api_key = "$(cat \"$HOME\"/.local/share/agenix/pi_ollama_api_key)";
+        base_url = aiProviders.ollamaCloud.baseUrl;
+        api_key = secretExpand "pi_ollama_api_key";
         # Only the explicitly listed models below; no /v1/models discovery
         # against the cloud endpoint.
         discover_models = false;
-        models = [
-          (ollamaModel "glm-5.2" "GLM-5.2 (Ollama Cloud)" 1000000 { })
-          (ollamaModel "kimi-k3" "Kimi K3 (Ollama Cloud)" 1000000 {
-            supports_attachments = true;
-            cost_per_1m_in = 3;
-            cost_per_1m_out = 15;
-            cost_per_1m_in_cached = 0.3;
-            cost_per_1m_out_cached = 0;
-          })
-          (ollamaModel "deepseek-v4-pro" "DeepSeek V4 Pro (Ollama Cloud)" 262144 { })
-          (ollamaModel "minimax-m3" "MiniMax M3 (Ollama Cloud)" 524288 { })
+        models = map ollamaModel [
+          "glm-5.2"
+          "kimi-k3"
+          "deepseek-v4-pro"
+          "minimax-m3"
         ];
       };
 
       openrouter = {
         name = "OpenRouter";
         type = "openai-compat";
-        api_key = "$(cat \"$HOME\"/.local/share/agenix/openrouter_api_key)";
+        api_key = secretExpand "openrouter_api_key";
         base_url = "https://openrouter.ai/api/v1";
       };
 
@@ -136,9 +156,11 @@ let
       # compromised upstream could redirect requests (and the Bearer key) to a
       # host of its choosing. With this override the endpoint only ever changes
       # through a reviewed commit here.
+      # Crush expects the catalog's models endpoint here, not the bare API
+      # root shared with the other tools — hence the /models suffix.
       opencode-zen = {
-        base_url = "https://opencode.ai/zen/v1/models";
-        api_key = "$(cat \"$HOME\"/.local/share/agenix/opencode_zen_api_key)";
+        base_url = "${aiProviders.opencodeZen.baseUrl}/models";
+        api_key = secretExpand "opencode_zen_api_key";
       };
     };
   };
@@ -162,7 +184,9 @@ in
   xdg.configFile."crush/crush.json".source = crushConfig;
   xdg.configFile."nono/profiles/crush-base.json".source = nonoBaseProfile;
 
-  # The wrapper shadows the real crush binary via PATH precedence so every
-  # invocation runs sandboxed under nono with the pinned profile.
+  # The wrapper shadows the real crush binary via PATH precedence to block
+  # unreviewed project-local config (see its comment above). It does NOT
+  # sandbox: nono is invoked manually with the base profile above when
+  # sandboxing is needed.
   home.packages = [ crushWrapper ];
 }

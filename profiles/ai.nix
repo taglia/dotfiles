@@ -7,9 +7,10 @@
 
 let
   # A second nixpkgs (unstable) is imported here so this profile can pull a few
-  # fast-moving tools ahead of the stable channel. Only this profile uses
-  # unstable, so it is the single extra nixpkgs evaluation in the flake, and the
-  # unfree allowance stays scoped to exactly the packages we opt into.
+  # fast-moving tools ahead of the stable channel. Other modules reuse the
+  # flake's shared `inputs.nixpkgs-unstable.legacyPackages` evaluation; this
+  # configured import is the single extra one, and the unfree allowance stays
+  # scoped to exactly the packages we opt into.
   pkgs-unstable = import inputs.nixpkgs-unstable {
     system = pkgs.stdenv.hostPlatform.system;
 
@@ -37,9 +38,15 @@ in
   imports = [
     ../modules/home/opencode.nix
     ../modules/home/pi.nix
-    (import ../modules/home/crush.nix { inherit pkgs pkgs-unstable; })
-    (import ../modules/home/goose.nix { inherit pkgs pkgs-unstable; })
+    ../modules/home/crush.nix
+    ../modules/home/goose.nix
   ];
+
+  # Makes the configured unstable instance above available to the imported
+  # modules as an ordinary module argument (crush.nix and goose.nix take
+  # `pkgs-unstable`), keeping them real modules instead of hand-applied
+  # functions.
+  _module.args.pkgs-unstable = pkgs-unstable;
 
   # `services.ollama` installs the `ollama` package itself and runs
   # `ollama serve` as a managed background service: a user LaunchAgent
@@ -70,7 +77,8 @@ in
     pkgs-unstable.opencode
     # crush is installed via the wrapper in modules/home/crush.nix, which
     # references the real binary by absolute store path and shadows it in
-    # PATH so every invocation runs under nono.
+    # PATH to block unreviewed project-local config. nono is installed for
+    # manual sandboxing (see crush.nix); the wrapper does not invoke it.
     pkgs-unstable.nono
     pkgs-unstable.pi-coding-agent
     pi-npm
