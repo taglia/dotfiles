@@ -2,6 +2,8 @@ import type { Static } from "typebox";
 import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 
@@ -54,7 +56,22 @@ function getEnvInt(name: string, fallback: number): number {
 }
 
 function getKagiBaseUrl(): string {
-  return process.env.KAGI_BASE_URL?.trim().replace(/\/$/, "") || DEFAULT_KAGI_BASE_URL;
+  // Requests to this base URL carry the Kagi API key in an Authorization
+  // header, so only honor overrides that still point at kagi.com — anything
+  // else would leak the key to an arbitrary host.
+  const override = process.env.KAGI_BASE_URL?.trim().replace(/\/$/, "");
+  if (override) {
+    try {
+      const parsed = new URL(override);
+      const host = parsed.hostname.toLowerCase();
+      if (parsed.protocol === "https:" && (host === "kagi.com" || host.endsWith(".kagi.com"))) {
+        return override;
+      }
+    } catch {
+      /* fall through to the default */
+    }
+  }
+  return DEFAULT_KAGI_BASE_URL;
 }
 
 function getFetchTimeoutMs(): number {
@@ -87,11 +104,20 @@ function combineSignals(...signals: Array<AbortSignal | undefined>): AbortSignal
   if (active.length === 0) return undefined;
   if (active.length === 1) return active[0];
 
+  // AbortSignal.any (Node 20.3+/Bun) handles listener lifetimes for us.
+  if (typeof AbortSignal.any === "function") {
+    return AbortSignal.any(active);
+  }
+
+  // Fallback: detach our listeners from the caller-owned signals as soon as
+  // one of them fires, so we don't accumulate listeners on long-lived signals.
   const controller = new AbortController();
+  const cleanups: Array<() => void> = [];
   const abort = (signal: AbortSignal) => {
     if (controller.signal.aborted) return;
     const reason = "reason" in signal ? signal.reason : undefined;
     controller.abort(reason);
+    for (const cleanup of cleanups) cleanup();
   };
 
   for (const signal of active) {
@@ -99,7 +125,9 @@ function combineSignals(...signals: Array<AbortSignal | undefined>): AbortSignal
       abort(signal);
       break;
     }
-    signal.addEventListener("abort", () => abort(signal), { once: true });
+    const onAbort = () => abort(signal);
+    signal.addEventListener("abort", onAbort, { once: true });
+    cleanups.push(() => signal.removeEventListener("abort", onAbort));
   }
 
   return controller.signal;
@@ -161,6 +189,69 @@ function requireHttpUrl(url: string): URL {
   }
 
   return parsed;
+}
+
+function isPrivateIPv4(address: string): boolean {
+  const octets = address.split(".").map((part) => Number.parseInt(part, 10));
+  if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+    return true; // unparsable: refuse rather than guess
+  }
+  const [a, b] = octets;
+  return (
+    a === 0 || // 0.0.0.0/8 ("this network", routes to localhost on Linux)
+    a === 10 || // 10.0.0.0/8
+    a === 127 || // 127.0.0.0/8 loopback
+    (a === 169 && b === 254) || // 169.254.0.0/16 link-local incl. cloud metadata
+    (a === 172 && b >= 16 && b <= 31) || // 172.16.0.0/12
+    (a === 192 && b === 168) // 192.168.0.0/16
+  );
+}
+
+function isPrivateAddress(address: string): boolean {
+  const family = isIP(address);
+  if (family === 4) return isPrivateIPv4(address);
+  if (family !== 6) return true; // unparsable: refuse rather than guess
+
+  const normalized = address.toLowerCase();
+  // IPv4-mapped/compatible addresses (::ffff:10.0.0.1) inherit the IPv4 rules.
+  const v4Match = normalized.match(/(\d+\.\d+\.\d+\.\d+)$/);
+  if (v4Match) return isPrivateIPv4(v4Match[1]);
+
+  if (normalized === "::" || normalized === "::1") return true; // unspecified / loopback
+  const firstGroup = Number.parseInt(normalized.split(":")[0] || "0", 16);
+  if ((firstGroup & 0xfe00) === 0xfc00) return true; // fc00::/7 unique local
+  if ((firstGroup & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+  return false;
+}
+
+/**
+ * SSRF guard for web_fetch: resolve the URL's host and reject anything that
+ * points at private, loopback, link-local, or metadata address space.
+ */
+async function assertPublicHost(url: URL): Promise<void> {
+  const hostname = url.hostname.replace(/^\[|\]$/g, ""); // URL keeps [] around IPv6 hosts
+  const addresses: string[] = [];
+
+  if (isIP(hostname)) {
+    addresses.push(hostname);
+  } else {
+    let resolved: Array<{ address: string }>;
+    try {
+      resolved = await lookup(hostname, { all: true });
+    } catch {
+      throw new Error(`Could not resolve host: ${hostname}`);
+    }
+    if (resolved.length === 0) {
+      throw new Error(`Could not resolve host: ${hostname}`);
+    }
+    addresses.push(...resolved.map((entry) => entry.address));
+  }
+
+  for (const address of addresses) {
+    if (isPrivateAddress(address)) {
+      throw new Error(`Refusing to fetch non-public address: ${hostname} (${address})`);
+    }
+  }
 }
 
 function stringifySearchResults(query: string, results: SearchResult[]): string {
@@ -332,19 +423,42 @@ async function runKagiExtract(
   };
 }
 
+const MAX_REDIRECTS = 5;
+
 async function fetchText(
   url: string,
   signal?: AbortSignal,
 ): Promise<{ finalUrl: string; contentType: string; body: string }> {
-  const response = await fetch(url, {
-    method: "GET",
-    redirect: "follow",
-    headers: {
-      "User-Agent": getUserAgent(),
-      Accept: "text/html, text/plain, text/markdown, application/xhtml+xml;q=0.9, */*;q=0.1",
-    },
-    signal: withTimeout(signal, getFetchTimeoutMs()),
-  });
+  // Follow redirects manually so every hop — not just the first URL — gets
+  // the SSRF check; a public host could otherwise redirect us to
+  // localhost/metadata endpoints.
+  const timeoutSignal = withTimeout(signal, getFetchTimeoutMs());
+  let currentUrl = requireHttpUrl(url);
+  let response: Response;
+  for (let redirects = 0; ; redirects++) {
+    await assertPublicHost(currentUrl);
+    response = await fetch(currentUrl, {
+      method: "GET",
+      redirect: "manual",
+      headers: {
+        "User-Agent": getUserAgent(),
+        Accept: "text/html, text/plain, text/markdown, application/xhtml+xml;q=0.9, */*;q=0.1",
+      },
+      signal: timeoutSignal,
+    });
+
+    const location = response.headers.get("location");
+    if (response.status < 300 || response.status >= 400 || !location) break;
+    if (redirects >= MAX_REDIRECTS) {
+      throw new Error(`Too many redirects (more than ${MAX_REDIRECTS})`);
+    }
+    try {
+      await response.body?.cancel();
+    } catch {
+      /* ignore */
+    }
+    currentUrl = requireHttpUrl(new URL(location, currentUrl).toString());
+  }
 
   if (!response.ok) {
     throw new Error(`Fetch failed with HTTP ${response.status}`);
