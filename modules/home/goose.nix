@@ -25,7 +25,9 @@ let
     unset \
       OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY \
       ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN
-    exec ${pkgs-unstable.claude-code}/bin/claude --safe-mode "$@"
+    # Goose 1.28 predates Claude Code requiring --print for its stream-json
+    # input/output protocol. Supply it here while retaining subscription auth.
+    exec ${pkgs-unstable.claude-code}/bin/claude --safe-mode --print "$@"
   '';
 
   # Goose's CLI provider can use the current, separately packaged Codex CLI.
@@ -45,11 +47,23 @@ let
       ln -s "$HOME/.codex/auth.json" "$isolated_home/auth.json"
     fi
 
+    # Goose 1.28 calls the current smart-approval mode --full-auto. Current
+    # Codex renamed that option to --approve-for-me; translate it without
+    # weakening the workspace-write sandbox or changing other arguments.
+    codex_args=()
+    for arg in "$@"; do
+      if [[ "$arg" == "--full-auto" ]]; then
+        codex_args+=("--approve-for-me")
+      else
+        codex_args+=("$arg")
+      fi
+    done
+
     CODEX_HOME="$isolated_home" ${pkgs-unstable.codex}/bin/codex \
       -c 'mcp_servers={}' \
       -c 'project_doc_max_bytes=0' \
       -c 'features.skills=false' \
-      "$@"
+      "''${codex_args[@]}"
   '';
 
   # Expose the pinned ACP adapters to Goose only through constrained wrappers.
