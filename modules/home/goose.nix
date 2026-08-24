@@ -22,8 +22,34 @@ let
   # Claude's safe mode disables inherited MCPs, plugins, hooks, LSP, and
   # project instructions while preserving normal authentication.
   claudeSafe = pkgs.writeShellScriptBin "claude-goose" ''
-    unset OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY
+    unset \
+      OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY \
+      ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN
     exec ${pkgs-unstable.claude-code}/bin/claude --safe-mode "$@"
+  '';
+
+  # Goose's CLI provider can use the current, separately packaged Codex CLI.
+  # Give it only the subscription token in an ephemeral home and put the
+  # security overrides before Goose's arguments so they apply to subcommands.
+  codexCliSafe = pkgs.writeShellScriptBin "codex-goose" ''
+    set -euo pipefail
+    unset \
+      OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY \
+      OPENAI_API_KEY CODEX_API_KEY CODEX_CONFIG MODEL_PROVIDER
+
+    isolated_home="$(mktemp -d)"
+    cleanup() { rm -rf -- "$isolated_home"; }
+    trap cleanup EXIT HUP INT TERM
+
+    if [[ -f "$HOME/.codex/auth.json" ]]; then
+      ln -s "$HOME/.codex/auth.json" "$isolated_home/auth.json"
+    fi
+
+    CODEX_HOME="$isolated_home" ${pkgs-unstable.codex}/bin/codex \
+      -c 'mcp_servers={}' \
+      -c 'project_doc_max_bytes=0' \
+      -c 'features.skills=false' \
+      "$@"
   '';
 
   # Expose the pinned ACP adapters to Goose only through constrained wrappers.
@@ -32,7 +58,9 @@ let
   # project instructions, or skills. All children inherit these restrictions.
   codexAcpSafe = pkgs.writeShellScriptBin "codex-acp" ''
     set -euo pipefail
-    codex_model="''${GOOSE_CODEX_ACP_MODEL:-gpt-5.6-sol}"
+    # codex-acp 0.13 embeds Codex 0.128 rather than invoking the separately
+    # packaged Codex CLI. GPT-5.6 Sol rejects that older embedded client.
+    codex_model="''${GOOSE_CODEX_ACP_MODEL:-gpt-5.4}"
     unset \
       OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY \
       OPENAI_API_KEY CODEX_API_KEY CODEX_CONFIG MODEL_PROVIDER \
@@ -70,7 +98,7 @@ let
       ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN \
       GOOSE_CLAUDE_ACP_MODEL
 
-    if [[ ! "$claude_model" =~ ^[a-zA-Z0-9._:\[\]-]+$ ]]; then
+    if [[ ! "$claude_model" =~ ^[-a-zA-Z0-9._:]+$ ]]; then
       echo "error: invalid Claude model identifier: $claude_model" >&2
       exit 2
     fi
@@ -86,6 +114,10 @@ let
     GOOSE_PROVIDER = "ollama-cloud";
     GOOSE_MODEL = "glm-5.2";
     GOOSE_FAST_MODEL = "minimax-m3";
+    # Resolve subscription-backed CLI providers only to reviewed Nix-store
+    # wrappers, never to a project-local or package-manager-installed binary.
+    CODEX_COMMAND = "${codexCliSafe}/bin/codex-goose";
+    CLAUDE_CODE_COMMAND = "${claudeSafe}/bin/claude-goose";
     # Let Goose classify tool calls and automatically approve those it judges
     # safe, while retaining prompts for calls that require human approval.
     GOOSE_MODE = "smart_approve";
@@ -246,11 +278,19 @@ let
     if [[ "''${1-}" == "--hardened-provider" ]]; then
       case "''${2-}" in
         codex)
+          provider="codex"
+          model="''${3-}"
+          ;;
+        claude)
+          provider="claude-code"
+          model="''${3-}"
+          ;;
+        codex-acp)
           provider="codex-acp"
           model="''${3-}"
           export GOOSE_CODEX_ACP_MODEL="$model"
           ;;
-        claude)
+        claude-acp)
           provider="claude-acp"
           model="''${3-}"
           export GOOSE_CLAUDE_ACP_MODEL="$model"
@@ -285,7 +325,10 @@ let
     exec ${pkgs-unstable.goose-cli}/bin/goose "$@"
   '';
 
-  # Explicit launchers use the ACP providers recommended by Goose.
+  # The primary launchers use the separately packaged proprietary CLIs so new
+  # subscription models are not limited by the older runtime embedded in an
+  # ACP adapter. Explicit ACP launchers remain available for compatibility
+  # testing and can become primary once the adapters catch up.
   gooseCodex = pkgs.writeShellScriptBin "goose-codex" ''
     set -euo pipefail
     model="gpt-5.6-sol"
@@ -312,6 +355,32 @@ let
     fi
     exec ${gooseWrapper}/bin/goose --hardened-provider claude "$model" session "$@"
   '';
+  gooseCodexAcp = pkgs.writeShellScriptBin "goose-codex-acp" ''
+    set -euo pipefail
+    model="gpt-5.4"
+    if [[ "''${1-}" == "--model" ]]; then
+      [[ -n "''${2-}" ]] || { echo "error: --model requires a value" >&2; exit 2; }
+      model="$2"
+      shift 2
+    elif [[ "''${1-}" == --model=* ]]; then
+      model="''${1#--model=}"
+      shift
+    fi
+    exec ${gooseWrapper}/bin/goose --hardened-provider codex-acp "$model" session "$@"
+  '';
+  gooseClaudeAcp = pkgs.writeShellScriptBin "goose-claude-acp" ''
+    set -euo pipefail
+    model="claude-sonnet-5"
+    if [[ "''${1-}" == "--model" ]]; then
+      [[ -n "''${2-}" ]] || { echo "error: --model requires a value" >&2; exit 2; }
+      model="$2"
+      shift 2
+    elif [[ "''${1-}" == --model=* ]]; then
+      model="''${1#--model=}"
+      shift
+    fi
+    exec ${gooseWrapper}/bin/goose --hardened-provider claude-acp "$model" session "$@"
+  '';
   gooseChatgpt = pkgs.writeShellScriptBin "goose-chatgpt" ''
     exec ${gooseWrapper}/bin/goose --hardened-provider chatgpt gpt-5.1-codex session "$@"
   '';
@@ -330,6 +399,8 @@ in
     claudeAcpSafe
     gooseCodex
     gooseClaude
+    gooseCodexAcp
+    gooseClaudeAcp
     gooseChatgpt
   ];
 }
