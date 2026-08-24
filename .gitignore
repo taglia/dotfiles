@@ -17,3 +17,7 @@ result-*
 # minimal-web install in modules/home/pi.nix can use `npm ci`)
 files/pi/agent/extensions/*/node_modules/
 crush.json
+
+# Local agent state (session database, logs, machine-local settings)
+.claude/settings.local.json
+.crush/

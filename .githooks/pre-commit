@@ -8,7 +8,12 @@ set -euo pipefail
 # committing it fail loudly instead.
 # --ita-visible-in-index: intent-to-add entries (staged by
 # scripts/bootstrap_and_switch.sh) are invisible to plain `git diff --cached`.
-if git diff --cached --name-only --ita-visible-in-index | grep -qx 'identity\.nix'; then
+# Captured into a variable rather than piped: `git | grep -q` under pipefail
+# can fail open (grep exits at first match, git dies with SIGPIPE, the
+# pipeline reports failure and the commit goes through). This way a git
+# failure aborts the hook (fail closed) and grep's exit status stands alone.
+staged_files="$(git diff --cached --name-only --ita-visible-in-index)"
+if grep -qx 'identity\.nix' <<<"$staged_files"; then
   echo "error: refusing to commit identity.nix (machine-local, see .gitignore)" >&2
   echo "hint: git restore --staged identity.nix" >&2
   exit 1

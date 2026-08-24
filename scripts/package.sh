@@ -13,13 +13,14 @@ tar \
   --exclude="$repo_name/.agents" \
   --exclude="$repo_name/.claude" \
   --exclude="$repo_name/.codex" \
+  --exclude="$repo_name/.crush" \
   --exclude="$repo_name/.git" \
   --exclude="$repo_name/.github" \
   --exclude="$repo_name/.pi" \
   --exclude="$repo_name/packages" \
   --exclude="$repo_name/result" \
   --exclude="$repo_name/result-*" \
-  --exclude="$repo_name/*.log" \
+  --exclude="*.log" \
   --exclude="$repo_name/.nvimlog" \
   --exclude="$repo_name/.DS_Store" \
   --exclude="$repo_name/identity.nix" \

@@ -118,11 +118,19 @@ package_receipt_apps() {
 
 payload_app_install_targets() {
   local cask="$1"
+  local payload_listing
   local payload_app
   local basename
   local candidate
 
-  brew list --cask "$cask" 2>/dev/null |
+  # Captured first: under `set -euo pipefail` a failing `brew list --cask` in
+  # a pipeline would abort the whole report instead of just this cask.
+  if ! payload_listing="$(brew list --cask "$cask" 2>/dev/null)"; then
+    printf 'warning: brew list --cask failed for %s; skipping its payload apps\n' "$cask" >&2
+    return 0
+  fi
+
+  printf '%s\n' "$payload_listing" |
     ruby -e '
       ARGF.each_line(chomp: true) do |line|
         line.scan(%r{[^/]+\.app}).each do |app|
@@ -147,13 +155,22 @@ payload_app_install_targets() {
 
 {
   if [[ -s "$installed_casks" ]]; then
-    mapfile -t installed_cask_args < "$installed_casks"
-    installed_cask_count="${#installed_cask_args[@]}"
+    # `wc -l` + `read` loop instead of `mapfile`: the latter needs bash >= 4,
+    # and `#!/usr/bin/env bash` can resolve to macOS stock bash 3.2. The loop
+    # reads from fd 3 so commands in the body cannot consume the cask list.
+    installed_cask_count="$(wc -l < "$installed_casks" | tr -d '[:space:]')"
+    cask_number=0
 
-    for i in "${!installed_cask_args[@]}"; do
-      cask="${installed_cask_args[$i]}"
-      printf 'Checking cask %d/%d: %s\n' "$((i + 1))" "$installed_cask_count" "$cask" >&2
-      brew info --cask --json=v2 "$cask" |
+    while IFS= read -r cask <&3; do
+      cask_number=$((cask_number + 1))
+      printf 'Checking cask %d/%d: %s\n' "$cask_number" "$installed_cask_count" "$cask" >&2
+      # Captured first: under `set -euo pipefail` a failing `brew info --cask`
+      # in a pipeline would abort the whole report instead of just this cask.
+      if ! cask_info_json="$(brew info --cask --json=v2 "$cask")"; then
+        printf 'warning: brew info --cask failed for %s; skipping its artifacts\n' "$cask" >&2
+        continue
+      fi
+      printf '%s\n' "$cask_info_json" |
         ruby -rjson -e '
           json = JSON.parse(STDIN.read)
           json.fetch("casks", []).each do |cask|
@@ -189,7 +206,7 @@ payload_app_install_targets() {
           esac
         done
       payload_app_install_targets "$cask"
-    done
+    done 3< "$installed_casks"
   fi
 } | sort -u > "$brew_owned_apps"
 
