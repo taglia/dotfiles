@@ -19,11 +19,23 @@ let
     available_tools = [ ];
   };
 
-  # Do not inherit Codex CLI MCP/plugin configuration. Each invocation gets an
-  # empty CODEX_HOME containing only the existing OAuth login token.
-  codexNoMcp = pkgs.writeShellScriptBin "codex-goose" ''
-    set -euo pipefail
+  # Claude's safe mode disables inherited MCPs, plugins, hooks, LSP, and
+  # project instructions while preserving normal authentication.
+  claudeSafe = pkgs.writeShellScriptBin "claude-goose" ''
     unset OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY
+    exec ${pkgs-unstable.claude-code}/bin/claude --safe-mode "$@"
+  '';
+
+  # Expose the pinned ACP adapters to Goose only through constrained wrappers.
+  # Codex gets an ephemeral home containing only its OAuth token; final CLI
+  # overrides prevent project/user configuration from adding MCP servers,
+  # project instructions, or skills. All children inherit these restrictions.
+  codexAcpSafe = pkgs.writeShellScriptBin "codex-acp" ''
+    set -euo pipefail
+    unset \
+      OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY \
+      OPENAI_API_KEY CODEX_API_KEY CODEX_CONFIG MODEL_PROVIDER
+
     isolated_home="$(mktemp -d)"
     cleanup() { rm -rf -- "$isolated_home"; }
     trap cleanup EXIT HUP INT TERM
@@ -32,14 +44,23 @@ let
       ln -s "$HOME/.codex/auth.json" "$isolated_home/auth.json"
     fi
 
-    CODEX_HOME="$isolated_home" ${pkgs-unstable.codex}/bin/codex "$@"
+    CODEX_HOME="$isolated_home" ${pkgs-unstable.codex-acp}/bin/codex-acp \
+      "$@" \
+      -c 'mcp_servers={}' \
+      -c 'project_doc_max_bytes=0' \
+      -c 'features.skills=false'
   '';
 
-  # Claude's safe mode disables inherited MCPs, plugins, hooks, LSP, and
-  # project instructions while preserving normal authentication.
-  claudeSafe = pkgs.writeShellScriptBin "claude-goose" ''
-    unset OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY
-    exec ${pkgs-unstable.claude-code}/bin/claude --safe-mode "$@"
+  # The Nix adapter normally points at the raw Claude binary. Override that
+  # default with the safe-mode wrapper so subscription auth remains available
+  # while MCP, plugins, hooks, LSP, and project instructions stay disabled.
+  claudeAcpSafe = pkgs.writeShellScriptBin "claude-agent-acp" ''
+    set -euo pipefail
+    unset \
+      OLLAMA_API_KEY OPENROUTER_API_KEY OPENCODE_API_KEY \
+      ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN
+    export CLAUDE_CODE_EXECUTABLE="${claudeSafe}/bin/claude-goose"
+    exec ${pkgs-unstable.claude-agent-acp}/bin/claude-agent-acp "$@"
   '';
 
   gooseConfig = yaml.generate "goose-config.yaml" {
@@ -48,10 +69,6 @@ let
     GOOSE_PROVIDER = "ollama-cloud";
     GOOSE_MODEL = "glm-5.2";
     GOOSE_FAST_MODEL = "minimax-m3";
-    # Use reviewed Nix-store binaries for CLI-backed providers; never resolve a
-    # project-local or package-manager-installed `codex`/`claude` from PATH.
-    CODEX_COMMAND = "${codexNoMcp}/bin/codex-goose";
-    CLAUDE_CODE_COMMAND = "${claudeSafe}/bin/claude-goose";
     # Let Goose classify tool calls and automatically approve those it judges
     # safe, while retaining prompts for calls that require human approval.
     GOOSE_MODE = "smart_approve";
@@ -222,15 +239,12 @@ let
     exec ${pkgs-unstable.goose-cli}/bin/goose "$@"
   '';
 
-  # Explicit launchers make the reviewed CLI-backed providers convenient while
-  # leaving Ollama Cloud as the default. CLI options outrank the forced default
-  # environment in Goose 1.28's provider resolution. Provider/model flags are
-  # exposed by `run`, not `session`; interactive mode retains the normal TUI.
+  # Explicit launchers use the ACP providers recommended by Goose.
   gooseCodex = pkgs.writeShellScriptBin "goose-codex" ''
-    exec ${gooseWrapper}/bin/goose run --interactive --provider codex --model gpt-5.2-codex "$@"
+    exec ${gooseWrapper}/bin/goose run --interactive --provider codex-acp --model gpt-5.2-codex "$@"
   '';
   gooseClaude = pkgs.writeShellScriptBin "goose-claude" ''
-    exec ${gooseWrapper}/bin/goose run --interactive --provider claude-code --model default "$@"
+    exec ${gooseWrapper}/bin/goose run --interactive --provider claude-acp --model default "$@"
   '';
   gooseChatgpt = pkgs.writeShellScriptBin "goose-chatgpt" ''
     exec ${gooseWrapper}/bin/goose run --interactive --provider chatgpt_codex --model gpt-5.1-codex "$@"
@@ -246,6 +260,8 @@ in
   # additional provider JSON.
   home.packages = [
     gooseWrapper
+    codexAcpSafe
+    claudeAcpSafe
     gooseCodex
     gooseClaude
     gooseChatgpt
