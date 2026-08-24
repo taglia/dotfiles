@@ -24,6 +24,16 @@
 
   # Menubar behavior
   system.defaults.NSGlobalDomain._HIHideMenuBar = true;
+  # Pack the native status items tighter (relevant when the hidden menu bar
+  # reveals on hover; sketchybar spacing is configured in its own Lua). Gap
+  # between icons and padding inside each icon's highlight, in points; the
+  # macOS defaults are roughly double these. Read at session start by every
+  # process hosting a status item, so a full logout (not killall Dock or
+  # ControlCenter) is what reliably applies a change. A manually written
+  # ByHost value (defaults -currentHost write) would override these; none
+  # exists on this machine.
+  system.defaults.NSGlobalDomain.NSStatusItemSpacing = 8;
+  system.defaults.NSGlobalDomain.NSStatusItemSelectionPadding = 6;
   system.defaults.universalaccess.reduceTransparency = true; # This is wider than the menubar, but unfortunately it's the only setting affecting it.
   system.defaults.controlcenter = {
     AirDrop = false;
