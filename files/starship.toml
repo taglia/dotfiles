@@ -4,7 +4,7 @@ $os$username$directory$git_branch$git_status$fill$nodejs$python$rust$golang
 $character
 """
 
-right_format = """${env_var.STARSHIP_RIGHT_STATUS}"""
+right_format = """${env_var.STARSHIP_RIGHT_STATUS}$time"""
 
 # Catppuccin Mocha. The [palettes.catppuccin_mocha] table is generated
 # from lib/catppuccin.nix (the repo's single source of truth for the palette)

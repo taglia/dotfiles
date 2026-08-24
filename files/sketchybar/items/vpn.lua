@@ -4,10 +4,10 @@
 -- exit-node status when the `tailscale` CLI is present.
 --
 -- The status probe lives in helpers/vpn-status.sh (shellcheck-ed by CI) so this
--- file just parses its tab-separated output. The helper path is resolved
--- relative to this file's own location, so it works wherever the config tree
--- is installed (the HM wrapper copies the directory verbatim into
--- ~/.config/sketchybar/).
+-- file just parses its tab-separated output. The helper path is resolved via
+-- utils.config_dir(), so it works wherever the config tree is installed.
+
+local utils = require("utils")
 
 local vpn = SBAR.add("item", "vpn", {
   position = "right",
@@ -47,10 +47,7 @@ for i = 1, 3 do
   })
 end
 
-local source = debug.getinfo(1, "S").source
-local this_file = source:sub(1, 1) == "@" and source:sub(2) or source
-local config_dir = this_file:match("^(.*)/items/[^/]+$") or (os.getenv("HOME") .. "/.config/sketchybar")
-local vpn_status_script = config_dir .. "/helpers/vpn-status.sh"
+local vpn_status_script = utils.config_dir() .. "/helpers/vpn-status.sh"
 
 local vpn_popup_open = false
 local last_details = { "VPN: disconnected" }

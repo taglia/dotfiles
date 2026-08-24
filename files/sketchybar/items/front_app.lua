@@ -97,6 +97,15 @@ local function show_close_affordance()
   })
 end
 
+-- Escape an app name for embedding as an AppleScript "..." literal inside a
+-- single-quoted `osascript -e '...'` shell argument: backslash-escape for the
+-- AppleScript string first, then close/reopen the shell single quotes ('\'')
+-- around any ' in the name so it can't break out of the shell quoting.
+local function quote_for_osascript(name)
+  local applescript = name:gsub("\\", "\\\\"):gsub('"', '\\"')
+  return (applescript:gsub("'", "'\\''"))
+end
+
 -- Resolve the app name to a bundle id (unique, avoids sketchybar's ambiguous
 -- name loop) and show its icon. Falls back to `app.<name>` if resolution fails.
 local function show_icon(app_name)
@@ -106,7 +115,7 @@ local function show_icon(app_name)
     set_icon_image(cached and ("app." .. cached) or ("app." .. app_name))
     return
   end
-  local safe = app_name:gsub('"', '\\"')
+  local safe = quote_for_osascript(app_name)
   SBAR.exec(string.format([[osascript -e 'id of app "%s"' 2>/dev/null]], safe), function(out)
     local bid = (out or ""):match("[^\r\n]+")
     if bid and bid ~= "" then
@@ -145,7 +154,7 @@ front_app:subscribe("mouse.clicked", function()
   end
   -- Quit by localized name (matches what front_app_switched reports). Swallow
   -- errors (unknown app -> no-op).
-  local safe = app:gsub('"', '\\"')
+  local safe = quote_for_osascript(app)
   SBAR.exec(string.format([[osascript -e 'tell application "%s" to quit' 2>/dev/null; true]], safe))
 end)
 

@@ -98,12 +98,10 @@ local cal_dst = SBAR.add("item", "cal.dst", {
 -- Scan up to a year ahead for the next UTC-offset change in Europe/Rome and
 -- format it as "Next DST change (Italy): <weekday> <mon> <day> · ±Nh".
 -- The probe lives in helpers/ so it can be shellcheck-ed by CI; the helper
--- path is resolved relative to this file's own location (same approach as
--- items/vpn.lua), so it works wherever the config tree is installed.
-local source = debug.getinfo(1, "S").source
-local this_file = source:sub(1, 1) == "@" and source:sub(2) or source
-local config_dir = this_file:match("^(.*)/items/[^/]+$") or (os.getenv("HOME") .. "/.config/sketchybar")
-local dst_script = config_dir .. "/helpers/next-dst-change.sh"
+-- path is resolved via utils.config_dir(), so it works wherever the config
+-- tree is installed.
+local utils = require("utils")
+local dst_script = utils.config_dir() .. "/helpers/next-dst-change.sh"
 
 local function update_dst()
   SBAR.exec("bash '" .. dst_script .. "'", function(out)

@@ -12,7 +12,7 @@
 --
 -- Interaction:
 --   left-click  → toggle the FineTune popup by sending its global "Toggle
---                 FineTune Popup" hotkey (⌃⌥⌘-s, bound in FineTune →
+--                 FineTune Popup" hotkey (⌥⇧⌘-s, bound in FineTune →
 --                 Settings → Shortcuts). FineTune's popup only opens on raw
 --                 mouse events / its own synthetic events (FluidMenuBarExtra
 --                 LocalEventMonitor), so an Accessibility AXPress on the menu
@@ -96,6 +96,8 @@ local function open_finetune()
   -- synthesize its global "Toggle FineTune Popup" hotkey instead. Requires
   -- Accessibility permission for SketchyBar (osascript keystrokes are
   -- otherwise auto-denied with error 1002).
+  -- If the click stops opening the popup, re-align the modifiers below with
+  -- the hotkey configured in FineTune → Settings → Shortcuts.
   SBAR.exec(
     'pgrep -qx FineTune && osascript -e \'tell application "System Events" to keystroke "s" using {command down, option down, shift down}\' || echo not-running',
     function(out)
