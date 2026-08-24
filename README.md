@@ -2,6 +2,15 @@
 
 This repo is a Nix flake that defines Home Manager configurations for Linux and macOS, plus a nix-darwin configuration for macOS system-level setup.
 
+> **Status: personal configuration, not a maintained project.** This repo is
+> public for my own convenience — it is my live machine configuration, shaped
+> by my hardware, accounts, and habits, and it changes whenever mine do.
+> Everyone is welcome to clone it, fork it, and reuse whatever is useful
+> (`identity.nix` exists to swap in your own identity), but it is not a
+> maintained FOSS package: no support, no compatibility promises, no issue
+> triage. Use at your own risk — you are on your own. See [LICENSE](LICENSE)
+> (MIT).
+
 ## Prerequisites
 
 - Nix installed
@@ -52,13 +61,19 @@ On macOS, nix-darwin also declares these settings once activated, but the initia
 ```bash
 git clone <this-repo-url> ~/dotfiles
 cd ~/dotfiles
+git config core.hooksPath .githooks
 ```
+
+The last line enables the repo hooks (`.githooks/pre-commit` blocks committing the machine-local `identity.nix`). `core.hooksPath` is a local-only git setting, so it must be set per clone; `scripts/bootstrap_and_switch.sh` does this automatically, but the nix-darwin path does not.
 
 ## 4) Pick a target
 
 Targets are defined in `lib/hosts.nix` (the `hosts` table) and exposed by `flake.nix` under `homeConfigurations`:
 
 - `mbp` (also aliased as `mbp-home`)
+- `mbp-admin` (the separate macOS admin account, local user `richie`: the dev
+  setup without private secrets or the mbp-only extras; switch it while logged
+  in as that user)
 - `linux`
 - `linux-ai`
 - `linux-private`
@@ -68,8 +83,14 @@ Targets are defined in `lib/hosts.nix` (the `hosts` table) and exposed by `flake
 - `linux-arm`
 - `linux-minimal-arm`
 
-There is also one NixOS host, `utm-vm` (`nixosConfigurations.utm-vm`, an
-aarch64-linux UTM virtual machine), switched with `just switch-utm-vm`.
+There are also two NixOS hosts:
+
+- `utm-vm` (`nixosConfigurations.utm-vm`): an aarch64-linux UTM virtual
+  machine, switched with `just switch-utm-vm`.
+- `ec2-x86-vm` (`nixosConfigurations.ec2-x86-vm`): an x86_64-linux AWS EC2
+  instance built on the NixOS Amazon image, set up as a dev + AI workstation
+  without the private agenix profile; switched on the instance itself with
+  `just switch-ec2-x86-vm`.
 
 Each target always includes the base profile. The Linux or macOS profile is selected from the target system in `lib/hosts.nix`, and the `ai` / `private` suffixes add those extra profile layers.
 
@@ -90,10 +111,16 @@ Build it without switching first:
 nix build .#darwinConfigurations.mbp.system
 ```
 
-Then switch when ready:
+Then switch when ready. On a fresh machine `darwin-rebuild` is not on `PATH` yet (it only appears after the first activation), so run it from the flake's nix-darwin input the first time (nix-darwin 26.05 requires `sudo`):
 
 ```bash
-darwin-rebuild switch --flake .#mbp
+sudo nix run nix-darwin/nix-darwin-26.05#darwin-rebuild -- switch --flake .#mbp
+```
+
+After that first activation, subsequent switches are simply:
+
+```bash
+sudo darwin-rebuild switch --flake .#mbp
 ```
 
 `darwin-rebuild switch` also activates the integrated Home Manager configuration for `taglia`.
@@ -362,7 +389,6 @@ The underlying scripts can be run from anywhere, but expect to live inside this 
   - On an interactive terminal, it asks whether to pass Home Manager's backup option for conflicting files.
   - Use `--backup` for a timestamped backup extension, `--backup backup` for `.backup`, or `--no-backup` to skip the prompt.
 - `scripts/set-default-shell.sh`: add Fish to `/etc/shells` and `chsh` to it; useful for standalone Home Manager systems, not normally needed with nix-darwin
-- `just update-unstable`: update only the `nixpkgs-unstable` input
 - `scripts/gc.sh`: garbage collect old Nix generations and unreachable store paths; on macOS, also clean Homebrew orphan dependencies, stale downloads, and cached downloads
   - By default it runs `nix-collect-garbage --delete-older-than 7d`, which keeps about one week of rollback history.
   - On NixOS and nix-darwin, it also runs the same Nix garbage collection through `sudo` when it detects a system profile. Use `--no-sudo` to limit cleanup to the current user, or `--sudo` to force root/system profile cleanup.
@@ -414,7 +440,7 @@ nix fmt
 
 `nix fmt -- --check` exits non-zero if any file is unformatted. The formatter, deadnix, statix, shellcheck, StyLua and Prettier are all run by `just check` (and CI).
 
-It also exposes Home Manager activation-package checks, grouped by system:
+It also exposes checks, grouped by system: the Home Manager activation packages, the nix-darwin system build, and the NixOS system toplevels:
 
 ```bash
 nix flake check

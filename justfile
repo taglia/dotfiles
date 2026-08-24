@@ -8,8 +8,13 @@ build-darwin target="mbp":
 switch-darwin target="mbp":
     nh darwin switch . -H {{target}}
 
+# The NixOS targets are on-box switches: run them from a clone of this repo on
+# the VM / instance itself.
 switch-utm-vm:
     sudo nixos-rebuild switch --flake .#utm-vm
+
+switch-ec2-x86-vm:
+    sudo nixos-rebuild switch --flake .#ec2-x86-vm
 
 switch-home target:
     nh home switch . -c {{target}}
@@ -19,7 +24,7 @@ switch-home target:
 check:
     nix flake check
     nix fmt -- --check
-    find scripts files -name '*.sh' -type f -print0 | xargs -0 shellcheck
+    find scripts files -name '*.sh' -type f -print0 | xargs -0 nix shell --inputs-from . nixpkgs#shellcheck --command shellcheck
     nix shell --inputs-from . nixpkgs#deadnix --command deadnix --fail .
     nix shell --inputs-from . nixpkgs#statix --command statix check .
     nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar

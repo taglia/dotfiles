@@ -27,6 +27,9 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
+      # Caches Nix store paths between runs in the GitHub Actions cache.
+      - uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
+
       # Evaluates every output for all systems (Linux and Darwin), catching
       # eval errors without needing a macOS runner to build the Darwin system.
       - name: nix flake check (evaluate all outputs)
