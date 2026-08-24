@@ -76,8 +76,12 @@ export function startMonitor(
     f.completionFired = true;
     const timer = setTimeout(() => {
       if (stopped) return;
-      getRegistry()?.refresh(task); // pick up the flushed log tail
+      const registry = getRegistry();
+      registry?.refresh(task); // pick up the flushed log tail
       wake(task, "completion", "followUp");
+      // Persist the reported flag so a later /resume doesn't re-announce.
+      task.reported = true;
+      void registry?.persist();
     }, COMPLETION_FLUSH_MS);
     if (typeof (timer as any).unref === "function") (timer as any).unref();
   };
@@ -113,11 +117,15 @@ export function startMonitor(
       if (task.status !== "running") {
         // Completion is normally delivered immediately via onFinished; this
         // is just the backstop (e.g. task already dead when the monitor
-        // started and no exit event ever fired).
-        if (!f.completionFired) {
+        // started and no exit event ever fired). Tasks whose completion was
+        // already reported (persisted flag) are skipped so a /resume doesn't
+        // re-announce them.
+        if (!f.completionFired && !task.reported) {
           f.completionFired = true;
-          getRegistry()?.refresh(task);
+          registry.refresh(task);
           wake(task, "completion", "followUp");
+          task.reported = true;
+          void registry.persist();
         }
         continue;
       }

@@ -10,13 +10,15 @@
  *
  * The registry only ever kills PIDs it spawned itself.
  */
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import {
   closeSync,
   existsSync,
+  fstatSync,
   mkdirSync,
   openSync,
   readFileSync,
+  readSync,
   writeFileSync,
   statSync,
 } from "node:fs";
@@ -36,6 +38,14 @@ export interface Task {
   status: TaskStatus;
   exitCode: number | null; // null = unknown (lost across restart)
   softDeadlineMs?: number;
+  /** Process identity captured at spawn (via `ps`), used after a restart to
+   *  make sure a restored pid still refers to our process and not a reused
+   *  one. Missing when `ps` failed or the process died before we could ask. */
+  procStartTime?: string;
+  procCommand?: string;
+  /** True once the monitor has announced this task's completion to the agent
+   *  (persisted so /resume doesn't re-announce already-reported tasks). */
+  reported?: boolean;
   // polled fields
   lastLogSize: number;
   lastOutputAt: number;
@@ -60,6 +70,45 @@ const MANIFEST = "tasks.json";
 
 function nowMs() {
   return Date.now();
+}
+
+/**
+ * Read a process's start time and command line via `ps` (the `lstart=` and
+ * `command=` formats work on both macOS and Linux). Returns null when the
+ * process is gone or `ps` fails.
+ */
+function readProcInfo(pid: number): { startTime: string; command: string } | null {
+  if (!pid || pid < 0) return null;
+  try {
+    const start = spawnSync("ps", ["-o", "lstart=", "-p", String(pid)], { encoding: "utf-8" });
+    const startTime = start.status === 0 ? start.stdout.trim() : "";
+    if (!startTime) return null;
+    const cmd = spawnSync("ps", ["-o", "command=", "-p", String(pid)], { encoding: "utf-8" });
+    const command = cmd.status === 0 ? cmd.stdout.trim() : "";
+    return { startTime, command };
+  } catch {
+    return null;
+  }
+}
+
+/** Read at most the trailing maxBytes of a file without slurping the rest. */
+function readFileTailBytes(path: string, maxBytes: number): { text: string; truncated: boolean } {
+  const fd = openSync(path, "r");
+  try {
+    const size = fstatSync(fd).size;
+    const start = Math.max(0, size - maxBytes);
+    const length = size - start;
+    const buf = Buffer.alloc(length);
+    let read = 0;
+    while (read < length) {
+      const n = readSync(fd, buf, read, length - read, start + read);
+      if (n <= 0) break;
+      read += n;
+    }
+    return { text: buf.subarray(0, read).toString("utf-8"), truncated: start > 0 };
+  } finally {
+    closeSync(fd);
+  }
 }
 
 export class Registry {
@@ -135,6 +184,7 @@ export class Registry {
         lastOutputAt: nowMs(),
       };
       this.tasks.set(id, task);
+      void this.persist();
       return { task, exitPromise: Promise.resolve(-1) };
     }
     // Parent doesn't need its fd copy; the child keeps writing.
@@ -159,11 +209,16 @@ export class Registry {
         lastOutputAt: nowMs(),
       };
       this.tasks.set(id, task);
+      void this.persist();
       return { task, exitPromise: Promise.resolve(-1) };
     }
 
     // Don't keep pi alive just for this child; it's background work.
     child.unref();
+
+    // Capture the process identity so a restored session can tell this pid
+    // apart from an unrelated process that reused it.
+    const procInfo = readProcInfo(child.pid);
 
     const task: Task = {
       id,
@@ -175,11 +230,14 @@ export class Registry {
       status: "running",
       exitCode: null,
       softDeadlineMs: opts.softDeadlineMs,
+      procStartTime: procInfo?.startTime,
+      procCommand: procInfo?.command,
       lastLogSize: 0,
       lastOutputAt: nowMs(),
     };
     this.tasks.set(id, task);
     this.children.set(id, child);
+    void this.persist();
 
     const exitPromise = new Promise<number | null>((resolve) => {
       child.once("exit", (code, signal) => {
@@ -190,6 +248,7 @@ export class Registry {
           t.endedAt = nowMs();
           this.refresh(t);
           this.emitFinished(t);
+          void this.persist();
         }
         this.children.delete(id);
         resolve(code);
@@ -202,6 +261,7 @@ export class Registry {
         t.exitCode = -1;
         t.endedAt = nowMs();
         this.emitFinished(t);
+        void this.persist();
       }
       this.children.delete(id);
     });
@@ -222,12 +282,13 @@ export class Registry {
    */
   detectExit(task: Task): boolean {
     if (task.status !== "running" || this.children.has(task.id)) return false;
-    if (this.pidAlive(task.pid)) return false;
+    if (this.pidAlive(task.pid) && this.isOurProcess(task)) return false;
     task.status = "exited";
     task.exitCode = null;
     task.endedAt = nowMs();
     this.refresh(task);
     this.emitFinished(task);
+    void this.persist();
     return true;
   }
 
@@ -257,15 +318,32 @@ export class Registry {
     return this.list().filter((t) => t.status === "running");
   }
 
-  /** Returns true if a pid is alive. */
+  /** Returns true if a pid is alive and ours to signal. EPERM means the pid
+   *  now belongs to a process we can't signal — for our purposes that task is
+   *  gone (we only ever spawn children we own). */
   private pidAlive(pid: number): boolean {
     if (!pid || pid < 0) return false;
     try {
       process.kill(pid, 0);
       return true;
-    } catch (err: any) {
-      return err.code === "EPERM"; // alive but not ours to signal
+    } catch {
+      return false;
     }
+  }
+
+  /**
+   * True when a task's pid still refers to the process we spawned. For live
+   * children the handle is proof enough; for restored tasks compare the
+   * `ps` start time (and command) captured at spawn — a reused pid would
+   * differ. Restored tasks with no recorded identity are never trusted.
+   */
+  private isOurProcess(task: Task): boolean {
+    if (this.children.has(task.id)) return true;
+    if (!task.procStartTime) return false;
+    const info = readProcInfo(task.pid);
+    if (!info || info.startTime !== task.procStartTime) return false;
+    if (task.procCommand && info.command !== task.procCommand) return false;
+    return true;
   }
 
   /**
@@ -282,37 +360,28 @@ export class Registry {
     const child = this.children.get(id);
     const pid = task.pid;
     const trySignal = (sig: NodeJS.Signals) => {
-      if (child && typeof child.kill === "function") {
-        // child.kill only signals the child itself; for the group use -pid.
+      // Signal the whole process group first (spawned detached, so the child
+      // leads its own group); fall back to the child alone.
+      try {
+        process.kill(-pid, sig);
+        return true;
+      } catch {
         try {
-          process.kill(-pid, sig);
+          process.kill(pid, sig);
           return true;
         } catch {
-          try {
-            process.kill(pid, sig);
-            return true;
-          } catch {
-            return false;
-          }
-        }
-      } else {
-        try {
-          process.kill(-pid, sig);
-          return true;
-        } catch {
-          try {
-            process.kill(pid, sig);
-            return true;
-          } catch {
-            return false;
-          }
+          return false;
         }
       }
     };
 
-    if (!this.pidAlive(pid)) {
+    // For restored tasks (no ChildProcess handle) make sure the pid still
+    // refers to the process we spawned before signaling anything — the pid
+    // may have been reused by an unrelated process.
+    if (!this.pidAlive(pid) || !this.isOurProcess(task)) {
       task.status = "exited";
       task.endedAt = nowMs();
+      void this.persist();
       return { ok: false, message: `Task ${id} already exited.` };
     }
 
@@ -329,33 +398,34 @@ export class Registry {
         // Restored tasks have no ChildProcess handle, so no `exit` event
         // will fire — notify listeners directly.
         if (!child) this.emitFinished(task);
+        void this.persist();
         return { ok: true, message: `Task ${id} terminated (SIGTERM).` };
       }
     }
-    trySignal("SIGKILL");
+    // Re-verify identity before the forceful kill, in case the pid was
+    // recycled while we waited.
+    if (child || this.isOurProcess(task)) trySignal("SIGKILL");
     task.status = "killed";
     task.exitCode = null;
     task.endedAt = nowMs();
     this.children.delete(id);
     if (!child) this.emitFinished(task);
+    void this.persist();
     return { ok: true, message: `Task ${id} killed (SIGKILL after timeout).` };
   }
 
-  /** Read a task's log: tail N lines or full (truncated to MAX_LOG_BYTES). */
+  /** Read a task's log: tail N lines or full (truncated to MAX_LOG_BYTES).
+   *  Only the trailing MAX_LOG_BYTES are ever read into memory, so an
+   *  unbounded log can't blow up the process. */
   readLog(id: string, opts: { tail?: number; full?: boolean }): string {
     const task = this.tasks.get(id);
     if (!task) throw new Error(`Unknown task id: ${id}`);
     if (!existsSync(task.logPath)) return "";
-    let content = readFileSync(task.logPath, "utf-8");
+    const { text, truncated } = readFileTailBytes(task.logPath, MAX_LOG_BYTES);
     if (opts.full) {
-      const bytes = Buffer.byteLength(content, "utf-8");
-      if (bytes > MAX_LOG_BYTES) {
-        content =
-          content.slice(0, MAX_LOG_BYTES) + `\n\n[Output truncated at ${MAX_LOG_BYTES} bytes]`;
-      }
-      return content;
+      return truncated ? `[Output truncated to the last ${MAX_LOG_BYTES} bytes]\n\n${text}` : text;
     }
-    const lines = content.split("\n");
+    const lines = text.split("\n");
     const n = opts.tail ?? 50;
     return lines.slice(-n).join("\n");
   }
@@ -374,6 +444,9 @@ export class Registry {
       status: t.status,
       exitCode: t.exitCode,
       softDeadlineMs: t.softDeadlineMs,
+      procStartTime: t.procStartTime,
+      procCommand: t.procCommand,
+      reported: t.reported,
     }));
     try {
       writeFileSync(join(this.dir, MANIFEST), JSON.stringify(snapshot, null, 2));
@@ -406,10 +479,15 @@ export class Registry {
         status: e.status,
         exitCode: e.exitCode,
         softDeadlineMs: e.softDeadlineMs,
+        procStartTime: e.procStartTime,
+        procCommand: e.procCommand,
+        reported: e.reported,
         lastLogSize: 0,
         lastOutputAt: e.startedAt || nowMs(),
       };
-      if (task.status === "running" && !this.pidAlive(task.pid)) {
+      // Dead pid, or a pid recycled by an unrelated process, both mean the
+      // task itself is gone.
+      if (task.status === "running" && !(this.pidAlive(task.pid) && this.isOurProcess(task))) {
         task.status = "exited";
         task.exitCode = null;
         task.endedAt = nowMs();
@@ -417,6 +495,7 @@ export class Registry {
       this.refresh(task);
       this.tasks.set(task.id, task);
     }
+    void this.persist();
   }
 
   formatSummary(): string {
