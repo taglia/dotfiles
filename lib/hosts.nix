@@ -212,6 +212,11 @@ let
     username = defaultUser.adminUsername or "richie";
   };
 
+  # Module set for the admin account's home: the dev setup plus the
+  # interactive-shell Homebrew trust file (essential for the admin, who owns
+  # the prefix and runs brew).
+  adminModules = fullModules ++ [ ../modules/home/homebrew-trust.nix ];
+
   hosts = {
     linux = {
       system = "x86_64-linux";
@@ -279,7 +284,7 @@ let
     mbp-admin = {
       system = "aarch64-darwin";
       user = adminUser;
-      modules = fullModules;
+      modules = adminModules;
     };
 
     mbp = {
@@ -288,6 +293,9 @@ let
       modules = fullModules ++ [
         ../profiles/ai.nix
         ../profiles/private.nix
+        # Declarative brew tap-trust for interactive shells (replaces the
+        # hand-written ~/.config/homebrew/trust.json).
+        ../modules/home/homebrew-trust.nix
         # Games and terminal toys (cmatrix, asciiquarium, nethack) plus
         # chess-tui wired to gnuchess --uci as its bot engine. Kept on the
         # mbp profile only, so the other hosts stay lean.
@@ -309,7 +317,7 @@ let
       extraHomeUsers = {
         ${adminUser.username} = {
           user = adminUser;
-          modules = fullModules;
+          modules = adminModules;
         };
       };
     };

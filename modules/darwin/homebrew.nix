@@ -29,8 +29,11 @@ in
       "kitknox/homebrew-rootshell" = inputs.homebrew-rootshell;
     };
 
-    # Trust only the cask that is used, never every item in the tap.
-    trust.casks = [ "kitknox/rootshell/rootshell" ];
+    # Trust only the cask that is used, never every item in the tap. The
+    # list is shared with modules/home/homebrew-trust.nix, which covers the
+    # XDG trust path brew uses in interactive shells (this option only
+    # covers the activation context's ~/.homebrew path).
+    trust.casks = (import ../../lib/homebrew-trust.nix).casks;
   };
 
   # nix-darwin generates a Brewfile from this module and runs `brew bundle`
