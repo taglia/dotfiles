@@ -17,11 +17,15 @@
    just switch-darwin
    ```
 
-3. Preview, then apply routine Homebrew and App Store updates:
+3. Preview, then apply routine Homebrew and App Store updates. Homebrew runs
+   as the admin user (owner of the prefix); mas must run as the GUI-logged-in
+   user instead, because it drives the App Store daemons of the invoking
+   user's login session and hangs forever without one:
 
    ```bash
-   just check-brew-updates
-   just update-brew
+   just check-brew-updates   # as the admin user
+   just update-brew          # as the admin user
+   just update-mas           # as the GUI-logged-in user
    ```
 
    Repeat this step once midweek if you want application updates more often;

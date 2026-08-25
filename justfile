@@ -45,10 +45,19 @@ check-brew-updates:
     brew outdated --cask --verbose
     mas outdated
 
+# Run as the Homebrew admin user, which owns the prefix.
 update-brew:
     brew update
     brew upgrade --formula
     brew upgrade --cask
+
+# mas only asks the App Store daemons of the invoking user's login session to
+# install, so under `su - <admin>` (no Aqua session, no signed-in App Store
+# account) it waits forever for completion events that cannot arrive; the
+# guard fails fast instead of hanging.
+# Run as the GUI-logged-in user, NOT the Homebrew admin.
+update-mas:
+    [ "$(stat -f%Su /dev/console)" = "$(id -un)" ] || { echo "error: run mas as the console (GUI) user, not $(id -un)" >&2; exit 1; }
     mas upgrade
 
 # Review self-updating and unversioned casks monthly.
