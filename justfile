@@ -60,12 +60,22 @@ update-mas:
     [ "$(stat -f%Su /dev/console)" = "$(id -un)" ] || { echo "error: run mas as the console (GUI) user, not $(id -un)" >&2; exit 1; }
     mas upgrade
 
-# Review self-updating and unversioned casks monthly.
+# Review self-updating and unversioned casks monthly. Read the output
+# directionally: installed AHEAD of the catalog means the app self-updated
+# and Homebrew is lagging (do nothing — a greedy upgrade would downgrade);
+# installed BEHIND means the app is stale (see UPDATE-RUNBOOK.md).
 check-brew-greedy:
     brew outdated --cask --greedy --verbose
 
+# Casks brew must never upgrade: their pkg postinstall relaunches the app via
+# LaunchServices in the invoking user's GUI session, which structurally fails
+# from the admin's non-GUI shell (LaunchServices procNotFound -600;
+# tailscale-app confirmed via install.log). Update these in-app instead.
+self_update_only := "tailscale-app"
+
 # Requiring at least one cask prevents a global greedy upgrade.
 update-brew-greedy +casks:
+    for c in {{casks}}; do case " {{self_update_only}} " in *" $c "*) echo "error: $c is self-update only; update it from the app itself (see UPDATE-RUNBOOK.md)" >&2; exit 1;; esac; done
     brew upgrade --cask --greedy {{casks}}
 
 update-unstable:
