@@ -395,6 +395,7 @@ The underlying scripts can be run from anywhere, but expect to live inside this 
   - On macOS, it runs `brew autoremove`, `brew cleanup`, and `brew cleanup --scrub`. It does not run `brew bundle cleanup`; nix-darwin already removes undeclared Homebrew packages during activation because `homebrew.onActivation.cleanup = "zap"` is enabled.
   - Use `--dry-run` before the first real cleanup to inspect what supported tools would remove.
 - `scripts/package.sh`: create a tarball under `packages/`; excludes build outputs and logs
+- `scripts/update-blocked-casks.sh`: greedy-upgrade the casks whose vendor background updater is deliberately blocked (the `updater_blocked` list in the justfile), skipping any cask whose installed version is ahead of the catalog so a lagging Homebrew catalog never causes a downgrade; invoked by `just update-brew-blocked`
 
 Examples:
 
