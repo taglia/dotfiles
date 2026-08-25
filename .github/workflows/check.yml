@@ -27,20 +27,13 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      # Caches Nix store paths between runs in the GitHub Actions cache.
-      - uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
+      # No Nix cache action: magic-nix-cache's GitHub-cache backend was
+      # discontinued (its step ran but cached nothing), and the closures here
+      # exceed the actions-cache alternatives' useful limits. Builds pull from
+      # cache.nixos.org only.
 
-      # Evaluates every output for all systems (Linux and Darwin), catching
-      # eval errors without needing a macOS runner to build the Darwin system.
-      - name: nix flake check (evaluate all outputs)
-        run: nix flake check --no-build --all-systems
-
-      # Actually build the checks for the runner's own system (the x86_64-linux
-      # Home Manager activation packages), so package/build failures are caught
-      # too, not just eval errors. Darwin checks still can't build here.
-      - name: nix flake check (build x86_64-linux checks)
-        run: nix flake check
-
+      # Cheap lints first, so a failure in the heavy eval/build steps below
+      # can never mask their results.
       - name: Shellcheck scripts
         run: find scripts files -name '*.sh' -type f -print0 | xargs -0 nix shell --inputs-from . nixpkgs#shellcheck --command shellcheck
 
@@ -58,3 +51,24 @@ jobs:
 
       - name: Prettier check
         run: nix shell --inputs-from . nixpkgs#prettier --command prettier --check "files/**/*.ts"
+
+      # Evaluate the non-native checks (Darwin and aarch64-linux) one check
+      # per nix process. A single `nix flake check --no-build --all-systems`
+      # accumulates every system's eval in one process and OOM-kills the 7 GB
+      # runner ("runner received a shutdown signal"), so each drvPath is
+      # forced in a fresh process instead; x86_64-linux is covered by the
+      # build step below. Catches eval errors without a macOS runner.
+      - name: Evaluate aarch64-darwin and aarch64-linux checks
+        run: |
+          for system in aarch64-darwin aarch64-linux; do
+            for check in $(nix eval ".#checks.$system" --apply builtins.attrNames --json | nix shell --inputs-from . nixpkgs#jq --command jq -r '.[]'); do
+              echo "evaluating checks.$system.$check"
+              nix eval ".#checks.$system.$check.drvPath"
+            done
+          done
+
+      # Actually build the checks for the runner's own system (the x86_64-linux
+      # Home Manager activation packages), so package/build failures are caught
+      # too, not just eval errors. Darwin checks still can't build here.
+      - name: nix flake check (build x86_64-linux checks)
+        run: nix flake check
