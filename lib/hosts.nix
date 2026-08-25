@@ -71,11 +71,10 @@ let
       user ? defaultUser,
       secretsMachine ? null,
     }:
-    let
-      pkgs = import nixpkgs { inherit system; };
-    in
     home-manager.lib.homeManagerConfiguration {
-      inherit pkgs;
+      # Reuse the nixpkgs flake's shared per-system instantiation instead of
+      # importing a fresh copy per home configuration.
+      pkgs = nixpkgs.legacyPackages.${system};
 
       extraSpecialArgs = homeExtraSpecialArgs // {
         inherit secretsMachine;
