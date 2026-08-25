@@ -25,17 +25,8 @@
    ```bash
    just check-brew-updates   # as the admin user
    just update-brew          # as the admin user
-   just update-brew-blocked  # as the admin user
    just update-mas           # as the GUI-logged-in user
    ```
-
-   `update-brew-blocked` covers the casks whose vendor background updater is
-   deliberately not allowed to run (the `updater_blocked` list in the
-   justfile, e.g. Google Chrome without its Keystone agent) — for those,
-   Homebrew greedy upgrades are the only update channel, and browsers should
-   not wait for the monthly review. The underlying script skips any cask
-   whose installed version is ahead of the catalog, where a greedy upgrade
-   would downgrade.
 
    Repeat this step once midweek if you want application updates more often;
    the flake does not need another update.

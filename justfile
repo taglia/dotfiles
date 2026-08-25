@@ -73,20 +73,6 @@ check-brew-greedy:
 # tailscale-app confirmed via install.log). Update these in-app instead.
 self_update_only := "tailscale-app"
 
-# Casks whose vendor background updater is deliberately blocked (Chrome's
-# Keystone agent is never allowed to install): Homebrew greedy upgrades are
-# the only update channel these apps have left, so they get their own
-# routine target below instead of waiting for the monthly greedy review.
-updater_blocked := "google-chrome"
-
-# Upgrade the blocked-updater casks (updater_blocked above). Safe to run
-# routinely: the script skips casks whose installed version is ahead of the
-# catalog, where a greedy upgrade would downgrade.
-# Run as the Homebrew admin user.
-update-brew-blocked:
-    brew update
-    scripts/update-blocked-casks.sh {{updater_blocked}}
-
 # Requiring at least one cask prevents a global greedy upgrade.
 update-brew-greedy +casks:
     for c in {{casks}}; do case " {{self_update_only}} " in *" $c "*) echo "error: $c is self-update only; update it from the app itself (see UPDATE-RUNBOOK.md)" >&2; exit 1;; esac; done
