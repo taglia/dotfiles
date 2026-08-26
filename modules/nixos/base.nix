@@ -33,6 +33,12 @@
     vimAlias = true;
   };
 
+  # Mosh server on every NixOS host. This installs mosh system-wide and (via
+  # the module's default openFirewall = true) opens UDP 60000-61000, the range
+  # mosh-server picks its per-session port from. The initial handshake still
+  # goes over regular SSH (TCP 22).
+  programs.mosh.enable = true;
+
   environment.systemPackages = with pkgs; [
     git # needed by `nixos-rebuild --flake` against a git tree
     ghostty.terminfo

@@ -25,6 +25,7 @@
 
       fastfetch
       magic-wormhole
+      mosh
 
       lynis
       age

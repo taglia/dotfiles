@@ -17,7 +17,6 @@
     hugo
     hub
     links2
-    mosh
     pandoc
     pwgen
     sc-im
