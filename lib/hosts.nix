@@ -304,6 +304,10 @@ let
         # homeConfigurations by importing it here rather than in
         # profiles/base.nix or profiles/darwin.nix.
         ../modules/home/sketchybar.nix
+        # Terminal email (aerc). mbp-only, matching mail-accounts.age's
+        # recipient list in secrets.nix; the accounts themselves live in
+        # that secret (see the module header).
+        ../modules/home/mail.nix
       ];
     };
   };

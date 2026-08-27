@@ -72,6 +72,17 @@ in
     publicKeys = workstations;
     envVarFile = "OPENROUTER_API_KEY_FILE";
   };
+  # The entire aerc accounts.conf (modules/home/mail.nix), deployed whole
+  # like ssh-config.age: account names, addresses, usernames and app
+  # passwords are all inside the ciphertext, so none of it reaches the
+  # public repo or the Nix store. Edit with
+  # `agenix -e secrets/mail-accounts.age` (format: aerc-accounts(5); a
+  # template is in the mail.nix header). mbp only: mail is wired only on
+  # the laptop.
+  "secrets/mail-accounts.age" = {
+    publicKeys = [ mbp ];
+    path = ".config/aerc/accounts.conf";
+  };
   "secrets/openclaw-moonshot-api-key.age" = {
     publicKeys = [
       openclaw-hetzner
