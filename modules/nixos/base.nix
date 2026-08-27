@@ -39,6 +39,15 @@
   # goes over regular SSH (TCP 22).
   programs.mosh.enable = true;
 
+  # Eternal Terminal server. Preferred over mosh for TUI-heavy sessions: et is
+  # a transparent byte stream (no server-side screen model), so nvim renders
+  # exactly as over plain SSH while still surviving sleep/roaming. The client
+  # bootstraps auth over regular SSH (so Tailscale SSH keeps working); the
+  # session itself runs on TCP 2022, which this module does NOT open for us —
+  # remember the same port in any cloud security group.
+  services.eternal-terminal.enable = true;
+  networking.firewall.allowedTCPPorts = [ 2022 ];
+
   environment.systemPackages = with pkgs; [
     git # needed by `nixos-rebuild --flake` against a git tree
     ghostty.terminfo

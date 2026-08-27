@@ -19,21 +19,11 @@ let
   });
 
   continuumScript = "${continuum}/share/tmux-plugins/continuum/continuum.tmux";
-
-  # Resurrect restores remote-connection panes by re-running their saved
-  # command line, which works for ssh but not for mosh: the pane process is
-  # "mosh-client <ip> <port>" with a one-time key, so replaying it can never
-  # reconnect. Connecting through this wrapper keeps a replayable argv
-  # ("mssh host ...") in the pane instead.
-  mssh = pkgs.writeShellScriptBin "mssh" ''
-    exec mosh "$@"
-  '';
 in
 {
   # sesh lives here rather than in packages-cli.nix because it only exists to
   # drive the tmux session picker bound in tmux.conf (prefix + T).
   home.packages = [
-    mssh
     pkgs.sesh
   ];
 

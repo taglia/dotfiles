@@ -26,6 +26,7 @@
       fastfetch
       magic-wormhole
       mosh
+      eternal-terminal
 
       lynis
       age
