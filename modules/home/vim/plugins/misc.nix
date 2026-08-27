@@ -49,6 +49,11 @@ in
       lazyLoad.settings.cmd = "Oil";
     };
 
+    render-markdown = {
+      enable = true;
+      lazyLoad.settings.ft = "markdown";
+    };
+
     noice = {
       enable = true;
       lazyLoad.settings = {
