@@ -41,6 +41,12 @@
 # (9e5f94bc-e8a4-4e73-b8be-63364c29d753) usually is. Route 2, if IMAP is
 # disabled: run DavMail (pkgs.davmail) as a local EWS/OWA-to-IMAP bridge and
 # point a plain localhost IMAP account at it.
+{
+  config,
+  pkgs,
+  ...
+}:
+
 let
   inherit ((import ../../lib/catppuccin.nix).palette)
     text
@@ -67,6 +73,24 @@ in
   # get their conventional defaults), and no other imported HM module
   # branches on xdg.enable.
   xdg.enable = true;
+
+  # Keybindings: aerc ignores its built-in binds.conf entirely once a user
+  # one exists (no merging), so the file is generated from the stock binds
+  # plus vim-style tab keys, at build time rather than via
+  # programs.aerc.extraBinds (which would ship only the extra lines and lose
+  # every default). Changes vs stock: `gg` selects the top of the message
+  # list (was `g`, freeing it up as a prefix), `gt`/`gT` cycle the account
+  # tabs like vim tab pages (stock `<C-n>`/`<C-p>` and `]t`/`[t` still
+  # work). The grep guard fails the build if an aerc update changes the
+  # rebound line, instead of silently dropping the remap.
+  xdg.configFile."aerc/binds.conf".source = pkgs.runCommand "aerc-binds.conf" { } ''
+    stock=${config.programs.aerc.package}/share/aerc/binds.conf
+    grep -qxF 'g = :select 0<Enter>' "$stock"
+    {
+      printf '%s\n' 'gt = :next-tab<Enter>' 'gT = :prev-tab<Enter>'
+      sed 's/^g = :select 0<Enter>$/gg = :select 0<Enter>/' "$stock"
+    } > $out
+  '';
 
   programs.aerc = {
     enable = true;
