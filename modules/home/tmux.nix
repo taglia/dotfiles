@@ -30,7 +30,17 @@ let
   '';
 in
 {
-  home.packages = [ mssh ];
+  # sesh lives here rather than in packages-cli.nix because it only exists to
+  # drive the tmux session picker bound in tmux.conf (prefix + T).
+  home.packages = [
+    mssh
+    pkgs.sesh
+  ];
+
+  # The nixpkgs sesh package ships no shell completions, so generate the fish
+  # ones at build time.
+  xdg.configFile."fish/completions/sesh.fish".source =
+    pkgs.runCommand "sesh-completions-fish" { } "${pkgs.sesh}/bin/sesh completion fish > $out";
 
   programs.tmux = {
     enable = true;
