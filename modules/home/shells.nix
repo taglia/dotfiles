@@ -34,5 +34,11 @@ in
 
   programs.bash.enable = true;
 
-  programs.zsh.enable = true;
+  programs.zsh = {
+    enable = true;
+    # Adopt the upcoming default early (HM warns during switch otherwise):
+    # zsh dotfiles under XDG config instead of $HOME. HM plants a ~/.zshenv
+    # stub that sets ZDOTDIR accordingly.
+    dotDir = "${config.xdg.configHome}/zsh";
+  };
 }
