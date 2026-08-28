@@ -19,10 +19,9 @@
 #                 the Keychain. Vim-style j/k/g/G bindings by default. Note
 #                 that third-party clients are against Discord's ToS
 #                 (accepted trade-off; ban risk is real). Its config.toml is
-#                 declared below (theme only; keybind overrides belong there
-#                 too) — discordo never writes it, and merges it over its
-#                 built-in defaults, so declaring just the theme keys leaves
-#                 every other setting at its default.
+#                 declared below (theme + tmux-safe keybinds) — discordo
+#                 never writes it, and merges it over its built-in defaults,
+#                 so only the declared keys deviate from stock.
 #
 # nchat rewrites its config files on exit, but Config::Save silently no-ops
 # when the file is not writable (verified in lib/ncutil/src/config.cpp), so
@@ -91,6 +90,15 @@ let
   # overridden; attributes are restated where present because a style table
   # replaces the whole default style, not individual fields.
   discordoConfig = ''
+    # Defaults unreachable inside tmux get new homes: ctrl+b is the tmux
+    # prefix, and vim-tmux-navigator takes ctrl+h/j/k/l for pane navigation
+    # in non-vim panes. focus_previous/focus_next (ctrl+h/ctrl+l) are also
+    # shadowed but deliberately not remapped: the explicit focus keys
+    # (ctrl+g guilds, ctrl+t messages, ctrl+i input) cover focus movement.
+    [keybinds]
+    toggle_channels_picker = "ctrl+f"
+    toggle_guilds_tree = "ctrl+o"
+
     [theme.title]
     active_style = { foreground = "#${blue}", attributes = "bold" }
 
