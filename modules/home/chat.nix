@@ -26,10 +26,12 @@
 #
 # nchat rewrites its config files on exit, but Config::Save silently no-ops
 # when the file is not writable (verified in lib/ncutil/src/config.cpp), so
-# read-only theme symlinks below are safe — same situation as chess-tui in
-# entertainment.nix. The other conf files (ui.conf, key.conf, app.conf) are
-# left to nchat so in-UI setting changes persist; fold anything worth
-# keeping back into this module.
+# the read-only theme symlinks and the partial ui.conf below are safe —
+# same situation as chess-tui in entertainment.nix. Declared conf files
+# only need the settings that differ: defaults load first and the file
+# overlays them. The cost is that in-UI changes to *declared* files no
+# longer persist across restarts; key.conf and app.conf stay unmanaged, so
+# nchat still owns those. Fold anything worth keeping back into this module.
 #
 # Caveat, verified in the nchat 5.16.9 source: WhatsApp's chat lock is not
 # honored. Locked chats arrive in history sync flagged `locked`, but nchat's
@@ -107,6 +109,18 @@ in
       {
         text = discordoConfig;
       };
+
+  # Wider chat list (default 14 columns is too narrow for full chat names).
+  # The in-UI resize keys (alt-, / alt-.) collide with macOS, hence declared
+  # here; all other ui.conf settings keep their built-in defaults. force,
+  # because nchat has already written its own ui.conf on first run and the
+  # switch must replace it (like the chess-tui config in entertainment.nix).
+  xdg.configFile."nchat/ui.conf" = {
+    text = ''
+      list_width=30
+    '';
+    force = true;
+  };
 
   # Catppuccin Mocha, from the theme files nchat ships itself (a theme is
   # exactly these two files copied into ~/.config/nchat) — sourced from the
