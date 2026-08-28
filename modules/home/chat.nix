@@ -31,17 +31,25 @@
 # left to nchat so in-UI setting changes persist; fold anything worth
 # keeping back into this module.
 #
-# Caveat, verified in the nchat 5.14.44 source: WhatsApp's chat lock is not
+# Caveat, verified in the nchat 5.16.9 source: WhatsApp's chat lock is not
 # honored. Locked chats arrive in history sync flagged `locked`, but nchat's
 # gowm.go never reads that flag, so they show up as ordinary fully-readable
 # chats. The terminal session is the only privacy boundary.
 {
+  inputs,
   lib,
   pkgs,
   ...
 }:
 
 let
+  # nchat comes from unstable, not the pinned stable nixpkgs: WhatsApp's
+  # servers enforce a minimum client version and reject older whatsmeow
+  # builds with "WhatsApp client is outdated" (see nchat's WMOUTDATED.md),
+  # so nchat has to track upstream releases closely. Reuses the flake's
+  # shared unstable evaluation, same as the ai.nix profile's tools.
+  nchat = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.nchat;
+
   inherit ((import ../../lib/catppuccin.nix).palette)
     blue
     green
@@ -83,9 +91,9 @@ let
   '';
 in
 {
-  home.packages = with pkgs; [
+  home.packages = [
     nchat
-    discordo
+    pkgs.discordo
   ];
 
   # discordo resolves its config via Go's os.UserConfigDir, which on macOS is
@@ -104,7 +112,7 @@ in
   # exactly these two files copied into ~/.config/nchat) — sourced from the
   # package so they track the installed version.
   xdg.configFile."nchat/color.conf".source =
-    "${pkgs.nchat}/share/nchat/themes/catppuccin-mocha/color.conf";
+    "${nchat}/share/nchat/themes/catppuccin-mocha/color.conf";
   xdg.configFile."nchat/usercolor.conf".source =
-    "${pkgs.nchat}/share/nchat/themes/catppuccin-mocha/usercolor.conf";
+    "${nchat}/share/nchat/themes/catppuccin-mocha/usercolor.conf";
 }
