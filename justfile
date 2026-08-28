@@ -8,11 +8,14 @@ build-darwin target="mbp":
 # The agenix kickstart re-asserts the decrypted-secret symlinks (~/.ssh/config,
 # ~/.config/aerc/accounts.conf, ~/.local/share/agenix/*): the launchd agent
 # otherwise only re-runs at login or when the secret set changes, so a
-# hand-deleted symlink would survive a plain switch. `|| true` because the
-# gui/ domain (and the agent itself) may be absent, e.g. over SSH.
+# hand-deleted symlink would survive a plain switch. The agent lives in the
+# console (GUI) user's domain, not the invoker's — switches normally run from
+# the admin account — so kickstart it there: directly when invoker == console
+# user, else as root via nh's still-cached sudo timestamp (-n: never prompt).
+# Silently a no-op when neither works (SSH session, nobody at the console).
 switch-darwin target="mbp":
     nh darwin switch . -H {{target}}
-    launchctl kickstart -k "gui/$(id -u)/org.nix-community.home.activate-agenix" || true
+    uid="$(id -u "$(stat -f%Su /dev/console)")"; svc="gui/$uid/org.nix-community.home.activate-agenix"; launchctl kickstart -k "$svc" 2>/dev/null || sudo -n launchctl kickstart -k "$svc" 2>/dev/null || true
 
 # The NixOS targets are on-box switches: run them from a clone of this repo on
 # the VM / instance itself.
