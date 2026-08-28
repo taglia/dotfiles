@@ -308,6 +308,9 @@ let
         # recipient list in secrets.nix; the accounts themselves live in
         # that secret (see the module header).
         ../modules/home/mail.nix
+        # Terminal chat (nchat, discordo). mbp-only, like mail: personal
+        # messaging accounts, sessions created at runtime (module header).
+        ../modules/home/chat.nix
       ];
     };
   };
