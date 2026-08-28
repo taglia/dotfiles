@@ -57,7 +57,6 @@ let
     green
     yellow
     red
-    peach
     overlay0
     ;
 
@@ -70,14 +69,20 @@ let
 
   # The shipped catppuccin-mocha theme colors unread chats identically to
   # read ones (list_color_unread_fg = list_color_fg = subtext1), leaving the
-  # right-edge "*" as the only unread cue. Rebuild color.conf with unread in
-  # peach (matching aerc's accent choices); the grep guard fails the build
-  # if a theme update changes that line instead of silently dropping the
-  # patch, like the aerc binds.conf in mail.nix.
+  # right-edge unread indicator as the only cue. Rebuild color.conf with
+  # unread in bright_yellow — a NAMED color on purpose: nchat feeds hex
+  # colors through ncurses init_color, which needs the terminal to support
+  # palette redefinition (terminfo `ccc`), and tmux-256color does not
+  # advertise it, so inside tmux every 0x...... entry in this theme is
+  # silently skipped (log: "terminal cannot set custom hex colors"). Named
+  # colors resolve to the terminal's own palette, which is Catppuccin
+  # anyway, so bright_yellow renders as Mocha yellow. The grep guard fails
+  # the build if a theme update changes the line instead of silently
+  # dropping the patch, like the aerc binds.conf in mail.nix.
   nchatColorConf = pkgs.runCommand "nchat-color.conf" { } ''
     stock=${nchatThemeDir}/color.conf
     grep -qxF 'list_color_unread_fg=0xbac2de' "$stock"
-    sed 's/^list_color_unread_fg=0xbac2de$/list_color_unread_fg=0x${peach}/' "$stock" > $out
+    sed 's/^list_color_unread_fg=0xbac2de$/list_color_unread_fg=bright_yellow/' "$stock" > $out
   '';
 
   # Catppuccin Mocha accents (shared palette, lib/catppuccin.nix) over
@@ -130,14 +135,17 @@ in
         text = discordoConfig;
       };
 
-  # Wider chat list (default 14 columns is too narrow for full chat names).
-  # The in-UI resize keys (alt-, / alt-.) collide with macOS, hence declared
+  # Wider chat list (default 14 columns is too narrow for full chat names),
+  # and a filled-circle unread marker (drawn at the list's right edge, in
+  # list_color_unread_fg) instead of the easily-missed default "*". The
+  # in-UI resize keys (alt-, / alt-.) collide with macOS, hence declared
   # here; all other ui.conf settings keep their built-in defaults. force,
   # because nchat has already written its own ui.conf on first run and the
   # switch must replace it (like the chess-tui config in entertainment.nix).
   xdg.configFile."nchat/ui.conf" = {
     text = ''
       list_width=30
+      unread_indicator=●
     '';
     force = true;
   };
