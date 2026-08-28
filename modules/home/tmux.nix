@@ -30,7 +30,8 @@ in
   # The nixpkgs sesh package ships no shell completions, so generate the fish
   # ones at build time.
   xdg.configFile."fish/completions/sesh.fish".source =
-    pkgs.runCommand "sesh-completions-fish" { } "${pkgs.sesh}/bin/sesh completion fish > $out";
+    pkgs.runCommand "sesh-completions-fish" { }
+      "${pkgs.sesh}/bin/sesh completion fish > $out";
 
   programs.tmux = {
     enable = true;
