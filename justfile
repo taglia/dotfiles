@@ -5,8 +5,14 @@ build-darwin target="mbp":
     nix build ".#darwinConfigurations.{{target}}.system"
 
 # nh handles the sudo escalation itself and prints a package diff first.
+# The agenix kickstart re-asserts the decrypted-secret symlinks (~/.ssh/config,
+# ~/.config/aerc/accounts.conf, ~/.local/share/agenix/*): the launchd agent
+# otherwise only re-runs at login or when the secret set changes, so a
+# hand-deleted symlink would survive a plain switch. `|| true` because the
+# gui/ domain (and the agent itself) may be absent, e.g. over SSH.
 switch-darwin target="mbp":
     nh darwin switch . -H {{target}}
+    launchctl kickstart -k "gui/$(id -u)/org.nix-community.home.activate-agenix" || true
 
 # The NixOS targets are on-box switches: run them from a clone of this repo on
 # the VM / instance itself.
