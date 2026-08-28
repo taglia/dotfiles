@@ -4,6 +4,7 @@
 # SketchyBar, bare hex for fish).
 #
 # Consumers:
+#   - modules/home/claude-code.nix   (Claude Code theme JSON)
 #   - modules/home/fish.nix          (fish_color_* / fish_pager_color_*)
 #   - modules/home/xdg-files.nix     (starship.toml palette table, kitty theme)
 #   - modules/home/pi.nix            (pi theme JSON)

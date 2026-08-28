@@ -36,6 +36,7 @@ in
 
 {
   imports = [
+    ../modules/home/claude-code.nix
     ../modules/home/opencode.nix
     ../modules/home/pi.nix
     ../modules/home/crush.nix
