@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
   catppuccin = import ../../lib/catppuccin.nix;
@@ -100,4 +100,30 @@ in
     source = claudeThemeJson;
     force = true;
   };
+
+  # settings.json cannot be a store symlink (Claude Code rewrites it at
+  # runtime), so merge the two themed keys into the writable file instead:
+  # select the theme above and disable syntax highlighting in diffs, whose
+  # hardcoded highlight.js palette otherwise paints diff text in saturated
+  # green/red that no theme can override. Every activation re-asserts both
+  # keys, so a manual /theme change lasts only until the next switch.
+  home.activation.claudeThemeSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    claude_settings="$HOME/.claude/settings.json"
+    claude_tmp=$(${pkgs.coreutils}/bin/mktemp)
+    if [ -f "$claude_settings" ]; then
+      ${pkgs.jq}/bin/jq \
+        '.theme = "custom:catppuccin-mocha" | .syntaxHighlightingDisabled = true' \
+        "$claude_settings" > "$claude_tmp"
+    else
+      ${pkgs.jq}/bin/jq -n \
+        '{theme: "custom:catppuccin-mocha", syntaxHighlightingDisabled: true}' \
+        > "$claude_tmp"
+    fi
+    if ! ${pkgs.diffutils}/bin/cmp -s "$claude_tmp" "$claude_settings"; then
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p $VERBOSE_ARG "$HOME/.claude"
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 644 $VERBOSE_ARG \
+        "$claude_tmp" "$claude_settings"
+    fi
+    ${pkgs.coreutils}/bin/rm -f "$claude_tmp"
+  '';
 }
