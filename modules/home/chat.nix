@@ -57,8 +57,28 @@ let
     green
     yellow
     red
+    peach
     overlay0
     ;
+
+  # Theme files come from nchat's source tree, not the package output: the
+  # unstable package (unlike stable 5.14.44) no longer installs
+  # share/nchat/themes at all, which left the previous package-path symlinks
+  # dangling. src is a store path, so this still tracks the installed
+  # version.
+  nchatThemeDir = "${nchat.src}/themes/catppuccin-mocha";
+
+  # The shipped catppuccin-mocha theme colors unread chats identically to
+  # read ones (list_color_unread_fg = list_color_fg = subtext1), leaving the
+  # right-edge "*" as the only unread cue. Rebuild color.conf with unread in
+  # peach (matching aerc's accent choices); the grep guard fails the build
+  # if a theme update changes that line instead of silently dropping the
+  # patch, like the aerc binds.conf in mail.nix.
+  nchatColorConf = pkgs.runCommand "nchat-color.conf" { } ''
+    stock=${nchatThemeDir}/color.conf
+    grep -qxF 'list_color_unread_fg=0xbac2de' "$stock"
+    sed 's/^list_color_unread_fg=0xbac2de$/list_color_unread_fg=0x${peach}/' "$stock" > $out
+  '';
 
   # Catppuccin Mocha accents (shared palette, lib/catppuccin.nix) over
   # discordo's stock theme: blue replaces green as the "active" accent, and
@@ -122,11 +142,9 @@ in
     force = true;
   };
 
-  # Catppuccin Mocha, from the theme files nchat ships itself (a theme is
-  # exactly these two files copied into ~/.config/nchat) — sourced from the
-  # package so they track the installed version.
-  xdg.configFile."nchat/color.conf".source =
-    "${nchat}/share/nchat/themes/catppuccin-mocha/color.conf";
-  xdg.configFile."nchat/usercolor.conf".source =
-    "${nchat}/share/nchat/themes/catppuccin-mocha/usercolor.conf";
+  # Catppuccin Mocha, from the theme files in nchat's own tree (a theme is
+  # exactly these two files copied into ~/.config/nchat); color.conf carries
+  # the unread patch above.
+  xdg.configFile."nchat/color.conf".source = nchatColorConf;
+  xdg.configFile."nchat/usercolor.conf".source = "${nchatThemeDir}/usercolor.conf";
 }
