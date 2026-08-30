@@ -44,7 +44,11 @@ jobs:
         run: nix shell --inputs-from . nixpkgs#deadnix --command deadnix --fail .
 
       - name: statix
-        run: nix shell --inputs-from . nixpkgs#statix --command statix check .
+        # statix from unstable: the stable-channel statix (0-unstable-2026-05-14)
+        # is not on cache.nixos.org for darwin and fails its own insta snapshot
+        # tests when built from source; unstable's 0.5.8-unstable-2026-07-17 is
+        # cached and newer. Revert to nixpkgs#statix once stable catches up.
+        run: nix shell --inputs-from . nixpkgs-unstable#statix --command statix check .
 
       - name: StyLua check
         run: nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar

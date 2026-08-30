@@ -24,6 +24,17 @@ let
       ];
   };
 
+  # nono 0.74.0 added a test that fails inside the Nix build sandbox on darwin
+  # the same way as the ~30 tests nixpkgs already skips ("Refusing to grant
+  # '/nix' ... overlaps protected nono state root"): the build's $HOME sits
+  # under /nix since Nix moved build dirs to /nix/var/nix/builds. Not yet
+  # skipped in nixpkgs master; drop this override once it is.
+  nono = pkgs-unstable.nono.overrideAttrs (old: {
+    checkFlags = (old.checkFlags or [ ]) ++ [
+      "--skip=why_self_reports_active_profile_deny_before_covering_allow"
+    ];
+  });
+
   # Keep Pi's package-manager Node runtime aligned with the Node runtime used
   # by the unstable Pi package. This avoids PATH-dependent npm resolution and
   # native-module/SQLite ABI mismatches when Pi installs extensions. Put the
@@ -80,7 +91,7 @@ in
     # references the real binary by absolute store path and shadows it in
     # PATH to block unreviewed project-local config. nono is installed for
     # manual sandboxing (see crush.nix); the wrapper does not invoke it.
-    pkgs-unstable.nono
+    nono
     pkgs-unstable.pi-coding-agent
     pi-npm
   ];

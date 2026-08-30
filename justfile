@@ -35,7 +35,7 @@ check:
     nix fmt -- --check
     find scripts files -name '*.sh' -type f -print0 | xargs -0 nix shell --inputs-from . nixpkgs#shellcheck --command shellcheck
     nix shell --inputs-from . nixpkgs#deadnix --command deadnix --fail .
-    nix shell --inputs-from . nixpkgs#statix --command statix check .
+    nix shell --inputs-from . nixpkgs-unstable#statix --command statix check .
     nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar
     nix shell --inputs-from . nixpkgs#prettier --command prettier --check "files/**/*.ts"
 
