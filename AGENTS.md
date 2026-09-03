@@ -2,13 +2,14 @@
 
 ## Pending upstream checks
 
-- **nono test-skip override is a stopgap** (`profiles/ai.nix`): we override
-  `checkFlags` to skip `why_self_reports_active_profile_deny_before_covering_allow`,
-  which fails in the Nix build sandbox because the build `$HOME` sits under
-  `/nix`. The override changes the derivation hash, so nono can no longer be
-  substituted from cache.nixos.org and every machine compiles it from source
-  (~47 min check phase; the Debian dev box even hit an rustc OOM crash doing
-  so). At session start, check whether
+- **nono `doCheck = false` override is a stopgap** (`profiles/ai.nix`): nono's
+  test suite is environment-sensitive (it tests sandboxing) and nixpkgs' skip
+  list only matches Hydra's sandboxed NixOS builders — on darwin one extra
+  test fails (`why_self_reports_active_profile_deny_before_covering_allow`,
+  build `$HOME` under `/nix`), on the Debian dev box ~44 others fail. So the
+  override disables the check phase entirely. It changes the derivation hash,
+  so nono can no longer be substituted from cache.nixos.org and every machine
+  compiles it from source. At session start, check whether
   [NixOS/nixpkgs#558782](https://github.com/NixOS/nixpkgs/pull/558782) (adds
   the same skip upstream, resolving issue #558647) has merged and reached the
   pinned nixpkgs-unstable revision; once it has, remind the user to drop the

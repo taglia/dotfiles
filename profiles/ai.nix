@@ -24,15 +24,17 @@ let
       ];
   };
 
-  # nono 0.74.0 added a test that fails inside the Nix build sandbox on darwin
-  # the same way as the ~30 tests nixpkgs already skips ("Refusing to grant
-  # '/nix' ... overlaps protected nono state root"): the build's $HOME sits
-  # under /nix since Nix moved build dirs to /nix/var/nix/builds. Not yet
-  # skipped in nixpkgs master; drop this override once it is.
-  nono = pkgs-unstable.nono.overrideAttrs (old: {
-    checkFlags = (old.checkFlags or [ ]) ++ [
-      "--skip=why_self_reports_active_profile_deny_before_covering_allow"
-    ];
+  # nono's test suite is highly environment-sensitive (it tests sandboxing:
+  # Landlock, $PWD resolution, tmpdir validation), and nixpkgs' skip list is
+  # tuned for Hydra's sandboxed NixOS builders only. Elsewhere other tests
+  # fail: on darwin one more test hits the "/nix overlaps protected nono
+  # state root" problem, and on the Debian box ~44 tests fail. Any override
+  # already forfeits the binary cache and forces a local build, so skip the
+  # check phase entirely rather than chasing per-machine skip lists. Drop
+  # this override once nixpkgs PR #558782 lands in our pinned unstable;
+  # AGENTS.md tracks that.
+  nono = pkgs-unstable.nono.overrideAttrs (_: {
+    doCheck = false;
   });
 
   # Keep Pi's package-manager Node runtime aligned with the Node runtime used
