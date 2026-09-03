@@ -16,6 +16,7 @@ disabled = false
 symbols.Macos = "󰀵 "
 symbols.Linux = " "
 symbols.Windows = "󰍲 "
+symbols.NixOS = " "
 style = "bold blue"
 
 [username]
