@@ -18,3 +18,38 @@ if grep -qx 'identity\.nix' <<<"$staged_files"; then
   echo "hint: git restore --staged identity.nix" >&2
   exit 1
 fi
+
+# Mirror the cheap lint steps of .github/workflows/check.yml so a commit that
+# would fail CI is blocked here instead of after push (nine pushes went red in
+# a row on 2026-08-28 over one unformatted file). Keep the commands in sync
+# with check.yml. Each tool only runs when a staged file could affect it, but
+# — like CI — checks whole files/trees, not just the staged hunks: a failure
+# in something you didn't touch is still a failure CI would report.
+cd "$(git rev-parse --show-toplevel)"
+
+if grep -q '\.nix$' <<<"$staged_files"; then
+  echo "pre-commit: nix fmt --check" >&2
+  nix fmt -- --check
+  echo "pre-commit: deadnix" >&2
+  nix shell --inputs-from . nixpkgs#deadnix --command deadnix --fail .
+  # statix from unstable, matching check.yml (stable statix is uncached on
+  # darwin and fails its own tests when built from source).
+  echo "pre-commit: statix" >&2
+  nix shell --inputs-from . nixpkgs-unstable#statix --command statix check .
+fi
+
+if grep -q '\.sh$' <<<"$staged_files"; then
+  echo "pre-commit: shellcheck" >&2
+  find scripts files -name '*.sh' -type f -print0 |
+    xargs -0 nix shell --inputs-from . nixpkgs#shellcheck --command shellcheck
+fi
+
+if grep -q '\.lua$' <<<"$staged_files"; then
+  echo "pre-commit: stylua" >&2
+  nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar
+fi
+
+if grep -q '\.ts$' <<<"$staged_files"; then
+  echo "pre-commit: prettier" >&2
+  nix shell --inputs-from . nixpkgs#prettier --command prettier --check "files/**/*.ts"
+fi
