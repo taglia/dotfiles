@@ -2,10 +2,9 @@
 # shared by the agent tools in this repo. Each consumer maps this data into
 # its own config schema and chooses which model ids it exposes, so adding a
 # model or correcting a context window is a one-file change here instead of a
-# hand-synchronized edit across three formats.
+# hand-synchronized edit across two formats.
 #
 # Consumers:
-#   - modules/home/goose.nix     (custom-provider JSON + wrapper defaults)
 #   - modules/home/crush.nix     (crush.json providers + default model pair)
 #   - modules/home/opencode.nix  (opencode.json provider + default model pair)
 #

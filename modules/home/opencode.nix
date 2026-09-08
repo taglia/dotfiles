@@ -7,7 +7,7 @@ let
   inherit (aiProviders) defaultModels;
 
   # Model ids exposed to OpenCode (also its whitelist); the facts behind each
-  # id live in lib/ai-providers.nix, shared with goose.nix and crush.nix.
+  # id live in lib/ai-providers.nix, shared with crush.nix.
   ollamaCloudIds = [
     "minimax-m3"
     "kimi-k2.7-code"

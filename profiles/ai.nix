@@ -53,13 +53,11 @@ in
     ../modules/home/opencode.nix
     ../modules/home/pi.nix
     ../modules/home/crush.nix
-    ../modules/home/goose.nix
   ];
 
   # Makes the configured unstable instance above available to the imported
-  # modules as an ordinary module argument (crush.nix and goose.nix take
-  # `pkgs-unstable`), keeping them real modules instead of hand-applied
-  # functions.
+  # modules as an ordinary module argument (crush.nix takes `pkgs-unstable`),
+  # keeping it a real module instead of a hand-applied function.
   _module.args.pkgs-unstable = pkgs-unstable;
 
   # `services.ollama` installs the `ollama` package itself and runs
@@ -86,8 +84,6 @@ in
     pkgs.rtk
     pkgs-unstable.claude-code
     pkgs-unstable.codex
-    # goose-cli is installed via the wrapper in modules/home/goose.nix so its
-    # provider credentials can be loaded from agenix only at runtime.
     pkgs-unstable.opencode
     # crush is installed via the wrapper in modules/home/crush.nix, which
     # references the real binary by absolute store path and shadows it in
