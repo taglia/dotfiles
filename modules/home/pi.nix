@@ -182,6 +182,14 @@ in
   # mise-installed Node (e.g. a fresh VM).
   home.packages = [ piPackageManagerNodejs ];
 
+  # pi contacts pi.dev at startup to look for a newer pi release and shows a
+  # notification; it never installs one (the binary is Nix-managed anyway).
+  # Skip the check: upgrades arrive through the nixpkgs pin. The companion
+  # install/update telemetry ping is turned off in settings.json
+  # (enableInstallTelemetry), and the per-start package update check only
+  # notifies; package versions are pinned in settings.json.
+  home.sessionVariables.PI_SKIP_VERSION_CHECK = "1";
+
   # All entries use `force = true`, so Home Manager's checkLinkTargets skips
   # the collision check and linkGeneration replaces any pre-existing file.
   home.file =
