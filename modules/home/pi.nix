@@ -114,6 +114,7 @@ let
       ../../files/pi/agent/extensions/session-cost-breakdown.ts;
     ".pi/agent/extensions/confirm-interrupt.ts" = ../../files/pi/agent/extensions/confirm-interrupt.ts;
     ".pi/agent/extensions/elapsed-time.ts" = ../../files/pi/agent/extensions/elapsed-time.ts;
+    ".pi/agent/extensions/todo.ts" = ../../files/pi/agent/extensions/todo.ts;
 
     # async-bash: run long-running shell commands in background subprocesses
     # with LLM-driven health monitoring. No npm deps (Node built-ins +
