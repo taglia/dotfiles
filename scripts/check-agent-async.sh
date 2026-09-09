@@ -16,6 +16,7 @@ sdk="$pi_package/lib/node_modules/pi-monorepo"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 cp -R files/pi/agent/extensions/agent-async "$tmp/src"
+cp -R files/pi/agent/extensions/answer-section "$tmp/answer-section"
 mkdir -p "$tmp/node_modules/@earendil-works"
 ln -s "$sdk" "$tmp/node_modules/@earendil-works/pi-coding-agent"
 for name in pi-ai pi-agent-core pi-tui; do
@@ -27,7 +28,10 @@ ln -s "$sdk/node_modules/@types" "$tmp/node_modules/@types"
   cd "$tmp"
   tsc --noEmit --module nodenext --moduleResolution nodenext --target es2023 \
     --allowImportingTsExtensions --strict --skipLibCheck --types node \
-    src/*.ts src/tests/*.ts src/tests/fixtures/*.ts
+    src/*.ts src/tests/*.ts src/tests/fixtures/*.ts \
+    answer-section/*.ts answer-section/tests/*.ts
 )
 
-PI_AGENT_TEST_SDK="$sdk" node --test files/pi/agent/extensions/agent-async/tests/*.test.ts
+PI_AGENT_TEST_SDK="$sdk" node --test \
+  files/pi/agent/extensions/agent-async/tests/*.test.ts \
+  files/pi/agent/extensions/answer-section/tests/*.test.ts

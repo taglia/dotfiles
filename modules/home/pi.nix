@@ -116,6 +116,9 @@ let
     ".pi/agent/extensions/elapsed-time.ts" = ../../files/pi/agent/extensions/elapsed-time.ts;
     ".pi/agent/extensions/todo.ts" = ../../files/pi/agent/extensions/todo.ts;
 
+    # Display-only collected replies after each settled run; no model context duplication.
+    ".pi/agent/extensions/answer-section" = ../../files/pi/agent/extensions/answer-section;
+
     # agent-async: session-owned SDK workers. No additional npm dependencies.
     ".pi/agent/extensions/agent-async" = ../../files/pi/agent/extensions/agent-async;
 

@@ -1,0 +1,8 @@
+{
+  "name": "pi-answer-section",
+  "private": true,
+  "type": "module",
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}

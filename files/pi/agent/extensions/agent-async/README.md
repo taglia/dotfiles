@@ -115,6 +115,9 @@ retained for inspection; temporary worker homes are deleted on normal cleanup
   from retained output. Provider environment credentials and custom executable
   providers are rejected rather than broadening access implicitly. A long-running
   agent's credential can expire; credential refresh remains the supervisor's job.
+  An explicit in-memory auth resolver supports API keys, resolved OAuth access
+  tokens (including Codex), and header-only auth. Resolved values stay literal:
+  they are never reinterpreted as `!command` / `$ENV` configuration expressions.
 - Standard API-backed custom models from `models.json` are supported, including
   local/Ollama-compatible endpoints. No independent worker auth/config discovery.
 - Default tools: workspace-scoped `read`, bounded literal `grep`, and `ls`.
@@ -141,7 +144,9 @@ node --test files/pi/agent/extensions/agent-async/tests/*.test.ts
 ```
 
 For the full suite, including shutdown cleanup, Pi's real extension loader,
-and a real SDK worker against a **local mock HTTP server** (no paid model calls):
+and real SDK workers against **local mock HTTP servers** (no paid model calls).
+Auth regressions cover OAuth-only provider preflight, literal/header-only auth,
+and Codex's actual SSE transport with a synthetic token/account:
 
 ```sh
 pi_package=$(nix build --impure --no-link --print-out-paths --expr '

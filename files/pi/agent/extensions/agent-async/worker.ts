@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import { join, relative } from "node:path";
 import { lstatSync, readdirSync, readFileSync } from "node:fs";
 import { scopedPath, writablePath } from "./paths.ts";
+import { configureWorkerModel } from "./worker-auth.ts";
 
 let session: any;
 let started = false;
@@ -82,16 +83,7 @@ process.on("message", async (message: any) => {
       refreshOnCreate: false,
       allowModelNetwork: false,
     });
-    runtime.registerProvider(model.provider, {
-      api: model.api,
-      baseUrl: auth.baseUrl ?? model.baseUrl,
-      headers: auth.headers,
-      models: [{ ...model, baseUrl: auth.baseUrl ?? model.baseUrl }],
-    });
-    if (auth.apiKey) await runtime.setRuntimeApiKey(model.provider, auth.apiKey);
-    const resolved = runtime.getModel(model.provider, model.id);
-    if (!resolved || resolved.api !== model.api)
-      throw new Error("Selected model could not be reproduced in worker; no fallback allowed.");
+    const resolved = await configureWorkerModel(runtime, model, auth);
     const settings = sdk.SettingsManager.inMemory({
       packages: [],
       enableInstallTelemetry: false,

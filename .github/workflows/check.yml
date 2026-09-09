@@ -56,7 +56,7 @@ jobs:
       - name: Prettier check
         run: nix shell --inputs-from . nixpkgs#prettier --command prettier --check "files/**/*.ts"
 
-      - name: Supervised agent tests (local mock provider; no API keys)
+      - name: Supervised agent and Answer section tests (local mocks; no API keys)
         run: nix shell --inputs-from . nixpkgs-unstable#nodejs nixpkgs#typescript --command bash scripts/check-agent-async.sh
 
       # Evaluate the non-native checks (Darwin and aarch64-linux) one check
