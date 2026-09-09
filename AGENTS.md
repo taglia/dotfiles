@@ -13,6 +13,9 @@ CI red for nine consecutive pushes:
 - `nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar` for Lua
 - `nix shell --inputs-from . nixpkgs#prettier --command prettier --check "files/**/*.ts"` for TypeScript
 - shellcheck for `*.sh` under `scripts/` and `files/`
+- `nix shell --inputs-from . nixpkgs-unstable#nodejs nixpkgs#typescript --command bash scripts/check-agent-async.sh`
+  for `agent-async` or `flake.lock` changes (typecheck, DAG/lifecycle tests,
+  and a local mock provider; no paid API calls)
 
 The pre-commit hook (`.githooks/pre-commit`, wired up by
 `scripts/bootstrap_and_switch.sh` via `core.hooksPath`) mirrors these and

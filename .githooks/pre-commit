@@ -53,3 +53,8 @@ if grep -q '\.ts$' <<<"$staged_files"; then
   echo "pre-commit: prettier" >&2
   nix shell --inputs-from . nixpkgs#prettier --command prettier --check "files/**/*.ts"
 fi
+
+if grep -Eq '^(files/pi/agent/extensions/agent-async/|scripts/check-agent-async\.sh$|flake\.lock$)' <<<"$staged_files"; then
+  echo "pre-commit: supervised agent typecheck and lifecycle tests" >&2
+  nix shell --inputs-from . nixpkgs-unstable#nodejs nixpkgs#typescript --command bash scripts/check-agent-async.sh
+fi

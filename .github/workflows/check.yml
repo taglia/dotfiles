@@ -56,6 +56,9 @@ jobs:
       - name: Prettier check
         run: nix shell --inputs-from . nixpkgs#prettier --command prettier --check "files/**/*.ts"
 
+      - name: Supervised agent tests (local mock provider; no API keys)
+        run: nix shell --inputs-from . nixpkgs-unstable#nodejs nixpkgs#typescript --command bash scripts/check-agent-async.sh
+
       # Evaluate the non-native checks (Darwin and aarch64-linux) one check
       # per nix process. A single `nix flake check --no-build --all-systems`
       # accumulates every system's eval in one process and OOM-kills the 7 GB
