@@ -21,3 +21,6 @@ crush.json
 # Local agent state (session database, logs, machine-local settings)
 .claude/settings.local.json
 .crush/
+
+# Local weekly Nix update reviews
+/update-reviews/
