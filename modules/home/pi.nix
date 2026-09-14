@@ -6,6 +6,66 @@
 }:
 
 let
+  json = pkgs.formats.json { };
+  aiProviders = import ../../lib/ai-providers.nix;
+
+  # Keep Pi's selection and thinking controls local; shared model facts and
+  # pricing come exclusively from the catalog used by Crush and OpenCode.
+  ollamaCloudIds = [
+    "minimax-m3"
+    "kimi-k2.7-code"
+    "deepseek-v4-pro"
+    "glm-5.2"
+    "glm-5.3"
+    "kimi-k3"
+  ];
+  ollamaModel =
+    id:
+    let
+      m = aiProviders.ollamaCloud.models.${id};
+    in
+    {
+      inherit id;
+      inherit (m) name;
+      contextWindow = m.context;
+      input = [ "text" ] ++ lib.optional (m.attachments or false) "image";
+      reasoning = true;
+      thinkingLevelMap = {
+        off = null;
+        minimal = "low";
+        low = "low";
+        medium = "medium";
+        high = "high";
+        xhigh = "high";
+      }
+      // lib.optionalAttrs (id == "glm-5.3") {
+        medium = "high";
+        xhigh = "max";
+        max = "max";
+      };
+    }
+    // lib.optionalAttrs (m ? cost) { inherit (m) cost; };
+
+  piModelsJson = json.generate "pi-models.json" {
+    providers = {
+      ollama = {
+        api = "openai-completions";
+        apiKey = "ollama";
+        baseUrl = "http://127.0.0.1:11434/v1";
+        models = [ ];
+      };
+      ollama-cloud = {
+        api = "openai-completions";
+        # Preserve runtime credential resolution; never read secrets in Nix.
+        apiKey = "!cat \"$OLLAMA_API_KEY_FILE\"";
+        authHeader = true;
+        inherit (aiProviders.ollamaCloud) baseUrl;
+        compat.supportsDeveloperRole = false;
+        models = map ollamaModel ollamaCloudIds;
+      };
+    };
+  };
+
   minimalWebSource = ../../files/pi/agent/extensions/minimal-web;
   settingsSource = ../../files/pi/agent/settings.json;
   piPackageManagerNodejs =
@@ -106,7 +166,7 @@ let
   # installed as a writable copy below instead.
   managedPiAgentFiles = {
     ".pi/agent/AGENTS.md" = ../../files/pi/agent/AGENTS.md;
-    ".pi/agent/models.json" = ../../files/pi/agent/models.json;
+    ".pi/agent/models.json" = piModelsJson;
     ".pi/agent/ascii-art/taglia-pi.txt" = ../../files/pi/agent/ascii-art/taglia-pi.txt;
     ".pi/agent/extensions/ascii-header.ts" = ../../files/pi/agent/extensions/ascii-header.ts;
     ".pi/agent/extensions/prettier-footer.ts" = ../../files/pi/agent/extensions/prettier-footer.ts;
