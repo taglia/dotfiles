@@ -66,6 +66,19 @@ let
     };
   };
 
+  # Promote the former hand-authored draft to a store-backed profile. Future
+  # grants belong here, not in nono's save-profile prompt.
+  nonoPiProfile = json.generate "pi.json" {
+    extends = [ "nolabs-ai/pi" ];
+    meta.name = "pi";
+    filesystem.read = [
+      "~/.local/share/agenix"
+      "~/.config/nix"
+    ];
+    workdir.access = "readwrite";
+    network.block = false;
+  };
+
   minimalWebSource = ../../files/pi/agent/extensions/minimal-web;
   settingsSource = ../../files/pi/agent/settings.json;
   piPackageManagerNodejs =
@@ -198,6 +211,16 @@ let
   };
 in
 {
+  xdg.configFile."nono/profiles/pi.json" = {
+    source = nonoPiProfile;
+    # Replace the existing draft without a manual deletion before activation.
+    force = true;
+  };
+
+  # Fish aliases forward $argv, so -c and other arguments reach Pi unchanged.
+  # Suppress nono's false-positive exit diagnostic without relaxing sandboxing.
+  programs.fish.shellAliases.pi-sandbox = "nono run --profile pi --no-diagnostics -- pi";
+
   # Writable copy of settings.json (see comment on managedPiAgentFiles). The
   # repo copy is the source of truth: runtime edits worth keeping should be
   # folded back into files/pi/agent/settings.json, otherwise the next switch
