@@ -29,6 +29,16 @@
         name = "GLM-5.2 (Ollama Cloud)";
         context = 1000000;
       };
+      "glm-5.3" = {
+        name = "GLM-5.3 (Ollama Cloud)";
+        context = 1000000;
+        cost = {
+          input = 1.4;
+          output = 4.4;
+          cacheRead = 0.26;
+          cacheWrite = 0;
+        };
+      };
       "kimi-k3" = {
         name = "Kimi K3 (Ollama Cloud)";
         context = 1000000;

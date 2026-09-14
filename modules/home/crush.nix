@@ -132,6 +132,7 @@ let
         discover_models = false;
         models = map ollamaModel [
           "glm-5.2"
+          "glm-5.3"
           "kimi-k3"
           "deepseek-v4-pro"
           "minimax-m3"

@@ -85,6 +85,25 @@
         },
         {
           "contextWindow": 1000000,
+          "id": "glm-5.3",
+          "input": [
+            "text"
+          ],
+          "name": "GLM-5.3 (Ollama Cloud)",
+          "reasoning": true,
+          "cost": { "input": 1.4, "output": 4.4, "cacheRead": 0.26, "cacheWrite": 0 },
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "low",
+            "low": "low",
+            "medium": "high",
+            "high": "high",
+            "xhigh": "max",
+            "max": "max"
+          }
+        },
+        {
+          "contextWindow": 1000000,
           "id": "kimi-k3",
           "input": [
             "text",
