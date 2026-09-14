@@ -11,10 +11,11 @@
 # can pop the "install developer tools" dialog on machines without the CLT).
 #
 # `ccc -i` prints one pipe-separated line per task:
-#   Task Name|state|fraction|bytesCopied|phase|currentPath
-# where state is "stopped", "running" or "running (pausable)", and fraction
-# is -1.000000 when progress is indeterminate. If several tasks run at once,
-# the first one wins.
+#   Task Name|state|percent|bytesCopied|phase|currentPath
+# where state is "stopped", "running" or "running (pausable)", and percent
+# is already a 0-100 value (matching the "Progress: X.YYYYYY%" line that
+# `ccc -w` prints), or -1.000000 when progress is indeterminate. If several
+# tasks run at once, the first one wins.
 set -u
 
 ccc="/Applications/Carbon Copy Cloner.app/Contents/MacOS/ccc"
@@ -33,9 +34,9 @@ fi
 
 printf 'running\t1\n'
 printf '%s\n' "$line" | awk -F'|' '{
-  fraction = $3 + 0
-  if (fraction >= 0) {
-    printf "percent\t%d\n", fraction * 100 + 0.5
+  percent = $3 + 0
+  if (percent >= 0) {
+    printf "percent\t%d\n", percent + 0.5
   } else {
     printf "percent\t-1\n"
   }
