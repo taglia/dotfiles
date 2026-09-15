@@ -23,7 +23,7 @@ let
 in
 {
   home.packages = with pkgs; [
-    asciiquarium
+    asciiquarium-transparent
     cmatrix
     nethack
 
