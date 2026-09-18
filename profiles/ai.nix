@@ -24,19 +24,6 @@ let
       ];
   };
 
-  # nono's test suite is highly environment-sensitive (it tests sandboxing:
-  # Landlock, $PWD resolution, tmpdir validation), and nixpkgs' skip list is
-  # tuned for Hydra's sandboxed NixOS builders only. Elsewhere other tests
-  # fail: on darwin one more test hits the "/nix overlaps protected nono
-  # state root" problem, and on the Debian box ~44 tests fail. Any override
-  # already forfeits the binary cache and forces a local build, so skip the
-  # check phase entirely rather than chasing per-machine skip lists. Drop
-  # this override once nixpkgs PR #558782 lands in our pinned unstable;
-  # AGENTS.md tracks that.
-  nono = pkgs-unstable.nono.overrideAttrs (_: {
-    doCheck = false;
-  });
-
   # Keep Pi's package-manager Node runtime aligned with the Node runtime used
   # by the unstable Pi package. This avoids PATH-dependent npm resolution and
   # native-module/SQLite ABI mismatches when Pi installs extensions. Put the
@@ -89,7 +76,7 @@ in
     # references the real binary by absolute store path and shadows it in
     # PATH to block unreviewed project-local config. nono is installed for
     # manual sandboxing (see crush.nix); the wrapper does not invoke it.
-    nono
+    pkgs-unstable.nono
     pkgs-unstable.pi-coding-agent
     pi-npm
   ];

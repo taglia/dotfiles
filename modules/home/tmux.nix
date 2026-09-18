@@ -20,6 +20,11 @@ in
     pkgs.runCommand "sesh-completions-fish" { }
       "${pkgs.sesh}/bin/sesh completion fish > $out";
 
+  # Keep the popup session out of the picker and sesh last (prefix + b).
+  xdg.configFile."sesh/sesh.toml".text = ''
+    blacklist = ["scratch"]
+  '';
+
   programs.tmux = {
     enable = true;
     baseIndex = 1;
