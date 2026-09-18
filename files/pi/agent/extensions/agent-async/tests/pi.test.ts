@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 
 const sdkDir = process.env.PI_AGENT_TEST_SDK;
@@ -36,7 +36,7 @@ test(
 );
 
 test(
-  "stock Pi accepts launches; shutdown cancels outstanding tasks without prompting",
+  "read-only and write-scoped launches need no per-agent approval; shutdown does not prompt",
   { skip: !sdkDir, timeout: 10000 },
   async (t) => {
     const dir = mkdtempSync(join(tmpdir(), "agent-shutdown-"));
@@ -64,7 +64,7 @@ test(
       },
       ui: {
         select() {
-          assert.fail("Shutdown must not prompt");
+          assert.fail("Agent launch and shutdown must not prompt");
         },
         setWidget() {},
       },
@@ -84,9 +84,18 @@ test(
       (await launch("one", args, undefined, undefined, ctx)).content[0].text,
     );
     const second = JSON.parse(
-      (await launch("two", { ...args, depends_on: [first.id] }, undefined, undefined, ctx))
-        .content[0].text,
+      (
+        await launch(
+          "two",
+          { ...args, depends_on: [first.id], write_paths: ["output.txt", "./output.txt"] },
+          undefined,
+          undefined,
+          ctx,
+        )
+      ).content[0].text,
     );
+    assert.deepEqual(first.write_paths, []);
+    assert.deepEqual(second.write_paths, [join(realpathSync(ctx.cwd), "output.txt")]);
     assert.equal(first.state, "running");
     assert.equal(second.state, "blocked");
     await shutdown();

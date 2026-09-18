@@ -94,8 +94,7 @@ connection, including on supervisor SIGKILL or terminal loss, also triggers
 cleanup. Simultaneous guardian destruction or an OS failure cannot provide
 ordinary orderly-shutdown guarantees.
 
-Agent launches remain interactive-only for write approval and session-change
-confirmation.
+Agent launches remain interactive-only for session-change confirmation.
 
 Session switch/fork prompts before cancelling work. **`/reload` unconditionally
 cancels all agents**, as does session teardown. Jobs are not resumed after restart;
@@ -123,9 +122,13 @@ retained for inspection; temporary worker homes are deleted on normal cleanup
 - Default tools: workspace-scoped `read`, bounded literal `grep`, and `ls`.
   Search skips symlinks, `.git`, `.pi`, `node_modules` and files above 1 MiB.
   No shell means workers cannot run builds/tests: delegate those to the supervisor.
-- `write_paths` requires an interactive approval of exact canonical files before
-  `edit`/`write` are enabled. Traversal and symlink escapes are rejected; writes to
-  control/instruction/credential paths are prohibited. Concurrent writers cannot
+- The supervisor obtains implementation approval in the main conversation before
+  delegating writing tasks. That approval covers sub-agents within the approved
+  plan; there is no per-agent approval dialog. This is an instruction-level gate,
+  not a programmatically verified approval record.
+- Explicit `write_paths` enables `edit`/`write` only for those exact canonical files;
+  omitting it keeps the worker read-only. Traversal and symlink escapes are rejected;
+  writes to control/instruction/credential paths are prohibited. Concurrent writers cannot
   share a file unless ordered by dependencies. Parent-agent edits are **not**
   locked across processes: the supervisor must avoid those files during the task.
 - Existing OS sandbox restrictions are inherited and never relaxed. Tool path
