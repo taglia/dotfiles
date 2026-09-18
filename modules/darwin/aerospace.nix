@@ -7,10 +7,12 @@
 # Colors: active = focused window (yellow, matches the focused-workspace pill
 # in files/sketchybar/colors.lua); inactive = the other windows (gray, matches
 # its `background_border`). The `borders` binary comes from `jankyborders` in
-# modules/darwin/packages.nix.
+# modules/darwin/packages.nix. `blacklist` excludes apps whose process name
+# matches (case-sensitive) — iPhone Mirroring draws its own rounded frame, so
+# a border on top looks wrong.
 let
   inherit (import ../../lib/catppuccin.nix) palette;
-  bordersStart = "exec-and-forget ${pkgs.jankyborders}/bin/borders style=round active_color=0xff${palette.yellow} inactive_color=0xff${palette.crust} width=5.0";
+  bordersStart = "exec-and-forget ${pkgs.jankyborders}/bin/borders style=round active_color=0xff${palette.yellow} inactive_color=0xff${palette.crust} width=5.0 blacklist=\"iPhone Mirroring\"";
 in
 {
   # Disable macOS' native tiling/snapping so AeroSpace is the sole window
