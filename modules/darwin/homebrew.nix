@@ -121,6 +121,7 @@ in
       "linearmouse"
       "lingon-x"
       "little-snitch"
+      "lookaway"
       "loopback"
       "moonlight"
       "mountain-duck"
