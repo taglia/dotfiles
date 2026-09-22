@@ -180,6 +180,7 @@ in
       "Kagi for Safari" = 1622835804;
       "Keynote" = 361285480;
       "lire" = 1482527526;
+      "LookAway" = 6747192301;
       "Mactracker" = 430255202;
       "Marked 3" = 6747497179;
       "Metapho" = 914457352;
