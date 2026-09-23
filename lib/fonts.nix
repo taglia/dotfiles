@@ -5,4 +5,5 @@ pkgs: with pkgs; [
   nerd-fonts.hack
   nerd-fonts.iosevka
   nerd-fonts.iosevka-term
+  inter
 ]
