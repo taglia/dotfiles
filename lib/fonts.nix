@@ -6,4 +6,5 @@ pkgs: with pkgs; [
   nerd-fonts.iosevka
   nerd-fonts.iosevka-term
   inter
+  geist-font
 ]
