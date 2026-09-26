@@ -325,7 +325,7 @@ end)
 -- jittering as the magnitude changes.
 local function format_rate(bps)
   if bps < 1024 then
-    return string.format("%5d B/s", bps)
+    return string.format("%5d B/s", math.floor(bps))
   elseif bps < 1024 * 1024 then
     return string.format("%5.1f KB/s", bps / 1024)
   elseif bps < 1024 * 1024 * 1024 then
