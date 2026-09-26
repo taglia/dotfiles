@@ -50,6 +50,29 @@ the Catppuccin palette) and injected by `modules/home/sketchybar.nix`. The bar
 uses an explicit high-contrast style: opaque near-black bar, white foreground,
 bright yellow focused workspace.
 
+## Time Machine
+
+The Time Machine icon is visible only during a backup or when the last known
+successful backup is older than seven days. It is green while active and orange
+when overdue; idle with recent or unavailable history stays hidden.
+Hover shows the current phase (or an overdue warning while idle); only copying with valid progress shows a
+percentage. Click for status, destination, the last successful backup's local
+date/time and age, and estimated time remaining when reported during copying.
+An orange popup warning appears when that backup is older than seven days.
+
+History uses the newest destination `SnapshotDates` entry in macOS's local
+`com.apple.TimeMachine` preferences, not local snapshots or attempted backups.
+This is last-known history, available without mounting the destination or
+requesting root/Full Disk Access; it cannot detect backups deleted remotely.
+Missing/unreadable history is shown as unavailable, not as "never backed up".
+With multiple destinations, the newest backup across them is shown with its
+destination. Status and history are refreshed every 30 seconds, even while the
+icon is hidden, and on wake or opening the popup. The preference schema is
+macOS-internal and may change.
+
+Regression checks: `bash scripts/check-timemachine.sh` and
+`lua scripts/check-timemachine.lua` (from the repository root).
+
 ## Local modifications (vs. upstream)
 
 - Uses an explicit high-contrast palette (no theme switching, no
