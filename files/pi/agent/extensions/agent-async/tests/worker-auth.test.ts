@@ -5,7 +5,24 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import type { Model } from "@earendil-works/pi-ai";
 import { configureWorkerModel } from "../worker-auth.ts";
+
+// Exercise the real Codex provider without depending on its changing model catalog.
+function codexModel(): Model<"openai-codex-responses"> {
+  return {
+    id: "fixture-codex",
+    name: "Fixture Codex",
+    provider: "openai-codex",
+    api: "openai-codex-responses",
+    baseUrl: "https://chatgpt.com/backend-api",
+    reasoning: true,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 128000,
+    maxTokens: 4096,
+  };
+}
 
 const sdkDir = process.env.PI_AGENT_TEST_SDK;
 async function fixture(t: any) {
@@ -31,8 +48,7 @@ test(
   { skip: !sdkDir },
   async (t) => {
     const { runtime, credentials } = await fixture(t);
-    const model = runtime.getModel("openai-codex", "gpt-5.4-mini");
-    assert.ok(model);
+    const model = codexModel();
     // Reproduce the old implementation: the override is NOT recognized as configured OAuth auth.
     runtime.registerProvider(model.provider, {
       api: model.api,
@@ -75,7 +91,7 @@ test(
   async (t) => {
     const { runtime } = await fixture(t);
     const model = {
-      ...runtime.getModel("openai-codex", "gpt-5.4-mini"),
+      ...codexModel(),
       provider: "header-only",
       api: "openai-completions",
     };
@@ -159,7 +175,7 @@ test(
     });
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     const baseUrl = `http://127.0.0.1:${(server.address() as any).port}`;
-    const model = runtime.getModel("openai-codex", "gpt-5.4-mini");
+    const model = codexModel();
     const selected = await configureWorkerModel(runtime, model, {
       ok: true,
       apiKey: token,
