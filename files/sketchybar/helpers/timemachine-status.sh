@@ -19,6 +19,8 @@ printf '%s\n' "$status" | awk '
     if (key == "BackupPhase") phase = value
     if (key == "Percent") percent = value
     if (key == "TimeRemaining") remaining = value
+    if (key == "bytes") bytes = value
+    if (key == "totalBytes") total = value
   }
   END {
     printf "running\t%d\n", (running == "1")
@@ -29,6 +31,10 @@ printf '%s\n' "$status" | awk '
         printf "percent\t%d\n", percent * 100 + 0.5
       if (remaining ~ /^[0-9]+([.][0-9]+)?$/ && remaining > 0)
         printf "remaining\t%d\n", remaining + 0.5
+      if (bytes ~ /^[0-9]+$/ && total ~ /^[0-9]+$/ && total > 0) {
+        printf "bytes\t%s\n", bytes
+        printf "total_bytes\t%s\n", total
+      }
     }
   }
 '

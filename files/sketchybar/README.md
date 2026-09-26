@@ -56,21 +56,29 @@ The Time Machine icon is visible only during a backup or when the last known
 successful backup is older than seven days. It is green while active and orange
 when overdue; idle with recent or unavailable history stays hidden.
 Hover shows the current phase (or an overdue warning while idle); only copying with valid progress shows a
-percentage. Click for status, destination, the last successful backup's local
-date/time and age, and estimated time remaining when reported during copying.
+percentage. Click for status, the last successful backup's relative age, and a
+bullet list of the five newest available backup dates/times (local timezone).
+During copying, data copied / total (decimal B–PB) and estimated time remaining
+appear when reported by Time Machine. No destination row is displayed.
 An orange popup warning appears when that backup is older than seven days.
 
-History uses the newest destination `SnapshotDates` entry in macOS's local
+History uses the five newest destination `SnapshotDates` entries in macOS's local
 `com.apple.TimeMachine` preferences, not local snapshots or attempted backups.
 This is last-known history, available without mounting the destination or
 requesting root/Full Disk Access; it cannot detect backups deleted remotely.
-Missing/unreadable history is shown as unavailable, not as "never backed up".
-With multiple destinations, the newest backup across them is shown with its
-destination. Status and history are refreshed every 30 seconds, even while the
+A native `defaults`/`plutil`/`date` helper reads history without JavaScript/AppleScript.
+`defaults export` accesses the system preferences domain through CFPreferences;
+direct plist access is denied to SketchyBar by macOS privacy controls even when
+Terminal can read the file. No additional Full Disk Access grant is needed.
+Failures are logged; transient failures preserve previously read dates and show
+a refresh-failed notice. Missing history is unavailable, not "never backed up".
+With multiple destinations, the newest five backups across them are used.
+Status and history are refreshed every 30 seconds, even while the
 icon is hidden, and on wake or opening the popup. The preference schema is
 macOS-internal and may change.
 
-Regression checks: `bash scripts/check-timemachine.sh` and
+Regression checks: `bash scripts/check-timemachine.sh`,
+`bash scripts/check-timemachine-history.sh` (macOS), and
 `lua scripts/check-timemachine.lua` (from the repository root).
 
 ## Local modifications (vs. upstream)

@@ -34,5 +34,11 @@ for percent in -1 1.2 garbage; do
     "$(printf 'Running = 1;\nBackupPhase = Copying;\nPercent = "%s";\nTimeRemaining = -1;' "$percent")"
 done
 check unknown $'running\t1\nphase\tWorking' 'Running = 1;'
+check data $'running\t1\nphase\tCopying\nbytes\t42000000000\ntotal_bytes\t100000000000' \
+  $'Running = 1;\nBackupPhase = Copying;\nbytes = 42000000000;\ntotalBytes = 100000000000;'
+check 'ignore stale data' $'running\t1\nphase\tVerifying' \
+  $'Running = 1;\nBackupPhase = Verifying;\nbytes = 420;\ntotalBytes = 1000;'
+check 'invalid data' $'running\t1\nphase\tCopying' \
+  $'Running = 1;\nBackupPhase = Copying;\nbytes = -1;\ntotalBytes = 0;'
 export TM_EXIT=1
 check failure $'running\t0\nphase\tStatus unavailable' ''
