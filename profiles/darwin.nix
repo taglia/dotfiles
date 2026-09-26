@@ -3,6 +3,7 @@
 {
   imports = [
     ../modules/home/darwin-apps.nix
+    ../modules/home/log-maintenance.nix
   ];
 
   home.sessionPath = [

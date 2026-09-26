@@ -50,6 +50,9 @@ jobs:
         # cached and newer. Revert to nixpkgs#statix once stable catches up.
         run: nix shell --inputs-from . nixpkgs-unstable#statix --command statix check .
 
+      - name: Log maintenance tests
+        run: nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/log-maintenance -v
+
       - name: StyLua check
         run: nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar
 

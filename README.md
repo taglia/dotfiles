@@ -195,6 +195,36 @@ Some application config is managed by Home Manager from files in this repo:
 
 AeroSpace is managed directly by nix-darwin through `services.aerospace`.
 
+### Log maintenance (macOS)
+
+`modules/home/log-maintenance.nix` installs a per-user LaunchAgent that runs
+**once per hour**. `files/log-maintenance/maintain.py` manages only:
+
+- `~/Library/Logs/sketchybar/sketchybar.{out,err}.log`
+- `~/Library/Logs/agenix/{stdout,stderr}`
+- `~/.local/state/dotfiles/wallpaper.log`
+- Task artifacts in `~/.pi/agent/{async-bash,agent-async}/`
+
+Service logs and async-bash task logs above **10 MiB** are copied/truncated in
+place, preserving open writer file descriptors. Each rotation archives only the
+**latest 10 MiB**, retaining **three gzip archives**; older overflow is discarded.
+These are hourly safeguards, not hard disk quotas. A few concurrent writes can
+be lost during copy/truncate. Archives are private (0600).
+
+Completed async-bash logs/archives and agent-async transcripts/results expire
+after **30 days**. Cleanup requires explicit completion evidence and old output;
+running/unknown bash tasks and agent transcripts without results are preserved.
+Bash task metadata is retained for session restoration. Agent transcripts already
+have a 5 MiB writer-side cap. Conversation history, unrelated app data, and
+symlinked paths are never cleaned. Custom `PI_CODING_AGENT_DIR` locations are not
+included. Stale tasks without completion evidence need manual review.
+
+Run the regression tests with:
+
+```sh
+nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/log-maintenance -v
+```
+
 ### Theming (Catppuccin Mocha)
 
 `lib/catppuccin.nix` is the single source of truth for the Catppuccin Mocha palette. The themed configs that used to duplicate it are now generated from it: `files/starship.toml` (palette table) and the kitty theme via `modules/home/xdg-files.nix`, the fish colors via `modules/home/fish.nix`, and `colors.lua` (injected at build time) via `modules/home/sketchybar.nix`. tmux, Ghostty, and OpenCode use an upstream Catppuccin plugin or built-in theme and are intentionally not wired in. Change a color once in `lib/catppuccin.nix` to update every generated consumer.

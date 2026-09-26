@@ -44,6 +44,11 @@ if grep -q '\.sh$' <<<"$staged_files"; then
     xargs -0 nix shell --inputs-from . nixpkgs#shellcheck --command shellcheck
 fi
 
+if grep -Eq '^(files/log-maintenance/|modules/home/log-maintenance\.nix$|profiles/darwin\.nix$|flake\.lock$)' <<<"$staged_files"; then
+  echo "pre-commit: log maintenance tests" >&2
+  nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/log-maintenance -v
+fi
+
 if grep -q '\.lua$' <<<"$staged_files"; then
   echo "pre-commit: stylua" >&2
   nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar
