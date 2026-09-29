@@ -6,8 +6,8 @@ SBAR.begin_config() -- Pauses redraw for faster loading
 -- AeroSpace triggers aerospace_workspace_change; see modules/darwin/aerospace.nix.
 require("items.spaces")
 require("items.network")
-require("items.vpn")
 require("items.bandwidth")
+require("items.vpn")
 
 -- Right Side (Order: Right -> Left)
 require("items.calendar")
