@@ -20,8 +20,8 @@ local WORKSPACE_ICONS = {
   ["3"] = "󰇮", -- mail
   ["4"] = "󰭹", -- chat
   ["5"] = "", -- terminal
-  ["6"] = "󰈔", -- file
-  ["7"] = "󰈔", -- file
+  ["6"] = "􀢆", -- 3d apps
+  ["7"] = "􀑪", -- music
   ["8"] = "󰈔", -- file
   ["9"] = "󰈔", -- file
 }

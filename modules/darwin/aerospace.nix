@@ -221,6 +221,21 @@ in
           run = "move-node-to-workspace 4";
         }
         {
+          "if".app-id = "com.bambulab.bambu-studio";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 6";
+        }
+        {
+          "if".app-id = "com.mcneel.rhinoceros.9";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 6";
+        }
+        {
+          "if".app-id = "com.apple.Music";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 7";
+        }
+        {
           "if".app-name-regex-substring = "Messages";
           run = "layout floating";
         }
@@ -273,6 +288,10 @@ in
         }
         {
           "if".workspace = "2";
+          run = "layout accordion";
+        }
+        {
+          "if".workspace = "6";
           run = "layout accordion";
         }
       ];
