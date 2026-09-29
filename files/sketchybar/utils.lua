@@ -21,6 +21,7 @@ end
 local close_active_hover_popup
 
 function M.hover_popup(parent, triggers, on_change)
+  on_change = on_change or function() end
   local is_open = false
   local function close()
     if not is_open then
@@ -49,13 +50,12 @@ function M.hover_popup(parent, triggers, on_change)
     item:subscribe("mouse.entered", open)
     item:subscribe({ "mouse.exited", "mouse.exited.global" }, close)
   end
-  return close
+  return close, open
 end
 
--- Factory for backup-progress indicators (Time Machine, CCC).
--- Hidden entirely unless the backup is running (their only purpose is
--- answering "is it safe to unplug the laptop?"). While visible, hovering
--- shows the progress label, mirroring the battery indicator's hover behavior.
+-- Factory for compact backup-progress indicators (currently CCC).
+-- Hidden unless the backup is running; progress appears in a hover popup,
+-- never as an expanding label in the bar.
 --
 -- The status probe is a helpers/*.sh script (shellcheck-ed by CI) whose
 -- tab-separated output is parsed here: the `running` key (value "1"/"0")
@@ -71,14 +71,27 @@ function M.make_status_item(opts)
     -- Backups last minutes to hours; a moderate tick is plenty. The icon is
     -- hidden when idle, so the only cost of the poll is the helper script.
     update_freq = 30,
+    updates = true, -- Keep polling while the indicator is hidden.
     drawing = false,
     icon = {
       string = opts.icon,
       color = opts.icon_color,
       font = { family = "Hack Nerd Font", style = "Regular" },
     },
-    label = { drawing = false }, -- Shown on hover only
+    label = { drawing = false },
+    popup = { align = "right" },
   })
+  local detail = SBAR.add("item", opts.name .. ".detail", {
+    position = "popup." .. item.name,
+    icon = { drawing = false },
+    label = {
+      string = opts.initial_status,
+      font = { family = "Hack Nerd Font", style = "Regular", size = 14.0 },
+      padding_left = 14,
+      padding_right = 14,
+    },
+  })
+  local close_popup = M.hover_popup(item)
 
   local status_script = M.config_dir() .. "/helpers/" .. opts.script
   local last_status = opts.initial_status
@@ -98,28 +111,13 @@ function M.make_status_item(opts)
 
       last_status = opts.status(values) or last_status
 
-      item:set({
-        drawing = running,
-        label = { string = last_status, drawing = false },
-        icon = { padding_right = DEFAULT_ITEM.icon.padding_right },
-      })
+      detail:set({ label = { string = last_status } })
+      if not running then
+        close_popup()
+      end
+      item:set({ drawing = running })
     end)
   end
-
-  -- Show progress when hovering, hide when leaving (same as battery.lua).
-  item:subscribe("mouse.entered", function()
-    item:set({
-      icon = { padding_right = DEFAULT_ITEM.icon.padding_right * 0.5 },
-      label = { string = last_status, drawing = true },
-    })
-  end)
-
-  item:subscribe("mouse.exited", function()
-    item:set({
-      icon = { padding_right = DEFAULT_ITEM.icon.padding_right },
-      label = { drawing = false },
-    })
-  end)
 
   item:subscribe({ "routine", "system_woke" }, update)
 

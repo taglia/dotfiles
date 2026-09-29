@@ -2,24 +2,22 @@ require("globals")
 -- 1. Setup Bar and Defaults
 SBAR.begin_config() -- Pauses redraw for faster loading
 
--- Left Side: AeroSpace workspace indicator (no macOS Spaces, no rift) + the
--- resources widget (CPU/RAM). aerospace.toml triggers
--- `aerospace_workspace_change` on workspace switch (see
--- modules/darwin/aerospace.nix); see items/spaces.lua. resources.lua places
--- its own items on the left.
+-- Left Side (Order: Left -> Right)
+-- AeroSpace triggers aerospace_workspace_change; see modules/darwin/aerospace.nix.
 require("items.spaces")
-require("items.resources")
+require("items.network")
+require("items.vpn")
+require("items.bandwidth")
 
 -- Right Side (Order: Right -> Left)
 require("items.calendar")
 require("items.volume")
 require("items.battery")
-require("items.network")
-require("items.vpn")
+require("items.resources") -- Creates disk -> RAM -> CPU; on screen: CPU -> RAM -> disk.
 require("items.front_app")
 -- Backup indicators (Time Machine, CCC) are required LAST on the right so
 -- they are the leftmost right-side items (left of the front-app icon) when
--- visible; they are hidden unless a backup is running.
+-- visible (running backups, plus overdue Time Machine backups).
 require("items.timemachine")
 require("items.ccc")
 

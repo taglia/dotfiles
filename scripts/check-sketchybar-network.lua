@@ -1,4 +1,5 @@
 -- Run from the repository root: lua scripts/check-sketchybar-network.lua
+package.path = "files/sketchybar/?.lua;" .. package.path
 COLORS = { mocha_overlay_1 = "gray", mocha_text = "white" }
 local items, commands = {}, {}
 local result = {

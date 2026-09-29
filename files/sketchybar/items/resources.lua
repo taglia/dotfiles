@@ -1,5 +1,6 @@
 -- ==========================================================
--- CPU / RAM INDICATORS WITH TOP-PROCESS POPUPS
+-- RIGHT-SIDE CPU / RAM / DISK GROUP (left-to-right on screen)
+-- Created in reverse order because right-side items grow toward the left.
 -- ==========================================================
 
 local utils = require("utils")
@@ -16,41 +17,41 @@ if handle then
   handle:close()
 end
 
-local cpu = SBAR.add("item", "cpu", {
-  position = "left",
-  update_freq = 2,
-  icon = {
-    string = "􀧓",
-    padding_right = DEFAULT_ITEM.icon.padding_right * 0.5,
-  },
-  label = { padding_right = DEFAULT_ITEM.label.padding_right * 0.6 },
-  popup = { align = "left" },
-})
-
-local memory = SBAR.add("item", "memory", {
-  position = "left",
-  update_freq = 5,
-  icon = {
-    string = "􀫦",
-    padding_right = DEFAULT_ITEM.icon.padding_right * 0.5,
-  },
-  label = { padding_right = DEFAULT_ITEM.label.padding_right * 0.6 },
-  popup = { align = "left" },
-})
-
 -- Internal SSD usage: percentage of the root volume's APFS container, which
 -- is the internal SSD (`diskutil info /` reports `Device Location: Internal`
 -- and `Solid State: Yes`). Detected dynamically from the root mount — no
 -- device id or mount path is hardcoded, so it survives disk id changes.
--- Placed between `memory` and the network widget.
+-- Placed between `memory` and battery.
 local disk = SBAR.add("item", "disk", {
-  position = "left",
+  position = "right",
   update_freq = 30,
   icon = {
     string = "􀥾", -- placeholder glyph (replace with the real SF Symbol)
     padding_right = DEFAULT_ITEM.icon.padding_right * 0.5,
   },
   label = { padding_right = DEFAULT_ITEM.label.padding_right * 0.6 },
+})
+
+local memory = SBAR.add("item", "memory", {
+  position = "right",
+  update_freq = 5,
+  icon = {
+    string = "􀫦",
+    padding_right = DEFAULT_ITEM.icon.padding_right * 0.5,
+  },
+  label = { padding_right = DEFAULT_ITEM.label.padding_right * 0.6 },
+  popup = { align = "right" },
+})
+
+local cpu = SBAR.add("item", "cpu", {
+  position = "right",
+  update_freq = 2,
+  icon = {
+    string = "􀧓",
+    padding_right = DEFAULT_ITEM.icon.padding_right * 0.5,
+  },
+  label = { padding_right = DEFAULT_ITEM.label.padding_right * 0.6 },
+  popup = { align = "right" },
 })
 
 local function disk_update()
@@ -75,45 +76,6 @@ disk:subscribe("routine", disk_update)
 disk:subscribe("mouse.clicked", function()
   SBAR.exec("open -b com.apple.DiskUtility")
 end)
-
--- Network bandwidth: 2-line upload/download rate indicator. Added after
--- `memory` so it renders directly to the right of the RAM item on the left
--- side, and included in the resources bracket below for a unified pill.
---
--- SketchyBar has NO multi-line label support (newlines in a label are just
--- concatenated — see FelixKratz/SketchyBar discussion #709), so the two
--- lines are two separate items stacked vertically:
---   * bandwidth.up   -> width=0 (zero layout width) so the next item is
---                      placed at the same x; shifted up via y_offset.
---   * bandwidth.down -> dynamic width (defines the pill width); shifted down.
--- Both labels share the same padding_left so the arrows line up.
-local bandwidth_up = SBAR.add("item", "bandwidth.up", {
-  position = "left",
-  width = 0,
-  y_offset = 7,
-  icon = { drawing = false },
-  label = {
-    font = { family = "Hack Nerd Font", style = "Regular", size = 12.0 },
-    color = COLORS.mocha_red,
-    string = "\u{2191} 0.0 B/s",
-    padding_left = DEFAULT_ITEM.label.padding_right * 0.4,
-    padding_right = 0,
-  },
-})
-
-local bandwidth_down = SBAR.add("item", "bandwidth.down", {
-  position = "left",
-  update_freq = 2,
-  y_offset = -7,
-  icon = { drawing = false },
-  label = {
-    font = { family = "Hack Nerd Font", style = "Regular", size = 12.0 },
-    color = COLORS.mocha_green,
-    string = "\u{2193} 0.0 B/s",
-    padding_left = DEFAULT_ITEM.label.padding_right * 0.4,
-    padding_right = DEFAULT_ITEM.label.padding_right * 0.6,
-  },
-})
 
 local cpu_popup_open = false
 local memory_popup_open = false
@@ -297,69 +259,6 @@ memory:subscribe("routine", function()
 end)
 
 -- ==========================================================
--- NETWORK BANDWIDTH INDICATOR (upload / download)
--- ==========================================================
-
--- Human-readable bytes/s. Right-aligned width keeps the two lines from
--- jittering as the magnitude changes.
-local function format_rate(bps)
-  if bps < 1024 then
-    return string.format("%5d B/s", math.floor(bps))
-  elseif bps < 1024 * 1024 then
-    return string.format("%5.1f KB/s", bps / 1024)
-  elseif bps < 1024 * 1024 * 1024 then
-    return string.format("%5.1f MB/s", bps / 1048576)
-  else
-    return string.format("%5.1f GB/s", bps / 1073741824)
-  end
-end
-
-local bandwidth_prev_in, bandwidth_prev_out, bandwidth_prev_time
-
--- Reads the default interface's cumulative in/out byte counters. Only the
--- <Link#> line is used: each interface appears once per address family in
--- `netstat -ib` with the SAME cumulative counter, so summing all rows would
--- multiply the count. Returns nil when there is no default route (offline).
-local function bandwidth_update()
-  SBAR.exec(
-    [[iface=$(route -n get default 2>/dev/null | awk '/interface:/ {print $2}')
-netstat -ib 2>/dev/null | awk -v iface="$iface" '$1==iface && $3 ~ /<Link/ {print $7, $10}']],
-    function(out)
-      local inb, outb = out:match("(%d+)%s+(%d+)")
-      inb = tonumber(inb) or 0
-      outb = tonumber(outb) or 0
-      local now = os.time()
-      local dl, ul = 0, 0
-      if bandwidth_prev_in and bandwidth_prev_time then
-        local dt = now - bandwidth_prev_time
-        if dt > 0 then
-          -- Counters are monotonic but wrap/reset on interface change or
-          -- reboot; guard against negative deltas.
-          dl = math.max(0, inb - bandwidth_prev_in) / dt
-          ul = math.max(0, outb - bandwidth_prev_out) / dt
-        end
-      end
-      bandwidth_prev_in, bandwidth_prev_out, bandwidth_prev_time = inb, outb, now
-      bandwidth_up:set({ label = { string = "\u{2191} " .. format_rate(ul) } })
-      bandwidth_down:set({ label = { string = "\u{2193} " .. format_rate(dl) } })
-    end
-  )
-end
-
--- Only the down item ticks (update_freq=2); its routine refreshes both
--- lines so we run a single netstat/route pair per interval.
-bandwidth_down:subscribe("routine", bandwidth_update)
-
--- Click launches the Little Snitch Network Monitor window. Bound to both
--- items so the whole stacked widget is clickable.
-bandwidth_up:subscribe("mouse.clicked", function()
-  SBAR.exec('open -a "Little Snitch Network Monitor"')
-end)
-bandwidth_down:subscribe("mouse.clicked", function()
-  SBAR.exec('open -a "Little Snitch Network Monitor"')
-end)
-
--- ==========================================================
 -- POPUP REFRESH TICKER
 -- ==========================================================
 
@@ -409,13 +308,11 @@ end)
 -- FINAL BRACKET (Unified Background)
 -- ==========================================================
 
--- Wrap CPU and RAM into one bracket
+-- Keep only CPU/RAM/disk together; bandwidth has its own left-side bracket.
 SBAR.add("bracket", "resources.bracket", {
   "cpu",
   "memory",
   "disk",
-  "bandwidth.up",
-  "bandwidth.down",
 }, {
   background = {
     drawing = true,
@@ -431,4 +328,3 @@ SBAR.add("bracket", "resources.bracket", {
 cpu_update()
 memory_update()
 disk_update()
-bandwidth_update()

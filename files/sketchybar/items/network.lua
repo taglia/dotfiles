@@ -1,8 +1,9 @@
 -- Two stacked items, like the calendar. Uses the unmodified wifi-unredactor;
 -- launch its app explicitly to set up the Location Services grant.
+local utils = require("utils")
 local width = 100
 local network = SBAR.add("item", "network", {
-  position = "right",
+  position = "left",
   width = 0,
   y_offset = 7,
   update_freq = 30,
@@ -18,7 +19,7 @@ local network = SBAR.add("item", "network", {
   popup = { align = "center" },
 })
 local name = SBAR.add("item", "network.ssid", {
-  position = "right",
+  position = "left",
   y_offset = -8,
   icon = { drawing = false },
   label = {
@@ -118,19 +119,11 @@ local function update()
   end)
 end
 
+utils.hover_popup(network, { network, name })
 for _, item in ipairs({ network, name }) do
-  item:subscribe("mouse.entered", function()
-    network:set({ popup = { drawing = true } })
-  end)
-  item:subscribe("mouse.exited", function()
-    network:set({ popup = { drawing = false } })
-  end)
   item:subscribe("mouse.clicked", function()
     SBAR.exec("open 'x-apple.systempreferences:com.apple.preference.network'")
   end)
 end
-network:subscribe("mouse.exited.global", function()
-  network:set({ popup = { drawing = false } })
-end)
 network:subscribe({ "routine", "wifi_change", "system_woke" }, update)
 update()

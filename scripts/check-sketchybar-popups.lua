@@ -15,6 +15,7 @@ DEFAULT_ITEM = {
 }
 local items, commands = {}, {}
 local deferred, defer = {}, false
+local ccc_status = "running\t1\npercent\t42"
 SBAR = {
   add = function(_, name, config, bracket_config)
     local item = { name = name, config = bracket_config or config, callbacks = {} }
@@ -48,6 +49,12 @@ SBAR = {
       out = "35.0\t/Applications/Test.app/Contents/MacOS/Test"
     elseif command:find("netstat", 1, true) then
       out = "1000 2000"
+    elseif command:find("ccc-status.sh", 1, true) then
+      out = ccc_status
+    elseif command:find("id of app", 1, true) then
+      out = "com.example.Test"
+    elseif command:find("frontmost is true", 1, true) then
+      out = "Example"
     elseif command:find("vpn-status.sh", 1, true) then
       out = "status\tconnected\nname\tTailscale\ntailscale\tConnected"
     elseif command:find("next-dst-change.sh", 1, true) then
@@ -78,9 +85,11 @@ dofile("files/sketchybar/items/resources.lua")
 io.popen = popen
 dofile("files/sketchybar/items/calendar.lua")
 dofile("files/sketchybar/items/vpn.lua")
+dofile("files/sketchybar/items/ccc.lua")
+dofile("files/sketchybar/items/front_app.lua")
 
-local function fire(name, event)
-  assert(items[name].callbacks[event], name .. ": missing " .. event)()
+local function fire(name, event, env)
+  assert(items[name].callbacks[event], name .. ": missing " .. event)(env)
 end
 local function visible(name)
   return items[name].config.popup.drawing == true
@@ -88,7 +97,7 @@ end
 local function ticking()
   return items["resources.popup_ticker"].config.updates == true
 end
-for _, name in ipairs({ "cpu", "memory", "cal.time", "cal.date", "vpn" }) do
+for _, name in ipairs({ "cpu", "memory", "cal.time", "cal.date", "vpn", "ccc", "front_app" }) do
   for _, event in ipairs({ "mouse.entered", "mouse.exited", "mouse.exited.global" }) do
     assert(items[name].callbacks[event])
   end
@@ -147,6 +156,43 @@ assert(not visible("vpn"))
 fire("vpn", "mouse.entered")
 fire("vpn", "mouse.exited.global")
 assert(not visible("vpn"))
+
+-- CCC progress stays in a popup, including during refreshes, and hiding an
+-- idle indicator resets its hover controller before the next backup starts.
+assert(items.ccc.config.updates and items.ccc.config.drawing)
+assert(not items.ccc.config.label.drawing)
+local ccc_padding = items.ccc.config.icon.padding_right
+fire("ccc", "mouse.entered")
+assert(visible("ccc") and items["ccc.detail"].config.label.string == "42%")
+ccc_status = "running\t1\npercent\t75"
+fire("ccc", "routine")
+assert(visible("ccc") and items["ccc.detail"].config.label.string == "75%")
+assert(not items.ccc.config.label.drawing and items.ccc.config.icon.padding_right == ccc_padding)
+ccc_status = "running\t0"
+fire("ccc", "routine")
+assert(not visible("ccc") and not items.ccc.config.drawing)
+ccc_status = "running\t1\nphase\tPreparing"
+fire("ccc", "routine")
+fire("ccc", "mouse.entered")
+assert(visible("ccc") and items["ccc.detail"].config.label.string == "Preparing")
+
+-- Front-app hover describes the action without replacing the app icon.
+fire("front_app", "mouse.entered")
+assert(visible("front_app") and not visible("ccc"))
+assert(items["front_app.detail"].config.label.string == "Example — Click to quit")
+assert(items.front_app.config.icon.string == "" and items.front_app.config.icon.background.image.drawing)
+assert(not items.front_app.config.label.drawing)
+fire("front_app", "mouse.clicked")
+assert(commands[#commands]:find('tell application "Example" to quit', 1, true))
+assert(not visible("front_app"))
+fire("front_app", "front_app_switched", { INFO = "Finder" })
+fire("front_app", "mouse.entered")
+assert(items["front_app.detail"].config.label.string == "Finder — Quit disabled")
+local before_quit = #commands
+fire("front_app", "mouse.clicked")
+assert(#commands == before_quit)
+fire("front_app", "mouse.exited.global")
+assert(not visible("front_app"))
 
 -- Late async process results must not reopen a dismissed popup or its ticker.
 defer = true

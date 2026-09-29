@@ -1,8 +1,8 @@
 -- Frontmost-application icon.
 -- Shows the icon of the currently focused app, as the leftmost item on the
--- right side of the bar (i.e. immediately left of the VPN indicator). Hover
--- swaps the icon for a red rounded-square "✕" centered on the icon to signal
--- that clicking will quit the app; click quits it. After the app quits,
+-- right side of the bar (immediately left of CPU). Hover shows the app name
+-- and quit action in a popup without replacing the icon; click quits it.
+-- After the app quits,
 -- `front_app_switched` fires for the newly focused app and the icon updates.
 --
 -- The icon is rendered natively by sketchybar via `icon.background.image`.
@@ -16,13 +16,14 @@
 -- Sizing (from sketchybar src/image.c + src/workspace.m): the app icon is
 -- rasterized at 32*backing px and image.c divides by backing^2, giving a 32pt
 -- base on retina; `image.scale` multiplies it. ICON_SCALE = 1.25 -> 40pt.
--- SLOT matches the icon's drawn size so the hover ✕ square sits exactly on it
--- (both are bar-clipped to 38pt identically). Tune ICON_SCALE if too big/small.
+-- SLOT matches the icon's drawn size (bar-clipped to 38pt).
+-- Tune ICON_SCALE if too big/small.
 
+local utils = require("utils")
 local ICON_SCALE = 1.25
-local SLOT = 32 * ICON_SCALE -- square side for the icon slot / hover ✕ (40pt)
+local SLOT = 32 * ICON_SCALE -- square side for the icon slot (40pt)
 local SLOT_PAD = 4 -- item-level padding so the slot doesn't touch neighbors
-local CORNER = 8 -- rounded-square corner radius for the hover ✕
+local CORNER = 8
 
 -- System / relaunch-only processes we never want to "quit" from the bar.
 local NO_QUIT = {
@@ -38,9 +39,10 @@ local front_app = SBAR.add("item", "front_app", {
   padding_left = SLOT_PAD,
   padding_right = SLOT_PAD,
   label = { drawing = false },
+  popup = { align = "right" },
   icon = {
     string = "",
-    width = SLOT, -- fixed square slot; image and ✕ both centered in it
+    width = SLOT, -- fixed square slot for the app image
     align = "center",
     padding_left = 0,
     padding_right = 0,
@@ -60,14 +62,23 @@ local front_app = SBAR.add("item", "front_app", {
   },
 })
 
+local detail = SBAR.add("item", "front_app.detail", {
+  position = "popup." .. front_app.name,
+  icon = { drawing = false },
+  label = {
+    string = "No active application",
+    font = { family = "Hack Nerd Font", style = "Regular", size = 14.0 },
+    padding_left = 14,
+    padding_right = 14,
+  },
+})
+
 local current_app = ""
-local image_source = "" -- the "app.<bid>" (or "app.<name>") currently shown
 -- Cache app name -> bundle id (or false if `id of app` failed) so repeated
 -- switches to the same app don't re-shell-out.
 local bid_cache = {}
 
 local function set_icon_image(source)
-  image_source = source
   front_app:set({
     icon = {
       string = "",
@@ -80,21 +91,12 @@ local function set_icon_image(source)
   })
 end
 
-local function show_close_affordance()
-  front_app:set({
-    icon = {
-      string = "✕",
-      color = COLORS.white,
-      font = { family = "Hack Nerd Font", style = "Bold", size = SLOT * 0.55 },
-      background = {
-        color = COLORS.mocha_red,
-        border_width = 0,
-        corner_radius = CORNER,
-        height = SLOT,
-        image = { drawing = false },
-      },
-    },
-  })
+local function update_detail()
+  local text = "No active application"
+  if current_app ~= "" then
+    text = current_app .. (NO_QUIT[current_app] and " — Quit disabled" or " — Click to quit")
+  end
+  detail:set({ label = { string = text } })
 end
 
 -- Escape an app name for embedding as an AppleScript "..." literal inside a
@@ -110,6 +112,7 @@ end
 -- name loop) and show its icon. Falls back to `app.<name>` if resolution fails.
 local function show_icon(app_name)
   current_app = app_name or ""
+  update_detail()
   local cached = bid_cache[app_name]
   if cached ~= nil then
     set_icon_image(cached and ("app." .. cached) or ("app." .. app_name))
@@ -135,15 +138,9 @@ front_app:subscribe("front_app_switched", function(env)
   end
 end)
 
-front_app:subscribe("mouse.entered", function()
-  if current_app ~= "" then
-    show_close_affordance()
-  end
-end)
-
-front_app:subscribe("mouse.exited", function()
-  if current_app ~= "" then
-    set_icon_image(image_source)
+local close_popup = utils.hover_popup(front_app, nil, function(open)
+  if open then
+    update_detail()
   end
 end)
 
@@ -152,6 +149,7 @@ front_app:subscribe("mouse.clicked", function()
   if app == "" or NO_QUIT[app] then
     return
   end
+  close_popup()
   -- Quit by localized name (matches what front_app_switched reports). Swallow
   -- errors (unknown app -> no-op).
   local safe = quote_for_osascript(app)

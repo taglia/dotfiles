@@ -32,17 +32,16 @@ Originally vendored from [hajiboy95/dotfiles](https://github.com/hajiboy95/dotfi
 A high-contrast bar (height 38, sized for the MacBook Pro notch/menu-bar
 area): opaque near-black background, pure-white text, and a bright focused
 workspace pill.
-- **Left**: AeroSpace workspace indicator (`items/spaces.lua`) — one item per
-  workspace 1-9, focused workspace highlighted. No macOS Spaces, no `rift`.
-  Resources (`items/resources.lua`) — CPU and RAM usage.
-- **Right** (left → right on screen): frontmost-app icon
-  (`items/front_app.lua`) — the focused app's icon, rendered natively by
-  sketchybar via `app.<bundle-id>` (the name is resolved to a bundle id first,
-  to avoid sketchybar's ambiguous running-apps name match); hover swaps it for
-  a red `✕` pill signaling that click quits the app. VPN indicator
-  (`items/vpn.lua`), network (`items/network.lua`), battery (`items/battery.lua`), volume
-  (`items/volume.lua`), and calendar (`items/calendar.lua`) — local time +
-  date; hover for a world-clock popup
+- **Left** (left → right): AeroSpace workspaces (`items/spaces.lua`), network
+  (`items/network.lua`), VPN (`items/vpn.lua`), upload/download bandwidth
+  (`items/bandwidth.lua`). Workspaces 1–9 highlight the focused workspace;
+  no macOS Spaces or `rift`. Clicking bandwidth opens Little Snitch Network Monitor.
+- **Right** (left → right): backup indicators when visible (CCC, Time Machine),
+  frontmost app (`items/front_app.lua`), CPU → RAM → disk (`items/resources.lua`),
+  battery (`items/battery.lua`), volume (`items/volume.lua`), and calendar
+  (`items/calendar.lua`). The front-app icon uses `app.<bundle-id>` to avoid
+  ambiguous app-name matches; hover describes the quit action in a popup.
+  The calendar shows local time + date; hover for a world-clock popup
   (Paris, London, UTC, New York, San Francisco, Sydney, Singapore, Tokyo)
   ordered chronologically with AM/PM and day offsets.
 
@@ -52,17 +51,30 @@ the Catppuccin palette) and injected by `modules/home/sketchybar.nix`. The bar
 uses an explicit high-contrast style: opaque near-black bar, white foreground,
 bright yellow focused workspace.
 
+`init.lua` controls the module order: left-side modules are loaded left-to-right,
+right-side modules right-to-left. The resources module creates disk, RAM, then
+CPU to produce CPU → RAM → disk on screen. Bandwidth is a separate module so it
+can stay on the left; each group has its own background bracket.
+Layout/bandwidth regression check: `lua scripts/check-sketchybar-layout.lua`.
+
 ## Hover popups and click actions
 
-Hover over CPU, memory, VPN, or either calendar row to open its details popup.
-Move into the popup to keep reading; leaving the indicator/popup closes it.
-Only one of these four popups is open at once. CPU/memory process lists refresh
-while visible, and their extra refresh ticker stops when closed.
+Hover over CPU, memory, network, VPN, either calendar row, the front-app icon,
+or a visible backup indicator to open its details popup. Hover information never
+expands an in-bar label or replaces an icon. Move into the popup to keep reading;
+leaving the indicator/popup closes it. Only one hover popup is open at once.
+CPU/memory process lists refresh while visible, and their extra refresh ticker
+stops when closed. CCC progress and Time Machine status/history refresh in place
+inside their popups; finishing a backup also closes a popup if its icon is hidden.
 
 - **CPU / memory click:** opens Activity Monitor.
 - **Disk click:** opens Disk Utility.
 - **VPN click:** opens the Tailscale GUI app (not its CLI).
 - **Calendar:** hover-only world-clock popup; clicking no longer toggles it.
+- **Front app click:** quits the focused app, retaining the system-app denylist;
+  its popup names the app and says whether quitting is available.
+- **Time Machine click:** still toggles its status/history popup as an alternative
+  to hovering. CCC shows progress in a popup while its task is running.
 
 `utils.hover_popup()` subscribes to both `mouse.exited` and
 `mouse.exited.global`: SketchyBar suppresses the item-exit event when crossing
@@ -74,7 +86,7 @@ repository root. Probes and app launches are mocked; nothing is opened.
 
 ## Network indicator
 
-`items/network.lua` sits between VPN and battery. The top row contains Wi-Fi and
+`items/network.lua` sits between workspaces and VPN on the left. The top row contains Wi-Fi and
 wired-link icons, independently crossed out when disconnected. The bottom row
 shows the SSID (first 10 Unicode code points plus `…` for longer names). Hover
 over either row for a two-row popup; click either row to open macOS Network Settings.
@@ -184,9 +196,10 @@ with Lua 5.3+ (the SketchyBar wrapper provides a compatible Lua), and
 The Time Machine icon is visible only during a backup or when the last known
 successful backup is older than seven days. It is green while active and orange
 when overdue; idle with recent or unavailable history stays hidden.
-Hover shows the current phase (or an overdue warning while idle); only copying with valid progress shows a
-percentage. Click for status, the last successful backup's relative age, and a
-bullet list of the five newest available backup dates/times (local timezone).
+Hover opens a popup with the current phase (a percentage only while copying with
+valid progress), an overdue warning when applicable, the last successful backup's
+relative age, and the five newest available backup dates/times (local timezone).
+Click still toggles that same popup; no progress label expands in the bar.
 During copying, data copied / total (decimal B–PB) and estimated time remaining
 appear when reported by Time Machine. No destination row is displayed.
 An orange popup warning appears when that backup is older than seven days.
@@ -244,8 +257,8 @@ Regression checks: `bash scripts/check-timemachine.sh`,
   C34J79x's garbage DDC readback can't wedge it) took over that job.
 - Added a frontmost-app icon (`items/front_app.lua`), leftmost on the right
   side: native `app.<bundle-id>` icon rendering (name → bundle id via
-  `id of app`, to dodge sketchybar's ambiguous name loop), hover shows a red
-  `✕` close affordance, click quits the app (with a no-quit denylist for
+  `id of app`, to dodge sketchybar's ambiguous name loop), hover shows the app
+  name and quit action in a popup, click quits the app (with a no-quit denylist for
   Finder/Dock/etc.).
 
 ## Nix-adaptations (vs. upstream)
@@ -278,20 +291,21 @@ Regression checks: `bash scripts/check-timemachine.sh`,
 
 ```
 sketchybarrc        entry point (executable, #!/usr/bin/env lua)
-init.lua            requires globals + items (left: spaces, resources;
-                    right, left→right: front_app, VPN, network, battery, volume,
-                    calendar)
+init.lua            left→right: spaces, network, VPN, bandwidth;
+                    right, left→right: CCC/Time Machine (when visible), front_app,
+                    CPU, RAM, disk, battery, volume, calendar
 globals.lua         SBAR / COLORS / DEFAULT_ITEM globals
 default.lua         default item styling + bar
 helpers/            shell/python helpers: the VPN status probe
                     (vpn-status.sh + tailscale-exit-node.py) and the
                     next-DST-transition probe (next-dst-change.sh)
 items/spaces.lua    AeroSpace workspace indicator (aerospace_workspace_change)
-items/resources.lua CPU + RAM usage
+items/resources.lua right-side CPU + RAM + disk usage group
+items/bandwidth.lua left-side upload/download rates (click = Little Snitch)
 items/calendar.lua  local time/date + world-clock popup (8 zones;
                     DST probe: helpers/next-dst-change.sh)
 items/vpn.lua       VPN status indicator (probe: helpers/vpn-status.sh)
 items/network.lua   stacked Wi-Fi + wired icons / SSID (helpers/network-status.sh)
-items/front_app.lua frontmost-app icon (hover = red ✕ close affordance, click = quit)
+items/front_app.lua frontmost-app icon (hover = app/quit popup, click = quit)
 items/*.lua         battery, volume
 ```

@@ -1,8 +1,7 @@
 -- Carbon Copy Cloner indicator.
--- Built by utils.make_status_item (shared with items/timemachine.lua): hidden
--- unless a CCC task is running, hover shows the task progress. The label is
--- the percentage, or the current phase when CCC reports indeterminate
--- progress. The status probe lives in helpers/ccc-status.sh.
+-- Built by utils.make_status_item: hidden unless a CCC task is running.
+-- Hover shows task progress in a popup: the percentage, or the current phase
+-- when CCC reports indeterminate progress. The status probe lives in helpers/ccc-status.sh.
 
 local utils = require("utils")
 

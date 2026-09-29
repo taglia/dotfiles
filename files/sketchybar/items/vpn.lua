@@ -1,5 +1,5 @@
 -- VPN status indicator.
--- Shows a compact "VPN" marker on the right. Bright green means connected; gray
+-- Shows a compact "VPN" marker on the left. Bright green means connected; gray
 -- means disconnected. Hover for details; click opens the Tailscale GUI.
 -- Tailscale gets special handling for
 -- exit-node status when the `tailscale` CLI is present.
@@ -11,7 +11,7 @@
 local utils = require("utils")
 
 local vpn = SBAR.add("item", "vpn", {
-  position = "right",
+  position = "left",
   -- VPN state changes rarely and the poll shells out to scutil (and possibly
   -- tailscale), so a slow tick is enough; system_woke and hovering refresh it
   -- at the moments it actually changes.
@@ -28,7 +28,7 @@ local vpn = SBAR.add("item", "vpn", {
     color = COLORS.mocha_mantle,
     border_color = COLORS.mocha_overlay_1,
   },
-  popup = { align = "right" },
+  popup = { align = "left" },
 })
 
 local rows = {}

@@ -32,7 +32,8 @@ for i = 1, 13 do
   })
 end
 
-local popup_open, hovered = false, false
+local popup_open = false
+local close_popup, open_popup
 local status, history = {}, {}
 local history_loading, status_loading = false, false
 local history_failed = false
@@ -92,8 +93,8 @@ local function render()
   local warning = age ~= nil and age > 7 * 86400
   local running = status.running == "1"
   local visible = running or warning
-  if not visible then
-    popup_open, hovered = false, false
+  if not visible and popup_open then
+    close_popup()
   end
   local phase = status.phase or "Status unavailable"
   local text = phases[phase] or phase:gsub("(%l)(%u)", "%1 %2")
@@ -105,11 +106,10 @@ local function render()
     popup = { drawing = popup_open },
     icon = {
       color = warning and COLORS.mocha_peach or COLORS.mocha_green,
-      padding_right = DEFAULT_ITEM.icon.padding_right * (hovered and 0.5 or 1),
     },
-    label = { string = not running and warning and "Backup over a week old" or text, drawing = hovered },
+    label = { drawing = false },
   })
-  -- Keep the hidden popup contents fresh too, ready for the next click and
+  -- Keep the hidden popup contents fresh too, ready for the next hover and
   -- inspectable through SketchyBar's query API without opening the popup.
   local details = { "Status: " .. text }
   if epoch then
@@ -191,20 +191,19 @@ local function update()
   update_history()
 end
 
-tm:subscribe("mouse.entered", function()
-  hovered = true
-  render()
-end)
-tm:subscribe("mouse.exited", function()
-  hovered = false
-  render()
-end)
-tm:subscribe("mouse.clicked", function()
-  popup_open = not popup_open
-  tm:set({ popup = { drawing = popup_open } })
-  if popup_open then
+close_popup, open_popup = utils.hover_popup(tm, nil, function(open)
+  popup_open = open
+  if open then
     update()
     render()
+  end
+end)
+-- Keep the existing click-to-toggle action as an alternative to hovering.
+tm:subscribe("mouse.clicked", function()
+  if popup_open then
+    close_popup()
+  else
+    open_popup()
   end
 end)
 tm:subscribe({ "routine", "system_woke" }, update)
