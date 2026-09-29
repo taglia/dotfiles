@@ -30,11 +30,51 @@ local name = SBAR.add("item", "network.ssid", {
     padding_right = 4,
   },
 })
-local detail = SBAR.add("item", "network.detail", {
-  position = "popup." .. network.name,
-  icon = { drawing = false },
-  label = { string = "Checking network…", font = { size = 14.0 }, padding_left = 14, padding_right = 14 },
-})
+local details = {}
+for _, kind in ipairs({ "wifi", "wired" }) do
+  details[kind] = SBAR.add("item", "network.detail." .. kind, {
+    position = "popup." .. network.name,
+    icon = { drawing = false },
+    label = {
+      string = kind == "wifi" and "Wi-Fi: Checking…" or "Wired: Checking…",
+      font = { size = 14.0 },
+      align = "left",
+      padding_left = 14,
+      padding_right = 14,
+    },
+  })
+end
+
+local function text_or(value, fallback)
+  return type(value) == "string" and value ~= "" and value or fallback
+end
+
+local function addresses(ip, gateway)
+  return text_or(ip, "No IP") .. " [" .. text_or(gateway, "Gateway unavailable") .. "]"
+end
+
+local function wired_detail(result)
+  if result.wired == false then
+    return "Wired: Disconnected"
+  elseif result.wired ~= true then
+    return "Wired: Status unavailable"
+  end
+  local links = type(result.wired_links) == "table" and result.wired_links or {}
+  local entries = {}
+  for _, link in ipairs(links) do
+    if type(link) == "table" then
+      local prefix = #links > 1 and (text_or(link.interface, "Interface") .. ": ") or ""
+      entries[#entries + 1] = prefix
+        .. text_or(link.speed, "Speed unavailable")
+        .. " — "
+        .. addresses(link.ip, link.gateway)
+    end
+  end
+  if #entries == 0 then
+    entries[1] = "Speed unavailable — " .. addresses(nil, nil)
+  end
+  return "Wired: " .. table.concat(entries, "; ")
+end
 
 local function truncate(ssid)
   -- Count UTF-8 code points, not bytes; never cut through an encoded character.
@@ -60,10 +100,11 @@ local function update()
     local ssid = type(result.ssid) == "string" and result.ssid ~= "" and result.ssid or nil
     local text = ssid or result.reason or "SSID unavailable — check Location Services"
     if disconnected then
-      text = "Wi-Fi disconnected"
+      text = "Disconnected"
+    elseif result.status == "connected" then
+      text = text .. " — " .. addresses(result.wifi_ip, result.wifi_gateway)
     end
     local wired = result.wired == true
-    text = text .. "  |  Wired: " .. (wired and "connected" or "disconnected")
     network:set({
       label = {
         string = (disconnected and "󰤭" or "󰤨") .. "  " .. (wired and "󰈁" or "󰈂"),
@@ -72,7 +113,8 @@ local function update()
     })
     -- Keep the lower item's layout space even when no SSID is shown.
     name:set({ label = { string = disconnected and "" or (ssid and truncate(ssid) or "Unknown") } })
-    detail:set({ label = { string = text } })
+    details.wifi:set({ label = { string = "Wi-Fi: " .. text } })
+    details.wired:set({ label = { string = wired_detail(result) } })
   end)
 end
 

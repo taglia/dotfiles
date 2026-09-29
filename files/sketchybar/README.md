@@ -77,8 +77,24 @@ repository root. Probes and app launches are mocked; nothing is opened.
 `items/network.lua` sits between VPN and battery. The top row contains Wi-Fi and
 wired-link icons, independently crossed out when disconnected. The bottom row
 shows the SSID (first 10 Unicode code points plus `…` for longer names). Hover
-over either row for the full SSID and wired-link state; click either row to open
-macOS Network Settings. Both connections can be active at once. A wired link
+over either row for a two-row popup; click either row to open macOS Network Settings.
+The popup shows the full SSID on the Wi-Fi row and adapter-reported link speed on
+the wired row, each followed by its local IPv4 address and gateway in brackets:
+
+```text
+Wi-Fi: Full SSID — 192.168.1.20 [192.168.1.1]
+Wired: 2.5 Gbps — 192.168.2.20 [192.168.2.1]
+```
+
+Disconnected links say `Disconnected`. Active links without IPv4 say `No IP`;
+missing gateways or link speeds say `Gateway unavailable` or `Speed unavailable`.
+Addresses come from each interface's first IPv4 address, not IPv6 or a public-IP
+service. Gateway lookup is interface-scoped and rejects a result naming another
+interface, so it does not accidentally display the VPN/default interface's gateway.
+Wired speed comes from `ifconfig` media (preferring the negotiated medium when
+reported); it is a link rate in Mbps/Gbps, not measured throughput. Multiple active
+wired adapters share the wired row, with their interface names and individual
+speed/address/gateway details separated by semicolons. Both connections can be active at once. A wired link
 means an active physical Ethernet/Thunderbolt interface, **not** proof of Internet
 access or which route is preferred; VPNs and virtual bridges are excluded.
 Updates run on `wifi_change`, wake, and every 30 seconds (including wired changes).
