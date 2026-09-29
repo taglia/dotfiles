@@ -59,8 +59,8 @@ Layout/bandwidth regression check: `lua scripts/check-sketchybar-layout.lua`.
 
 ## Hover popups and click actions
 
-Hover over CPU, memory, network, VPN, either calendar row, the front-app icon,
-or a visible backup indicator to open its details popup. Hover information never
+Hover over a workspace, CPU, memory, network, VPN, either calendar row, the
+front-app icon, or a visible backup indicator to open its details popup. Hover information never
 expands an in-bar label or replaces an icon. Every popup closes immediately when
 the pointer leaves its bar item, including moving down toward the popup itself.
 Only one hover popup is open at once.
@@ -68,6 +68,7 @@ CPU/memory process lists refresh while visible, and their extra refresh ticker
 stops when closed. CCC progress and Time Machine status/history refresh in place
 inside their popups; finishing a backup also closes a popup if its icon is hidden.
 
+- **Workspace click:** switches to that AeroSpace workspace, as before.
 - **CPU / memory click:** opens Activity Monitor.
 - **Disk click:** opens Disk Utility.
 - **VPN click:** opens the Tailscale GUI app (not its CLI).
@@ -86,6 +87,25 @@ There is no close delay, timer, or pointer polling.
 
 Regression check: `lua scripts/check-sketchybar-popups.lua` (Lua 5.3+) from the
 repository root. Probes and app launches are mocked; nothing is opened.
+
+## Workspace popups
+
+Each workspace (1–9) shows the names of apps with windows on that workspace,
+alphabetically sorted (case-insensitive) and deduplicated when an app has multiple
+windows. The popup refreshes on each hover, using:
+
+```sh
+aerospace list-windows --workspace 1 --format '%{app-name}' --json
+```
+
+Only app names are requested—not window titles. JSON preserves names containing
+spaces or punctuation. Empty workspaces show `No windows`; failed/malformed
+queries show `Window list unavailable`. Queries are asynchronous, and late replies
+after exiting/reopening a popup are ignored. No workspace-window polling runs
+while the popups are closed. Clicking still switches workspace; hover never does.
+
+Regression check: `lua scripts/check-sketchybar-spaces.lua` (Lua 5.3+), using
+mocked AeroSpace responses without changing workspaces or opening applications.
 
 ## Network indicator
 
@@ -312,7 +332,8 @@ Regression checks: `bash scripts/check-timemachine.sh`,
   `font-hack-nerd-font` cask was removed in favor of the Nix package.
 - **`aerospace`** — on the wrapper's `PATH` via `programs.sketchybar.extraPackages`
   (in `modules/home/sketchybar.nix`), used by `items/spaces.lua` for the
-  `aerospace workspace N` click action and `aerospace list-workspaces --focused`.
+  `aerospace workspace N` click action, `aerospace list-workspaces --focused`,
+  and workspace-scoped `aerospace list-windows` hover queries.
 - **`FineTune`** — Homebrew cask (open source, GPL-3.0), not on the wrapper's
   PATH: `items/volume.lua` opens its menu-bar popup on click. Owns all
   volume/mute control including the monitor's DDC volume and the F10–F12
@@ -330,7 +351,7 @@ default.lua         default item styling + bar
 helpers/            shell/python helpers: the VPN status probe
                     (vpn-status.sh + tailscale-exit-node.py) and the
                     next-DST-transition probe (next-dst-change.sh)
-items/spaces.lua    AeroSpace workspace indicator (aerospace_workspace_change)
+items/spaces.lua    AeroSpace workspaces + deduplicated app-name hover popups
 items/resources.lua right-side CPU + RAM + disk usage group
 items/bandwidth.lua left-side upload/download rates (click = Little Snitch)
 items/calendar.lua  local time/date + world-clock popup (8 zones;
