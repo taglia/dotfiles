@@ -9,15 +9,17 @@ The only Nix-side references to it are:
 - `modules/home/sketchybar.nix` — the Home Manager module that installs this
   whole directory verbatim into `~/.config/sketchybar/` via
   `programs.sketchybar.config.source` (recursive), wires the launchd agent, and
-  puts `aerospace` on the wrapper's `PATH` (`extraPackages`) for the workspace
-  indicator.
+  puts `aerospace` and the private network-status helper on the wrapper's
+  `PATH` (`extraPackages`). Its `modules/home/sketchybar/wifi-unredactor.nix`
+  package expression builds the Wi-Fi permission helper; see **Network indicator** below.
 - one line in `flake.nix` (`hosts.mbp.modules`) that imports that module.
 - `modules/darwin/aerospace.nix` — `exec-on-workspace-change` triggers the
   `aerospace_workspace_change` sketchybar event consumed by `items/spaces.lua`,
   using the absolute nix store path to `sketchybar` (aerospace's launchd daemon
   does not see the Home Manager user PATH).
 
-Everything SketchyBar-related lives here or in those two modules.
+Everything SketchyBar-related lives here, in those two modules, or in the
+private `modules/home/sketchybar/` packaging directory.
 
 ## Origin
 
@@ -38,7 +40,7 @@ workspace pill.
   sketchybar via `app.<bundle-id>` (the name is resolved to a bundle id first,
   to avoid sketchybar's ambiguous running-apps name match); hover swaps it for
   a red `✕` pill signaling that click quits the app. VPN indicator
-  (`items/vpn.lua`), battery (`items/battery.lua`), volume
+  (`items/vpn.lua`), network (`items/network.lua`), battery (`items/battery.lua`), volume
   (`items/volume.lua`), and calendar (`items/calendar.lua`) — local time +
   date; click for a world-clock popup
   (Paris, London, UTC, New York, San Francisco, Sydney, Singapore, Tokyo)
@@ -49,6 +51,95 @@ at build time from `lib/catppuccin.nix` (the repo's single source of truth for
 the Catppuccin palette) and injected by `modules/home/sketchybar.nix`. The bar
 uses an explicit high-contrast style: opaque near-black bar, white foreground,
 bright yellow focused workspace.
+
+## Network indicator
+
+`items/network.lua` sits between VPN and battery. The top row contains Wi-Fi and
+wired-link icons, independently crossed out when disconnected. The bottom row
+shows the SSID (first 10 Unicode code points plus `…` for longer names). Hover
+over either row for the full SSID and wired-link state; click either row to open
+macOS Network Settings. Both connections can be active at once. A wired link
+means an active physical Ethernet/Thunderbolt interface, **not** proof of Internet
+access or which route is preferred; VPNs and virtual bridges are excluded.
+Updates run on `wifi_change`, wake, and every 30 seconds (including wired changes).
+
+### Why a separate app?
+
+Recent macOS versions redact SSIDs from command-line tools unless the calling
+app has Location Services authorization. The private Nix derivation
+`modules/home/sketchybar/wifi-unredactor.nix` builds the Swift
+[wifi-unredactor](https://github.com/noperator/wifi-unredactor) app from pinned
+revision `c4acc3e1f8093c6a365195f1240546b342aa0f56`, with a fixed source hash.
+It uses CoreWLAN and CoreLocation. There is no Homebrew dependency, global CLI
+installation, background daemon, or continuous location tracking.
+
+Everything is wired solely through `modules/home/sketchybar.nix`:
+
+- The app is built into the **Nix store**. Home Manager exposes it at
+  `~/Applications/SketchyBar/wifi-unredactor.app` for permission setup; this is a
+  symlink to the store bundle, not an unmanaged copy.
+- `sketchybar-network-status` is on **SketchyBar's private PATH**, not the global
+  user PATH. It runs `helpers/network-status.sh`, using the app's absolute store path
+  and Nix-provided `jq`. Standard macOS tools detect physical links.
+- A small patch adds non-interactive `--status` probes: refreshes never request
+  permission. Each invocation exits after reading status, with a 10-second
+  safety timeout. Opening the app normally retains the permission prompt
+  (with a 60-second safety timeout and a guard to wait for the initial decision).
+
+### One-time setup (after applying the Home Manager configuration)
+
+```sh
+open "$HOME/Applications/SketchyBar/wifi-unredactor.app"
+```
+
+Allow Location Services, then check **System Settings → Privacy & Security →
+Location Services → wifi-unredactor** is enabled. Upstream notes that the initial
+prompt may add the entry without enabling its switch. No root or Full Disk
+Access is needed. The bar picks up the SSID on its next refresh.
+
+Without authorization, a detected Wi-Fi link still shows a connected icon and
+`Unknown` below; its hover text explains that the SSID is unavailable. It is not
+misrepresented as disconnected. To diagnose directly:
+
+```sh
+"$HOME/Applications/SketchyBar/wifi-unredactor.app/Contents/MacOS/wifi-unredactor" --status
+```
+
+Unchanged derivation inputs keep the same store path. Updating the source,
+build recipe, compiler, SDK, or dependencies can change it—even if the app's own
+source stays pinned. **macOS permission persistence across such changes is not
+guaranteed**: you may need to reopen the app and re-enable Location Services;
+stale permission entries may remain. The stable Home Manager symlink does not
+guarantee a stable privacy identity. Permission grants are deliberately manual,
+not scripted by Nix.
+
+### Security review of the pinned source
+
+All five upstream files at the pinned revision were reviewed: the Swift source,
+`Info.plist`, build/install script, README, and `.gitignore`. No network requests,
+telemetry, shell execution, persistence/LaunchAgents, credential access, or
+arbitrary file access were found in the app. It requests Location Services
+authorization, reads the Wi-Fi interface name/SSID/BSSID, prints JSON to stdout,
+and exits. It does not start location updates. The status wrapper consumes only
+the SSID; nothing is sent to a remote service or written to a status cache.
+
+The upstream installer compiles with `swiftc` and replaces its app under
+`~/Applications`; **we do not execute that installer**. Nix compiles the reviewed
+source directly, adds the small lifecycle patch described above, and ad-hoc signs
+the app bundle. This is not Developer ID signing/notarization. The built binary's
+linked libraries were inspected and are Apple system frameworks/Swift runtimes.
+The upstream snapshot includes no explicit license; this is a private local
+package, not a proposal to redistribute it through nixpkgs.
+
+The source pin and hash prevent silently accepting different upstream content;
+they are not a proof of safety. This was a source review, not a formal audit, and
+does not cover the entire compiler/SDK supply chain. Re-review source changes
+before updating the pin. Location Services is a sensitive permission even though
+this source uses it only to read Wi-Fi information.
+
+Regression checks (repository root): `lua scripts/check-sketchybar-network.lua`
+with Lua 5.3+ (the SketchyBar wrapper provides a compatible Lua), and
+`bash scripts/check-sketchybar-network.sh` with `jq` on PATH.
 
 ## Time Machine
 
@@ -150,7 +241,7 @@ Regression checks: `bash scripts/check-timemachine.sh`,
 ```
 sketchybarrc        entry point (executable, #!/usr/bin/env lua)
 init.lua            requires globals + items (left: spaces, resources;
-                    right, left→right: front_app, VPN, battery, volume,
+                    right, left→right: front_app, VPN, network, battery, volume,
                     calendar)
 globals.lua         SBAR / COLORS / DEFAULT_ITEM globals
 default.lua         default item styling + bar
@@ -162,6 +253,7 @@ items/resources.lua CPU + RAM usage
 items/calendar.lua  local time/date + world-clock popup (8 zones;
                     DST probe: helpers/next-dst-change.sh)
 items/vpn.lua       VPN status indicator (probe: helpers/vpn-status.sh)
+items/network.lua   stacked Wi-Fi + wired icons / SSID (helpers/network-status.sh)
 items/front_app.lua frontmost-app icon (hover = red ✕ close affordance, click = quit)
 items/*.lua         battery, volume
 ```

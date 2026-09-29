@@ -43,6 +43,18 @@ let
 
   sketchybarConfigDir = ../../files/sketchybar;
 
+  # Deliberately scoped to SketchyBar. No global CLI or Homebrew dependency.
+  # The app bundle is exposed for the explicit Location Services grant.
+  wifiUnredactor = pkgs.callPackage ./sketchybar/wifi-unredactor.nix { };
+  networkStatus = pkgs.writeShellApplication {
+    name = "sketchybar-network-status";
+    runtimeInputs = [ pkgs.jq ];
+    text = ''
+      export WIFI_UNREDACTOR=${wifiUnredactor}/Applications/wifi-unredactor.app/Contents/MacOS/wifi-unredactor
+    ''
+    + builtins.readFile ../../files/sketchybar/helpers/network-status.sh;
+  };
+
   # colors.lua, generated from the shared palette. SketchyBar colors are
   # 0xAARRGGBB (alpha in the high byte); every palette color is fully opaque.
   colorsLua = pkgs.writeText "colors.lua" ''
@@ -82,6 +94,9 @@ let
   '';
 in
 {
+  home.file."Applications/SketchyBar/wifi-unredactor.app".source =
+    "${wifiUnredactor}/Applications/wifi-unredactor.app";
+
   programs.sketchybar = {
     enable = true;
     configType = "lua";
@@ -91,6 +106,7 @@ in
     };
     extraPackages = [
       pkgs.aerospace
+      networkStatus
     ];
   };
 }
