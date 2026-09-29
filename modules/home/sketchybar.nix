@@ -35,9 +35,17 @@
 # `extraPackages` puts `aerospace` on the wrapper's PATH so the workspace
 # indicator (items/spaces.lua) can run `aerospace workspace N` (click_script)
 # and `aerospace list-workspaces --focused` without an absolute path.
-{ lib, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
+  # Match the AeroSpace app and SketchyBar trigger in modules/darwin/aerospace.nix.
+  # AeroSpace 0.21 changed its client/server protocol; don't mix CLI versions.
+  unstable = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
   catppuccin = import ../../lib/catppuccin.nix;
   inherit (catppuccin) palette;
 
@@ -99,13 +107,14 @@ in
 
   programs.sketchybar = {
     enable = true;
+    package = unstable.sketchybar;
     configType = "lua";
     config = {
       source = sketchybarConfig;
       recursive = true;
     };
     extraPackages = [
-      pkgs.aerospace
+      unstable.aerospace
       networkStatus
     ];
   };

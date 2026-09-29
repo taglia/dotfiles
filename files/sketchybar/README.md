@@ -33,8 +33,8 @@ A high-contrast bar (height 38, sized for the MacBook Pro notch/menu-bar
 area): opaque near-black background, pure-white text, and a bright focused
 workspace pill.
 - **Left** (left → right): AeroSpace workspaces (`items/spaces.lua`), network
-  (`items/network.lua`), VPN (`items/vpn.lua`), upload/download bandwidth
-  (`items/bandwidth.lua`). Workspaces 1–9 highlight the focused workspace;
+  (`items/network.lua`), upload/download bandwidth (`items/bandwidth.lua`),
+  VPN (`items/vpn.lua`). Workspaces 1–9 highlight the focused workspace;
   no macOS Spaces or `rift`. Clicking bandwidth opens Little Snitch Network Monitor.
 - **Right** (left → right): backup indicators when visible (CCC, Time Machine),
   frontmost app (`items/front_app.lua`), CPU → RAM → disk (`items/resources.lua`),
@@ -109,7 +109,7 @@ mocked AeroSpace responses without changing workspaces or opening applications.
 
 ## Network indicator
 
-`items/network.lua` sits between workspaces and VPN on the left. The top row contains Wi-Fi and
+`items/network.lua` sits between workspaces and bandwidth on the left. The top row contains Wi-Fi and
 wired-link icons, independently crossed out when disconnected. The bottom row
 shows the SSID (first 10 Unicode code points plus `…` for longer names). Hover
 over either row for a three-row popup; click either row to open macOS Network Settings.
@@ -311,6 +311,14 @@ Regression checks: `bash scripts/check-timemachine.sh`,
 
 ## Nix-adaptations (vs. upstream)
 
+- SketchyBar and AeroSpace use the pinned `nixpkgs-unstable` input without
+  changing the default stable package set. The AeroSpace app, its CLI on
+  SketchyBar's wrapper `PATH`, and the SketchyBar workspace-change trigger
+  use matching packages in `modules/darwin/aerospace.nix` and
+  `modules/home/sketchybar.nix`; AeroSpace 0.21 changed its client/server protocol.
+  AeroSpace's `focus-follows-mouse.enabled` is enabled, retaining the existing
+  lazy pointer movement on keyboard-driven focus changes. This is window
+  focus-following, not a guarantee that hovering the bar focuses its monitor.
 - `sketchybarrc` (entry): shebang `#!/usr/bin/env lua` (was homebrew lua 5.4);
   removed the upstream from-source SBarLua installer (`git clone … make install`
   + `package.cpath`) — the HM wrapper provides sbarlua via `LUA_CPATH` and lua
@@ -343,7 +351,7 @@ Regression checks: `bash scripts/check-timemachine.sh`,
 
 ```
 sketchybarrc        entry point (executable, #!/usr/bin/env lua)
-init.lua            left→right: spaces, network, VPN, bandwidth;
+init.lua            left→right: spaces, network, bandwidth, VPN;
                     right, left→right: CCC/Time Machine (when visible), front_app,
                     CPU, RAM, disk, battery, volume, calendar
 globals.lua         SBAR / COLORS / DEFAULT_ITEM globals

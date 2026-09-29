@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
 
 # JankyBorders is started together with AeroSpace below via
 # `after-startup-command`. `borders <args>` starts the daemon on first call and
@@ -11,6 +11,9 @@
 # matches (case-sensitive) — iPhone Mirroring draws its own rounded frame, so
 # a border on top looks wrong.
 let
+  # Keep the app, SketchyBar's CLI dependency, and workspace-change trigger
+  # on the same pinned unstable packages (see modules/home/sketchybar.nix).
+  unstable = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
   inherit (import ../../lib/catppuccin.nix) palette;
   bordersStart = "exec-and-forget ${pkgs.jankyborders}/bin/borders style=round active_color=0xff${palette.yellow} inactive_color=0xff${palette.crust} width=5.0 blacklist=\"iPhone Mirroring\"";
 in
@@ -28,7 +31,7 @@ in
 
   services.aerospace = {
     enable = true;
-    package = pkgs.aerospace;
+    package = unstable.aerospace;
 
     settings = {
       after-login-command = [ ];
@@ -41,7 +44,7 @@ in
       exec-on-workspace-change = [
         "/bin/bash"
         "-c"
-        "${pkgs.sketchybar}/bin/sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE"
+        "${unstable.sketchybar}/bin/sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE"
       ];
 
       enable-normalization-flatten-containers = true;
@@ -53,6 +56,9 @@ in
 
       key-mapping.preset = "qwerty";
 
+      # Requires AeroSpace >= 0.21. Mouse-driven monitor changes don't warp
+      # the pointer back: monitor-lazy-center is a no-op on that monitor.
+      focus-follows-mouse.enabled = true;
       on-focused-monitor-changed = [ "move-mouse monitor-lazy-center" ];
 
       automatically-unhide-macos-hidden-apps = false;

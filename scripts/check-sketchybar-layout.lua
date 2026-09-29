@@ -80,7 +80,7 @@ end
 dofile("files/sketchybar/init.lua")
 assert(begin_count == 1 and end_count == 1)
 assert(
-  table.concat(left, ",") == "spaces,network,network.ssid,vpn,bandwidth.up,bandwidth.down",
+  table.concat(left, ",") == "spaces,network,network.ssid,bandwidth.up,bandwidth.down,vpn",
   table.concat(left, ",")
 )
 assert(
