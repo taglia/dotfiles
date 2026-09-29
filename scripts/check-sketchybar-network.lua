@@ -53,6 +53,7 @@ end
 assert(ssid.config.label.string == "Home")
 assert(network.config.label.string == "󰤨  󰈂")
 for _, item in ipairs({ network, ssid }) do
+  assert(not item.callbacks["mouse.exited.global"])
   item.callbacks["mouse.entered"]()
   assert(network.config.popup.drawing)
   item.callbacks["mouse.exited"]()
@@ -117,6 +118,6 @@ network.callbacks.system_woke()
 network.callbacks["mouse.entered"]()
 network.callbacks.routine()
 assert(network.config.popup.drawing) -- Refresh does not close an open tooltip.
-network.callbacks["mouse.exited.global"]()
+network.callbacks["mouse.exited"]()
 assert(not network.config.popup.drawing)
 print("SketchyBar network widget checks passed")

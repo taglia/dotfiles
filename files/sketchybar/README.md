@@ -61,8 +61,9 @@ Layout/bandwidth regression check: `lua scripts/check-sketchybar-layout.lua`.
 
 Hover over CPU, memory, network, VPN, either calendar row, the front-app icon,
 or a visible backup indicator to open its details popup. Hover information never
-expands an in-bar label or replaces an icon. Move into the popup to keep reading;
-leaving the indicator/popup closes it. Only one hover popup is open at once.
+expands an in-bar label or replaces an icon. Every popup closes immediately when
+the pointer leaves its bar item, including moving down toward the popup itself.
+Only one hover popup is open at once.
 CPU/memory process lists refresh while visible, and their extra refresh ticker
 stops when closed. CCC progress and Time Machine status/history refresh in place
 inside their popups; finishing a backup also closes a popup if its icon is hidden.
@@ -77,10 +78,11 @@ inside their popups; finishing a backup also closes a popup if its icon is hidde
 - **Time Machine click:** still toggles its status/history popup as an alternative
   to hovering. CCC shows progress in a popup while its task is running.
 
-`utils.hover_popup()` subscribes to both `mouse.exited` and
-`mouse.exited.global`: SketchyBar suppresses the item-exit event when crossing
-into a popup with this combination ([upstream explanation](https://github.com/FelixKratz/SketchyBar/issues/178#issuecomment-1153011527)).
-This avoids a custom timer or polling for pointer position.
+`utils.hover_popup()` subscribes to `mouse.entered` and `mouse.exited` only.
+It deliberately does **not** subscribe to `mouse.exited.global`, which would
+make SketchyBar suppress item-exit events when crossing into a popup
+([upstream explanation](https://github.com/FelixKratz/SketchyBar/issues/178#issuecomment-1153011527)).
+There is no close delay, timer, or pointer polling.
 
 Regression check: `lua scripts/check-sketchybar-popups.lua` (Lua 5.3+) from the
 repository root. Probes and app launches are mocked; nothing is opened.

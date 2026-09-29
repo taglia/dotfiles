@@ -98,9 +98,16 @@ local function ticking()
   return items["resources.popup_ticker"].config.updates == true
 end
 for _, name in ipairs({ "cpu", "memory", "cal.time", "cal.date", "vpn", "ccc", "front_app" }) do
-  for _, event in ipairs({ "mouse.entered", "mouse.exited", "mouse.exited.global" }) do
+  for _, event in ipairs({ "mouse.entered", "mouse.exited" }) do
     assert(items[name].callbacks[event])
   end
+  -- A global-exit subscription would suppress native exits toward the popup.
+  assert(not items[name].callbacks["mouse.exited.global"])
+  local parent = name == "cal.date" and "cal.time" or name
+  fire(name, "mouse.entered")
+  assert(visible(parent))
+  fire(name, "mouse.exited")
+  assert(not visible(parent) and not ticking())
 end
 fire("cpu", "mouse.entered")
 assert(visible("cpu") and ticking())
@@ -111,10 +118,10 @@ assert(#commands == count) -- No duplicate probe on repeated enter.
 fire("cpu", "mouse.exited")
 assert(not visible("cpu") and not ticking())
 fire("cpu", "mouse.entered")
--- SketchyBar suppresses item exit on crossing into its popup when global exit
--- is subscribed. The popup stays visible until it delivers a global exit.
+-- Leaving the icon closes immediately, even toward the popup: no global event
+-- or timer is needed, and the process-refresh ticker must stop at the same time.
 assert(visible("cpu"))
-fire("cpu", "mouse.exited.global")
+fire("cpu", "mouse.exited")
 assert(not visible("cpu") and not ticking())
 fire("cpu", "mouse.entered")
 fire("memory", "mouse.entered")
@@ -138,7 +145,7 @@ assert(items["cal.zone.1"].config.drawing)
 assert(items["cal.dst"].config.label.string == "Next DST change: test")
 fire("cal.time", "routine")
 assert(visible("cal.time"))
-fire("cal.time", "mouse.exited.global")
+fire("cal.time", "mouse.exited")
 assert(not visible("cal.time"))
 fire("cal.date", "mouse.entered")
 assert(visible("cal.time"))
@@ -159,7 +166,7 @@ fire("vpn", "mouse.clicked")
 assert(commands[#commands] == 'open -a "Tailscale"')
 assert(not visible("vpn"))
 fire("vpn", "mouse.entered")
-fire("vpn", "mouse.exited.global")
+fire("vpn", "mouse.exited")
 assert(not visible("vpn"))
 
 -- CCC progress stays in a popup, including during refreshes, and hiding an
@@ -196,7 +203,7 @@ assert(items["front_app.detail"].config.label.string == "Finder — Quit disable
 local before_quit = #commands
 fire("front_app", "mouse.clicked")
 assert(#commands == before_quit)
-fire("front_app", "mouse.exited.global")
+fire("front_app", "mouse.exited")
 assert(not visible("front_app"))
 
 -- Late async process results must not reopen a dismissed popup or its ticker.

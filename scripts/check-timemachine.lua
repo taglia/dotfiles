@@ -44,6 +44,7 @@ SBAR = {
 }
 dofile("files/sketchybar/items/timemachine.lua")
 local tm = items.timemachine
+assert(not tm.callbacks["mouse.exited.global"])
 local function fire(event)
   tm.callbacks[event]()
 end
@@ -118,7 +119,7 @@ fire("routine")
 assert(tm.config.drawing and tm.config.icon.color == "warning")
 fire("mouse.entered")
 assert(not tm.config.label.drawing and tm.config.popup.drawing and has("Warning:"))
-fire("mouse.exited.global")
+fire("mouse.exited")
 assert(not tm.config.popup.drawing)
 fire("mouse.clicked")
 assert(tm.config.popup.drawing and has("Warning:"))

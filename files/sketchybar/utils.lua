@@ -14,10 +14,10 @@ function M.config_dir()
   return this_file:match("^(.*)/[^/]+$") or (os.getenv("HOME") .. "/.config/sketchybar")
 end
 
--- Only one of these hover popups is open at a time. SketchyBar suppresses
--- mouse.exited on the item -> popup transition when mouse.exited.global is
--- also subscribed; the global event then closes it on leaving the popup.
--- See SketchyBar issue #178, comment 1153011527. No timers or polling needed.
+-- Only one hover popup is open at a time, and it closes as soon as the mouse
+-- leaves its bar item (including moving down toward the popup). Do not subscribe
+-- to mouse.exited.global: SketchyBar would then suppress the item-exit event
+-- when crossing into a popup. No timers or pointer polling needed.
 local close_active_hover_popup
 
 function M.hover_popup(parent, triggers, on_change)
@@ -48,7 +48,7 @@ function M.hover_popup(parent, triggers, on_change)
 
   for _, item in ipairs(triggers or { parent }) do
     item:subscribe("mouse.entered", open)
-    item:subscribe({ "mouse.exited", "mouse.exited.global" }, close)
+    item:subscribe("mouse.exited", close)
   end
   return close, open
 end
