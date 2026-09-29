@@ -1,5 +1,5 @@
 -- Calendar / world clock.
--- Shows local time + date. On click, shows a popup with the current time in
+-- Shows local time + date. On hover, shows a popup with the current time in
 -- several timezones, ordered chronologically (earliest first). Does NOT open
 -- Calendar.app.
 
@@ -179,21 +179,21 @@ local function build_popup()
 end
 
 -- 6. SUBSCRIPTIONS
-cal_time:subscribe({ "routine", "system_woke" }, update_calendar)
+local popup_open = false
+cal_time:subscribe({ "routine", "system_woke" }, function()
+  update_calendar()
+  if popup_open then
+    build_popup()
+  end
+end)
 cal_time:set({ update_freq = 30 })
 
--- Click: refresh times and toggle the popup. query() can return nil/partial
--- data during a reload, so don't trust its shape.
-local function on_click()
-  local q = cal_time:query()
-  local current = q and q.popup and q.popup.drawing
-  if current == "off" then
+utils.hover_popup(cal_time, { cal_time, cal_date }, function(open)
+  popup_open = open
+  if open then
     build_popup()
     update_dst()
   end
-  cal_time:set({ popup = { drawing = (current == "off") } })
-end
-cal_time:subscribe("mouse.clicked", on_click)
-cal_date:subscribe("mouse.clicked", on_click)
+end)
 
 update_calendar()

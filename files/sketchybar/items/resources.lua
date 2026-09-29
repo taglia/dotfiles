@@ -2,6 +2,8 @@
 -- CPU / RAM INDICATORS WITH TOP-PROCESS POPUPS
 -- ==========================================================
 
+local utils = require("utils")
+
 local TOP_COUNT = 10
 local POPUP_REFRESH_SECONDS = 3
 local POPUP_ROW_WIDTH = 380
@@ -70,6 +72,9 @@ local function disk_update()
 end
 
 disk:subscribe("routine", disk_update)
+disk:subscribe("mouse.clicked", function()
+  SBAR.exec("open -b com.apple.DiskUtility")
+end)
 
 -- Network bandwidth: 2-line upload/download rate indicator. Added after
 -- `memory` so it renders directly to the right of the RAM item on the left
@@ -258,21 +263,6 @@ cpu:subscribe("routine", function()
   update_cpu_popup()
 end)
 
--- Defined with the popup ticker below; forward-declared so the click
--- handlers can start/stop it.
-local sync_popup_ticker
-
-cpu:subscribe("mouse.clicked", function()
-  cpu_popup_open = not cpu_popup_open
-  memory_popup_open = false
-  memory:set({ popup = { drawing = false } })
-  cpu:set({ popup = { drawing = cpu_popup_open } })
-  if cpu_popup_open then
-    update_cpu_popup()
-  end
-  sync_popup_ticker()
-end)
-
 -- ==========================================================
 -- RAM / MEMORY INDICATOR
 -- ==========================================================
@@ -304,17 +294,6 @@ end
 memory:subscribe("routine", function()
   memory_update()
   update_memory_popup()
-end)
-
-memory:subscribe("mouse.clicked", function()
-  memory_popup_open = not memory_popup_open
-  cpu_popup_open = false
-  cpu:set({ popup = { drawing = false } })
-  memory:set({ popup = { drawing = memory_popup_open } })
-  if memory_popup_open then
-    update_memory_popup()
-  end
-  sync_popup_ticker()
 end)
 
 -- ==========================================================
@@ -385,7 +364,7 @@ end)
 -- ==========================================================
 
 -- Hidden item whose routine event refreshes the open popup. It only ticks
--- while a popup is visible: the click handlers toggle `updates` via
+-- while a popup is visible: the hover handlers toggle `updates` via
 -- sync_popup_ticker() so nothing polls when both popups are closed.
 local popup_ticker = SBAR.add("item", "resources.popup_ticker", {
   drawing = false,
@@ -393,13 +372,37 @@ local popup_ticker = SBAR.add("item", "resources.popup_ticker", {
   update_freq = POPUP_REFRESH_SECONDS,
 })
 
-sync_popup_ticker = function()
+local function sync_popup_ticker()
   popup_ticker:set({ updates = (cpu_popup_open or memory_popup_open) })
 end
 
 popup_ticker:subscribe("routine", function()
   update_cpu_popup()
   update_memory_popup()
+end)
+
+local close_cpu_popup = utils.hover_popup(cpu, nil, function(open)
+  cpu_popup_open = open
+  sync_popup_ticker()
+  if open then
+    update_cpu_popup()
+  end
+end)
+local close_memory_popup = utils.hover_popup(memory, nil, function(open)
+  memory_popup_open = open
+  sync_popup_ticker()
+  if open then
+    update_memory_popup()
+  end
+end)
+
+cpu:subscribe("mouse.clicked", function()
+  close_cpu_popup()
+  SBAR.exec("open -b com.apple.ActivityMonitor")
+end)
+memory:subscribe("mouse.clicked", function()
+  close_memory_popup()
+  SBAR.exec("open -b com.apple.ActivityMonitor")
 end)
 
 -- ==========================================================

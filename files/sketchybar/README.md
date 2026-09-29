@@ -42,7 +42,7 @@ workspace pill.
   a red `✕` pill signaling that click quits the app. VPN indicator
   (`items/vpn.lua`), network (`items/network.lua`), battery (`items/battery.lua`), volume
   (`items/volume.lua`), and calendar (`items/calendar.lua`) — local time +
-  date; click for a world-clock popup
+  date; hover for a world-clock popup
   (Paris, London, UTC, New York, San Francisco, Sydney, Singapore, Tokyo)
   ordered chronologically with AM/PM and day offsets.
 
@@ -51,6 +51,26 @@ at build time from `lib/catppuccin.nix` (the repo's single source of truth for
 the Catppuccin palette) and injected by `modules/home/sketchybar.nix`. The bar
 uses an explicit high-contrast style: opaque near-black bar, white foreground,
 bright yellow focused workspace.
+
+## Hover popups and click actions
+
+Hover over CPU, memory, VPN, or either calendar row to open its details popup.
+Move into the popup to keep reading; leaving the indicator/popup closes it.
+Only one of these four popups is open at once. CPU/memory process lists refresh
+while visible, and their extra refresh ticker stops when closed.
+
+- **CPU / memory click:** opens Activity Monitor.
+- **Disk click:** opens Disk Utility.
+- **VPN click:** opens the Tailscale GUI app (not its CLI).
+- **Calendar:** hover-only world-clock popup; clicking no longer toggles it.
+
+`utils.hover_popup()` subscribes to both `mouse.exited` and
+`mouse.exited.global`: SketchyBar suppresses the item-exit event when crossing
+into a popup with this combination ([upstream explanation](https://github.com/FelixKratz/SketchyBar/issues/178#issuecomment-1153011527)).
+This avoids a custom timer or polling for pointer position.
+
+Regression check: `lua scripts/check-sketchybar-popups.lua` (Lua 5.3+) from the
+repository root. Probes and app launches are mocked; nothing is opened.
 
 ## Network indicator
 
@@ -185,7 +205,7 @@ Regression checks: `bash scripts/check-timemachine.sh`,
   workspace indicator that re-queries `aerospace list-workspaces --focused` on
   every workspace change (so the highlight reflects reality on multi-monitor
   setups).
-- Replaced the calendar's "open Calendar.app" click with a world-clock popup.
+- Replaced the calendar's "open Calendar.app" click with a hover world-clock popup.
 - Reworked `items/volume.lua` into a display-only item: it reads volume/mute
   from CoreAudio/AppleScript (built-in speakers, Bluetooth, …) and falls back
   to a neutral icon for HDMI/DisplayPort outputs (which expose no software

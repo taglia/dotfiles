@@ -14,6 +14,44 @@ function M.config_dir()
   return this_file:match("^(.*)/[^/]+$") or (os.getenv("HOME") .. "/.config/sketchybar")
 end
 
+-- Only one of these hover popups is open at a time. SketchyBar suppresses
+-- mouse.exited on the item -> popup transition when mouse.exited.global is
+-- also subscribed; the global event then closes it on leaving the popup.
+-- See SketchyBar issue #178, comment 1153011527. No timers or polling needed.
+local close_active_hover_popup
+
+function M.hover_popup(parent, triggers, on_change)
+  local is_open = false
+  local function close()
+    if not is_open then
+      return
+    end
+    is_open = false
+    close_active_hover_popup = nil
+    parent:set({ popup = { drawing = false } })
+    on_change(false)
+  end
+
+  local function open()
+    if is_open then
+      return
+    end
+    if close_active_hover_popup then
+      close_active_hover_popup()
+    end
+    is_open = true
+    close_active_hover_popup = close
+    parent:set({ popup = { drawing = true } })
+    on_change(true)
+  end
+
+  for _, item in ipairs(triggers or { parent }) do
+    item:subscribe("mouse.entered", open)
+    item:subscribe({ "mouse.exited", "mouse.exited.global" }, close)
+  end
+  return close
+end
+
 -- Factory for backup-progress indicators (Time Machine, CCC).
 -- Hidden entirely unless the backup is running (their only purpose is
 -- answering "is it safe to unplug the laptop?"). While visible, hovering

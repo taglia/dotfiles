@@ -1,6 +1,7 @@
 -- VPN status indicator.
 -- Shows a compact "VPN" marker on the right. Bright green means connected; gray
--- means disconnected. Click for details. Tailscale gets special handling for
+-- means disconnected. Hover for details; click opens the Tailscale GUI.
+-- Tailscale gets special handling for
 -- exit-node status when the `tailscale` CLI is present.
 --
 -- The status probe lives in helpers/vpn-status.sh (shellcheck-ed by CI) so this
@@ -12,7 +13,7 @@ local utils = require("utils")
 local vpn = SBAR.add("item", "vpn", {
   position = "right",
   -- VPN state changes rarely and the poll shells out to scutil (and possibly
-  -- tailscale), so a slow tick is enough; system_woke and clicks refresh it
+  -- tailscale), so a slow tick is enough; system_woke and hovering refresh it
   -- at the moments it actually changes.
   update_freq = 60,
   icon = {
@@ -98,13 +99,17 @@ end
 
 vpn:subscribe({ "routine", "system_woke" }, update_vpn)
 
-vpn:subscribe("mouse.clicked", function()
-  vpn_popup_open = not vpn_popup_open
-  vpn:set({ popup = { drawing = vpn_popup_open } })
-  if vpn_popup_open then
+local close_popup = utils.hover_popup(vpn, nil, function(open)
+  vpn_popup_open = open
+  if open then
     set_rows(last_details)
     update_vpn()
   end
+end)
+
+vpn:subscribe("mouse.clicked", function()
+  close_popup()
+  SBAR.exec('open -a "Tailscale"')
 end)
 
 update_vpn()
