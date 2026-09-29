@@ -92,19 +92,20 @@ repository root. Probes and app launches are mocked; nothing is opened.
 `items/network.lua` sits between workspaces and VPN on the left. The top row contains Wi-Fi and
 wired-link icons, independently crossed out when disconnected. The bottom row
 shows the SSID (first 10 Unicode code points plus `…` for longer names). Hover
-over either row for a two-row popup; click either row to open macOS Network Settings.
+over either row for a three-row popup; click either row to open macOS Network Settings.
 The popup shows the full SSID on the Wi-Fi row and adapter-reported link speed on
 the wired row, each followed by its local IPv4 address and gateway in brackets:
 
 ```text
 Wi-Fi: Full SSID — 192.168.1.20 [192.168.1.1]
 Wired: 2.5 Gbps — 192.168.2.20 [192.168.2.1]
+Public IP: 203.0.113.7
 ```
 
 Disconnected links say `Disconnected`. Active links without IPv4 say `No IP`;
 missing gateways or link speeds say `Gateway unavailable` or `Speed unavailable`.
-Addresses come from each interface's first IPv4 address, not IPv6 or a public-IP
-service. Gateway lookup is interface-scoped and rejects a result naming another
+The Wi-Fi/wired addresses come from each interface's first IPv4 address, not IPv6
+or the public-IP service. Gateway lookup is interface-scoped and rejects a result naming another
 interface, so it does not accidentally display the VPN/default interface's gateway.
 Wired speed comes from `ifconfig` media (preferring the negotiated medium when
 reported); it is a link rate in Mbps/Gbps, not measured throughput. Multiple active
@@ -113,6 +114,29 @@ speed/address/gateway details separated by semicolons. Both connections can be a
 means an active physical Ethernet/Thunderbolt interface, **not** proof of Internet
 access or which route is preferred; VPNs and virtual bridges are excluded.
 Updates run on `wifi_change`, wake, and every 30 seconds (including wired changes).
+
+### Public IP lookup
+
+The third row queries [ipify](https://www.ipify.org/) at `https://api.ipify.org`
+for the public **IPv4** address. It reflects the route used to reach that service:
+a full-tunnel VPN normally shows its exit IP, while split-tunnel routing may differ.
+This is not a separate public address for each physical interface.
+
+Lookups run asynchronously only while the popup is open: on hover, then on local
+refresh ticks when the 60-second in-memory cache expires. Failures use the same
+cooldown. Wi-Fi-change/wake events invalidate the cache, with the next lookup
+on hover if the popup is hidden. Other routing/VPN changes are picked up on the
+next uncached lookup. Requests cannot overlap; results from a request spanning
+a Wi-Fi-change/wake event are discarded. The row shows `Checking…` while fetching
+and `Unavailable` for errors or invalid responses, rather than retaining a stale IP.
+
+The macOS `curl` uses HTTPS, a 3-second connection timeout, a 5-second total timeout,
+and a 64-byte response limit. User curl configuration and HTTP proxy environment
+settings are bypassed so the request follows the machine's routing. No credentials,
+SSID, or local addresses are sent; ipify necessarily sees the request's public
+source IP. Nothing is persisted to disk. This lookup is independent of the local
+status helper and does not alter wifi-unredactor or Location Services permissions.
+Regression tests mock all HTTP responses; they do not contact ipify.
 
 ### Why a separate app?
 

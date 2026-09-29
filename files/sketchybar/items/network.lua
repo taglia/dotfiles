@@ -32,18 +32,79 @@ local name = SBAR.add("item", "network.ssid", {
   },
 })
 local details = {}
-for _, kind in ipairs({ "wifi", "wired" }) do
+local titles = { wifi = "Wi-Fi", wired = "Wired", public = "Public IP" }
+for _, kind in ipairs({ "wifi", "wired", "public" }) do
   details[kind] = SBAR.add("item", "network.detail." .. kind, {
     position = "popup." .. network.name,
     icon = { drawing = false },
     label = {
-      string = kind == "wifi" and "Wi-Fi: Checking…" or "Wired: Checking…",
+      string = titles[kind] .. ": Checking…",
       font = { size = 14.0 },
       align = "left",
       padding_left = 14,
       padding_right = 14,
     },
   })
+end
+
+-- Keep external lookups separate from local interface/SSID probes. Only fetch
+-- while the popup is open, at most once per minute (including failed requests).
+local popup_open = false
+local public_pending, last_public_check = false, nil
+local public_generation = 0
+local PUBLIC_REFRESH_SECONDS = 60
+local PUBLIC_IP_COMMAND = "/usr/bin/curl -q --ipv4 --noproxy '*' --fail --silent"
+  .. " --connect-timeout 3 --max-time 5 --max-filesize 64 https://api.ipify.org"
+
+local function public_ipv4(out)
+  if type(out) ~= "string" or #out > 64 then
+    return nil
+  end
+  local a, b, c, d = out:match("^%s*(%d+)%.(%d+)%.(%d+)%.(%d+)%s*$")
+  if not a then
+    return nil
+  end
+  local parts = { a, b, c, d }
+  for _, part in ipairs(parts) do
+    if #part > 3 or tonumber(part) > 255 then
+      return nil
+    end
+  end
+  return table.concat(parts, ".")
+end
+
+local function update_public_ip()
+  local now = os.time()
+  if
+    public_pending
+    or (last_public_check and now >= last_public_check and now - last_public_check < PUBLIC_REFRESH_SECONDS)
+  then
+    return
+  end
+  public_pending, last_public_check = true, now
+  local generation = public_generation
+  details.public:set({ label = { string = "Public IP: Checking…" } })
+  SBAR.exec(PUBLIC_IP_COMMAND, function(out, code)
+    public_pending = false
+    -- A network change while curl was running invalidates that response.
+    if generation ~= public_generation then
+      if popup_open then
+        update_public_ip()
+      end
+      return
+    end
+    local ip = code == 0 and public_ipv4(out) or nil
+    details.public:set({ label = { string = "Public IP: " .. (ip or "Unavailable") } })
+  end)
+end
+
+local function invalidate_public_ip()
+  public_generation = public_generation + 1
+  last_public_check = nil
+  details.public:set({ label = { string = "Public IP: Checking…" } })
+  if popup_open then
+    update_public_ip()
+  end
 end
 
 local function text_or(value, fallback)
@@ -119,11 +180,25 @@ local function update()
   end)
 end
 
-utils.hover_popup(network, { network, name })
+utils.hover_popup(network, { network, name }, function(open)
+  popup_open = open
+  if open then
+    update_public_ip()
+  end
+end)
 for _, item in ipairs({ network, name }) do
   item:subscribe("mouse.clicked", function()
     SBAR.exec("open 'x-apple.systempreferences:com.apple.preference.network'")
   end)
 end
-network:subscribe({ "routine", "wifi_change", "system_woke" }, update)
+network:subscribe("routine", function()
+  update()
+  if popup_open then
+    update_public_ip()
+  end
+end)
+network:subscribe({ "wifi_change", "system_woke" }, function()
+  update()
+  invalidate_public_ip()
+end)
 update()
