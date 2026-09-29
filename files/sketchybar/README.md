@@ -81,10 +81,12 @@ Everything is wired solely through `modules/home/sketchybar.nix`:
 - `sketchybar-network-status` is on **SketchyBar's private PATH**, not the global
   user PATH. It runs `helpers/network-status.sh`, using the app's absolute store path
   and Nix-provided `jq`. Standard macOS tools detect physical links.
-- A small patch adds non-interactive `--status` probes: refreshes never request
-  permission. Each invocation exits after reading status, with a 10-second
-  safety timeout. Opening the app normally retains the permission prompt
-  (with a 60-second safety timeout and a guard to wait for the initial decision).
+- Upstream's source is **unmodified**. Each probe calls the executable without
+  arguments; upstream handles authorization, prints JSON, and exits. It calls
+  `requestAlwaysAuthorization()` on every launch, so a refresh may prompt if
+  permission has not been determined (for example, after an update). There is
+  no custom status mode or timeout. The widget does not start overlapping probes
+  while one is pending.
 
 ### One-time setup (after applying the Home Manager configuration)
 
@@ -102,7 +104,7 @@ Without authorization, a detected Wi-Fi link still shows a connected icon and
 misrepresented as disconnected. To diagnose directly:
 
 ```sh
-"$HOME/Applications/SketchyBar/wifi-unredactor.app/Contents/MacOS/wifi-unredactor" --status
+"$HOME/Applications/SketchyBar/wifi-unredactor.app/Contents/MacOS/wifi-unredactor"
 ```
 
 Unchanged derivation inputs keep the same store path. Updating the source,
@@ -125,9 +127,9 @@ the SSID; nothing is sent to a remote service or written to a status cache.
 
 The upstream installer compiles with `swiftc` and replaces its app under
 `~/Applications`; **we do not execute that installer**. Nix compiles the reviewed
-source directly, adds the small lifecycle patch described above, and ad-hoc signs
-the app bundle. This is not Developer ID signing/notarization. The built binary's
-linked libraries were inspected and are Apple system frameworks/Swift runtimes.
+source unchanged and ad-hoc signs the app bundle. This is not Developer ID
+signing/notarization. The built binary's linked libraries were inspected and are
+Apple system frameworks/Swift runtimes.
 The upstream snapshot includes no explicit license; this is a private local
 package, not a proposal to redistribute it through nixpkgs.
 

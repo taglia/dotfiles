@@ -23,27 +23,8 @@ stdenv.mkDerivation {
     swiftpm
   ];
 
-  # Routine probes must never request permission or leave an app running.
-  # An explicit GUI launch retains upstream's permission-request behavior.
-  postPatch = ''
-    substituteInPlace wifi-unredactor.app/Contents/MacOS/wifi-unredactor.swift \
-      --replace-fail 'locationManager?.requestAlwaysAuthorization()' '
-        if CommandLine.arguments.contains("--status") {
-            self.locationManager(locationManager!, didChangeAuthorization: locationManager!.authorizationStatus)
-        } else {
-            locationManager?.requestAlwaysAuthorization()
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + (CommandLine.arguments.contains("--status") ? 10 : 60)) {
-            print("{\"error\":\"location services timed out\"}")
-            NSApp.terminate(nil)
-        }' \
-      --replace-fail 'if status == .authorizedAlways || status == .authorized {' '
-        if status == .notDetermined && !CommandLine.arguments.contains("--status") {
-            return
-        }
-        if status == .authorizedAlways || status == .authorized {'
-  '';
-
+  # Compile upstream unchanged; permission handling and process lifetime are
+  # upstream's responsibility. No custom CLI flags or authorization shortcuts.
   buildPhase = ''
     runHook preBuild
     swiftc -O wifi-unredactor.app/Contents/MacOS/wifi-unredactor.swift \

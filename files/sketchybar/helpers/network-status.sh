@@ -32,7 +32,7 @@ else
   link=$(/sbin/ifconfig "$wifi_device" 2>/dev/null || true)
   if grep -q 'status: active' <<< "$link"; then
     status=connected
-    result=$("${WIFI_UNREDACTOR:?}" --status 2>/dev/null || true)
+    result=$("${WIFI_UNREDACTOR:?}" 2>/dev/null || true)
     # Upstream encodes missing SSIDs as this sentinel, not null.
     ssid=$(printf '%s' "$result" | jq -r '
       if (.ssid | type) == "string" and .ssid != "failed to retrieve SSID"

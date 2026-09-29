@@ -1,5 +1,5 @@
--- Two stacked items, like the calendar. The probe never requests permission;
--- launch wifi-unredactor.app explicitly for the one-time Location Services grant.
+-- Two stacked items, like the calendar. Uses the unmodified wifi-unredactor;
+-- launch its app explicitly to set up the Location Services grant.
 local width = 100
 local network = SBAR.add("item", "network", {
   position = "right",

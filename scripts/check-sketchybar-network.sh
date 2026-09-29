@@ -16,7 +16,9 @@ mock_ifconfig() {
   esac
 }
 mock_unredactor() {
-  [[ "$1" == --status ]]
+  # Upstream accepts no custom status flag. Fail before returning an SSID if
+  # the probe accidentally reintroduces one (even though probe errors are caught).
+  [[ $# -eq 0 ]] || return 1
   printf '%s\n' "$APP_RESULT"
 }
 export -f mock_networksetup mock_ifconfig mock_unredactor
