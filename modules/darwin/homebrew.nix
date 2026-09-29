@@ -204,6 +204,7 @@ in
       "SponsorBlock for Safari" = 1573461917;
       "StopTheMadness Pro" = 6471380298;
       "TestFlight" = 899247664;
+      "The Clock" = 488764545;
       "TrashMe 3" = 1490879410;
       "WaterMinder" = 1415257369;
       "Windows App" = 1295203466;

@@ -1,7 +1,7 @@
 -- Calendar / world clock.
 -- Shows local time + date. On hover, shows a popup with the current time in
--- several timezones, ordered chronologically (earliest first). Does NOT open
--- Calendar.app.
+-- several timezones, ordered chronologically (earliest first).
+-- Clicking either row opens The Clock (not Calendar.app).
 
 local ZONES = {
   { name = "Paris", tz = "Europe/Paris" },
@@ -188,12 +188,19 @@ cal_time:subscribe({ "routine", "system_woke" }, function()
 end)
 cal_time:set({ update_freq = 30 })
 
-utils.hover_popup(cal_time, { cal_time, cal_date }, function(open)
+local close_popup = utils.hover_popup(cal_time, { cal_time, cal_date }, function(open)
   popup_open = open
   if open then
     build_popup()
     update_dst()
   end
 end)
+
+for _, item in ipairs({ cal_time, cal_date }) do
+  item:subscribe("mouse.clicked", function()
+    close_popup()
+    SBAR.exec("open -b com.fabriceleyne.theclock")
+  end)
+end
 
 update_calendar()

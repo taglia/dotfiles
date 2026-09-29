@@ -144,8 +144,13 @@ fire("cal.date", "mouse.entered")
 assert(visible("cal.time"))
 fire("cal.date", "mouse.exited")
 assert(not visible("cal.time"))
-assert(not items["cal.time"].callbacks["mouse.clicked"])
-assert(not items["cal.date"].callbacks["mouse.clicked"])
+for _, name in ipairs({ "cal.time", "cal.date" }) do
+  fire(name, "mouse.entered")
+  assert(visible("cal.time"))
+  fire(name, "mouse.clicked")
+  assert(commands[#commands] == "open -b com.fabriceleyne.theclock")
+  assert(not visible("cal.time"))
+end
 
 fire("vpn", "mouse.entered")
 assert(visible("vpn"))

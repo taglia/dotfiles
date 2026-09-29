@@ -70,7 +70,8 @@ inside their popups; finishing a backup also closes a popup if its icon is hidde
 - **CPU / memory click:** opens Activity Monitor.
 - **Disk click:** opens Disk Utility.
 - **VPN click:** opens the Tailscale GUI app (not its CLI).
-- **Calendar:** hover-only world-clock popup; clicking no longer toggles it.
+- **Calendar:** hover for the world-clock popup; click either time or date to
+  open The Clock.
 - **Front app click:** quits the focused app, retaining the system-app denylist;
   its popup names the app and says whether quitting is available.
 - **Time Machine click:** still toggles its status/history popup as an alternative
@@ -234,7 +235,8 @@ Regression checks: `bash scripts/check-timemachine.sh`,
   workspace indicator that re-queries `aerospace list-workspaces --focused` on
   every workspace change (so the highlight reflects reality on multi-monitor
   setups).
-- Replaced the calendar's "open Calendar.app" click with a hover world-clock popup.
+- Replaced the calendar's "open Calendar.app" click with The Clock; the
+  world-clock popup opens on hover.
 - Reworked `items/volume.lua` into a display-only item: it reads volume/mute
   from CoreAudio/AppleScript (built-in speakers, Bluetooth, …) and falls back
   to a neutral icon for HDMI/DisplayPort outputs (which expose no software
@@ -276,6 +278,9 @@ Regression checks: `bash scripts/check-timemachine.sh`,
 
 ## External dependencies
 
+- **The Clock** — Mac App Store app (`488764545`), declared in
+  `modules/darwin/homebrew.nix`. Both calendar rows open the GUI using its
+  bundle ID `com.fabriceleyne.theclock`.
 - **`Hack Nerd Font`** — used for icons. Installed via Nix (`nerd-fonts.hack` in
   `modules/darwin/packages.nix`, and `modules/nixos/desktop.nix`). The Homebrew
   `font-hack-nerd-font` cask was removed in favor of the Nix package.
