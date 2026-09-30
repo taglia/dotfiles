@@ -207,6 +207,11 @@ in
       # focus (no --focus-follows-window needed).
       on-window-detected = [
         {
+          "if".app-id = "com.kagi.kagimacOS";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 1";
+        }
+        {
           "if".app-id = "com.apple.mail";
           check-further-callbacks = true;
           run = "move-node-to-workspace 2";
