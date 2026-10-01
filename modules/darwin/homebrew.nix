@@ -122,6 +122,7 @@ in
       "lingon-x"
       "little-snitch"
       "loopback"
+      "menuwhere"
       "moonlight"
       "mountain-duck"
       "mouseless@preview"
