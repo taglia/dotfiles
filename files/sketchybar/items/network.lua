@@ -9,7 +9,7 @@ local network = SBAR.add("item", "network", {
   update_freq = 30,
   icon = { drawing = false },
   label = {
-    string = "󰤨  󰈂",
+    string = "􀙇  󰈂",
     font = { family = "Hack Nerd Font", style = "Regular", size = 16.0 },
     align = "center",
     width = width,
@@ -169,7 +169,7 @@ local function update()
     local wired = result.wired == true
     network:set({
       label = {
-        string = (disconnected and "󰤭" or "󰤨") .. "  " .. (wired and "󰈁" or "󰈂"),
+        string = (disconnected and "􀙈" or "􀙇") .. "  " .. (wired and "󰈁" or "󰈂"),
         color = disconnected and not wired and COLORS.mocha_overlay_1 or COLORS.mocha_text,
       },
     })

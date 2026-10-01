@@ -74,7 +74,7 @@ local function update(value)
   network.callbacks.routine()
 end
 assert(ssid.config.label.string == "Home")
-assert(network.config.label.string == "󰤨  󰈂")
+assert(network.config.label.string == "􀙇  󰈂")
 for _, item in ipairs({ network, ssid }) do
   assert(not item.callbacks["mouse.exited.global"])
   item.callbacks["mouse.entered"]()
@@ -94,7 +94,7 @@ for _, fixture in ipairs({
   assert(ssid.config.label.string == fixture[2], ssid.config.label.string)
   assert(wifi_detail.config.label.string == "Wi-Fi: " .. fixture[1] .. " — No IP [Gateway unavailable]")
   assert(wired_detail.config.label.string == "Wired: Speed unavailable — No IP [Gateway unavailable]")
-  assert(network.config.label.string == "󰤨  󰈁")
+  assert(network.config.label.string == "􀙇  󰈁")
 end
 update({
   status = "connected",
@@ -123,13 +123,13 @@ for _, wired in ipairs({ false, true }) do
   update({ status = "disconnected", wired = wired })
   assert(ssid.config.label.string == "")
   assert(wifi_detail.config.label.string == "Wi-Fi: Disconnected")
-  assert(network.config.label.string == "󰤭  " .. (wired and "󰈁" or "󰈂"))
+  assert(network.config.label.string == "􀙈  " .. (wired and "󰈁" or "󰈂"))
 end
 update({ status = "connected", ssid = "", reason = "Permission required", wired = true })
 assert(ssid.config.label.string == "Unknown")
 assert(wifi_detail.config.label.string == "Wi-Fi: Permission required — No IP [Gateway unavailable]")
 assert(wired_detail.config.label.string == "Wired: Speed unavailable — No IP [Gateway unavailable]")
-assert(network.config.label.string == "󰤨  󰈁")
+assert(network.config.label.string == "􀙇  󰈁")
 update("not json")
 assert(ssid.config.label.string == "Unknown")
 assert(wifi_detail.config.label.string:match("Wi%-Fi status unavailable"))
