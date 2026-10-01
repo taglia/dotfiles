@@ -18,8 +18,8 @@
 --                 LocalEventMonitor), so an Accessibility AXPress on the menu
 --                 bar item does nothing — the hotkey is the reliable path.
 --                 Requires Accessibility permission for SketchyBar (keystroke
---                 synthesis); falls back to a CoreAudio software-mute toggle
---                 if FineTune is not running.
+--                 synthesis). Failures are logged without changing volume
+--                 or mute state.
 --   right-click → toggle CoreAudio software mute (built-in/BT outputs).
 --
 -- Polls every 5s (`update_freq`) to follow default-output switches, which
@@ -99,10 +99,11 @@ local function open_finetune()
   -- If the click stops opening the popup, re-align the modifiers below with
   -- the hotkey configured in FineTune → Settings → Shortcuts.
   SBAR.exec(
-    'pgrep -qx FineTune && osascript -e \'tell application "System Events" to keystroke "s" using {command down, option down, shift down}\' || echo not-running',
-    function(out)
-      if (out or ""):match("not%-running") then
-        toggle_coreaudio_mute()
+    'if ! /usr/bin/pgrep -qx FineTune; then echo "FineTune is not running"; exit 1; fi; '
+      .. '/usr/bin/osascript -e \'tell application "System Events" to keystroke "s" using {command down, option down, shift down}\' 2>&1',
+    function(out, code)
+      if code ~= 0 then
+        print("FineTune popup failed (exit " .. tostring(code) .. "): " .. (out or "No output"))
       end
     end
   )

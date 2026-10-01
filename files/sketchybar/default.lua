@@ -57,6 +57,8 @@ SBAR.default({ background = { drawing = false } })
 -- the bar otherwise loaded with drawing=off (invisible); forcing it on here
 -- survives reloads/restarts.
 SBAR.bar({
+  -- Cover the non-auto-hidden native menu bar; lower with `sketchybar --bar topmost=off`.
+  topmost = "on",
   -- position = "top",
   height = bar_height,
   color = COLORS.black,

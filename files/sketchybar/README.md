@@ -290,11 +290,13 @@ Regression checks: `bash scripts/check-timemachine.sh`,
   DDC volume and the F10–F12 media keys — is delegated to **FineTune**
   (installed via the `finetune` cask in `modules/darwin/homebrew.nix`):
   left-click toggles FineTune's popup by synthesizing its global "Toggle
-  FineTune Popup" hotkey (⌃⇧⌘-s, bound in FineTune's settings) —
+  FineTune Popup" hotkey (⌥⇧⌘-s, bound in FineTune's settings) —
   FineTune's menu bar popup only responds to raw mouse events
   (FluidMenuBarExtra `LocalEventMonitor`), so an accessibility (AXPress)
   click on its menu bar item does nothing, and the hotkey is the reliable
-  path. Requires SketchyBar in System Settings → Privacy & Security →
+  path. Left-click failures are logged without changing volume or mute;
+  right-click toggles CoreAudio software mute.
+  Requires SketchyBar in System Settings → Privacy & Security →
   Accessibility (add the sketchybar binary via Cmd+Shift+G; the grant
   needs redoing when the nix store path of sketchybar changes). Also polls every 5s (`update_freq`) to follow
   default-output switches, which don't reliably fire `volume_change`.

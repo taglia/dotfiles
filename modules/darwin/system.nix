@@ -22,10 +22,11 @@
   };
   system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
 
-  # Menubar behavior
-  system.defaults.NSGlobalDomain._HIHideMenuBar = true;
-  # Pack the native status items tighter (relevant when the hidden menu bar
-  # reveals on hover; sketchybar spacing is configured in its own Lua). Gap
+  # Keep the native menu bar visible underneath SketchyBar's topmost overlay.
+  # Reveal it temporarily with `sketchybar --bar topmost=off`.
+  system.defaults.NSGlobalDomain._HIHideMenuBar = false;
+  # Pack the native status items tighter (relevant when SketchyBar is lowered;
+  # sketchybar spacing is configured in its own Lua). Gap
   # between icons and padding inside each icon's highlight, in points; the
   # macOS defaults are roughly double these. Read at session start by every
   # process hosting a status item, so a full logout (not killall Dock or
