@@ -4,7 +4,9 @@
 # per-user program with per-user config in ~/.config/sketchybar and runs as a
 # *user launchd agent, and Home Manager ships a first-class `programs.sketchybar`
 # module that handles the package, the SBarLua/Lua wrapper, the config file, and
-# the LaunchAgent for us. nix-darwin has no equivalent module. This mirrors the
+# the LaunchAgent lifecycle for us. We replace its shell-based launch plist
+# with a direct executable launch below for correct macOS TCC attribution.
+# nix-darwin has no equivalent module. This mirrors the
 # split already in this repo: AeroSpace (system-level WM) is configured under
 # modules/darwin/aerospace.nix via nix-darwin, while SketchyBar (user-level
 # status bar) lives here under modules/home.
@@ -36,6 +38,7 @@
 # indicator (items/spaces.lua) can run `aerospace workspace N` (click_script)
 # and `aerospace list-workspaces --focused` without an absolute path.
 {
+  config,
   inputs,
   lib,
   pkgs,
@@ -46,6 +49,36 @@ let
   # Match the AeroSpace app and SketchyBar trigger in modules/darwin/aerospace.nix.
   # AeroSpace 0.21 changed its client/server protocol; don't mix CLI versions.
   unstable = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+  cfg = config.programs.sketchybar;
+  luaPackages = cfg.luaPackage.pkgs;
+  luaModules = [ cfg.sbarLuaPackage ] ++ cfg.extraLuaPackages luaPackages;
+  configDir = "${config.xdg.configHome}/sketchybar";
+  agent = config.launchd.agents.sketchybar.config;
+
+  # Do not execute HM's shell wrapper: TCC retains its Bash identity even
+  # after exec. Supply the wrapper's environment directly to launchd instead.
+  directAgent = pkgs.writeText "${agent.Label}.plist" (
+    lib.generators.toPlist { escape = true; } (
+      lib.filterAttrs (_: value: value != null) agent
+      // {
+        Program = lib.getExe cfg.package;
+        ProgramArguments = [ (lib.getExe cfg.package) ];
+        EnvironmentVariables =
+          (if agent.EnvironmentVariables == null then { } else agent.EnvironmentVariables)
+          // {
+            PATH =
+              lib.makeBinPath ([ cfg.package ] ++ cfg.extraPackages ++ [ cfg.luaPackage ])
+              + lib.optionalString cfg.includeSystemPath ":/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin";
+            LUA_PATH =
+              "${configDir}/?.lua;${configDir}/?/init.lua;${configDir}/?/?.lua;"
+              + lib.concatMapStringsSep ";" luaPackages.getLuaPath luaModules
+              + ";;";
+            LUA_CPATH = lib.concatMapStringsSep ";" luaPackages.getLuaCPath luaModules + ";;";
+          };
+      }
+    )
+  );
+
   catppuccin = import ../../lib/catppuccin.nix;
   inherit (catppuccin) palette;
 
@@ -102,6 +135,19 @@ let
   '';
 in
 {
+  # HM unconditionally rewrites launchd.agents to /bin/sh + wait4path. Replace
+  # only this generated plist, retaining HM's install/bootstrap/cleanup logic.
+  # Build a private directory rather than modifying the store-backed symlink.
+  # KeepAlive/RunAtLoad remain enabled; without wait4path, cold-boot startup
+  # before the Nix volume mounts relies on launchd retrying the failed launch.
+  home.extraBuilderCommands = lib.mkAfter ''
+    agents=$(readlink "$out/LaunchAgents")
+    rm "$out/LaunchAgents"
+    mkdir "$out/LaunchAgents"
+    cp -P "$agents/"*.plist "$out/LaunchAgents/"
+    ln -sfn ${directAgent} "$out/LaunchAgents/${agent.Label}.plist"
+  '';
+
   home.file."Applications/SketchyBar/wifi-unredactor.app".source =
     "${wifiUnredactor}/Applications/wifi-unredactor.app";
 

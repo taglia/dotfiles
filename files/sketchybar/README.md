@@ -9,9 +9,12 @@ The only Nix-side references to it are:
 - `modules/home/sketchybar.nix` — the Home Manager module that installs this
   whole directory verbatim into `~/.config/sketchybar/` via
   `programs.sketchybar.config.source` (recursive), wires the launchd agent, and
-  puts `aerospace` and the private network-status helper on the wrapper's
-  `PATH` (`extraPackages`). Its `modules/home/sketchybar/wifi-unredactor.nix`
-  package expression builds the Wi-Fi permission helper; see **Network indicator** below.
+  puts `aerospace` and the private network-status helper on the service's
+  `PATH` (`extraPackages`). The agent launches the real SketchyBar executable
+  directly with explicit PATH and Lua environment variables, not HM's Bash
+  wrapper. The wrapped CLI remains available for interactive use.
+  `modules/home/sketchybar/wifi-unredactor.nix` builds the Wi-Fi permission
+  helper; see **Network indicator** below.
 - one line in `flake.nix` (`hosts.mbp.modules`) that imports that module.
 - `modules/darwin/aerospace.nix` — `exec-on-workspace-change` triggers the
   `aerospace_workspace_change` sketchybar event consumed by `items/spaces.lua`,
@@ -296,9 +299,24 @@ Regression checks: `bash scripts/check-timemachine.sh`,
   click on its menu bar item does nothing, and the hotkey is the reliable
   path. Left-click failures are logged without changing volume or mute;
   right-click toggles CoreAudio software mute.
-  Requires SketchyBar in System Settings → Privacy & Security →
-  Accessibility (add the sketchybar binary via Cmd+Shift+G; the grant
-  needs redoing when the nix store path of sketchybar changes). Also polls every 5s (`update_freq`) to follow
+  Requires the **real SketchyBar executable** in System Settings → Privacy &
+  Security → Device Control and Data Access (Accessibility on older macOS).
+  After switching, obtain its path from the installed agent:
+
+  ```sh
+  /usr/libexec/PlistBuddy -c 'Print :Program' \
+    ~/Library/LaunchAgents/org.nix-community.home.sketchybar.plist
+  ```
+
+  Add that path via Cmd+Shift+G; do not authorize the CLI shell wrapper or
+  a general-purpose Bash interpreter. A changed Nix store path may require
+  renewing the grant. Automation access to System Events is also needed.
+  The direct launch replaces HM's generated shell/wait4path plist while
+  preserving its lifecycle management, logs, and KeepAlive/RunAtLoad. On a
+  cold boot, startup before the Nix volume mounts relies on launchd retrying;
+  this must be checked on the target Mac. TCC attribution and the FineTune
+  click must also be verified after deployment, not just at build time.
+  Also polls every 5s (`update_freq`) to follow
   default-output switches, which don't reliably fire `volume_change`.
   History: this item previously had a DDC backend using `m1ddc` on the
   wrapper's PATH plus a `/tmp` state file and a sketchybar-side safety net,
