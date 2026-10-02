@@ -51,6 +51,7 @@
   #
   # programs._1password.enable = true;
   environment.systemPackages = with pkgs; [
+    e2fsprogs
     qemu
 
     # Small CLI that sets the desktop wallpaper per-display reliably. Used by
