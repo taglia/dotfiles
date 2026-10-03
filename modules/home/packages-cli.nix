@@ -21,7 +21,7 @@
       lftp
       unzip
       zip
-      openssl_3
+      openssl
 
       fastfetch
       magic-wormhole

@@ -287,12 +287,12 @@ mise upgrade node uv
 
 This repo uses `agenix` for encrypted secrets. Two files are the source of
 truth: `secrets-machines.nix` declares the machines (recipient public keys +
-private key locations), and `secrets.nix` declares the secrets - each entry
+private key locations), and `agenix-rules.nix` declares the secrets - each entry
 maps an encrypted payload under `secrets/` to the machines allowed to decrypt
 it (`publicKeys`) and, optionally, an `envVarFile` environment variable for
-the decrypted file path. Commit only encrypted `.age` files, `secrets.nix` and
+the decrypted file path. Commit only encrypted `.age` files, `agenix-rules.nix` and
 `secrets-machines.nix`, never private SSH keys or plaintext secrets. (When
-bootstrapping a fresh fork with no secrets yet, `secrets.nix` can simply be
+bootstrapping a fresh fork with no secrets yet, `agenix-rules.nix` can simply be
 `{ }` until the first secret is needed.)
 
 This repo uses SSH keys as agenix identities. Prefer a machine-specific SSH key per machine; if available, use an `ed25519` key over RSA.
@@ -320,13 +320,18 @@ mbp = {
 };
 ```
 
-`publicKey` is the age recipient referenced from `secrets.nix`; `identity` is the absolute path of the matching private key on that machine. The identity may live anywhere on the filesystem (including outside the user's home, e.g. a machine-level key), as long as it is readable by the user running Home Manager activation. Use machine-specific names such as `mbp`, `linux_workstation`, or `server_name`; avoid a generic personal name for machine recipients.
+`publicKey` is the age recipient referenced from `agenix-rules.nix`; `identity` is the absolute path of the matching private key on that machine. The identity may live anywhere on the filesystem (including outside the user's home, e.g. a machine-level key), as long as it is readable by the user running Home Manager activation. Use machine-specific names such as `mbp`, `linux_workstation`, or `server_name`; avoid a generic personal name for machine recipients.
 
 At activation, `profiles/private.nix` passes every declared identity to agenix, which silently skips the ones not present on the local machine - so each machine automatically decrypts with its own key, with no key paths hardcoded per profile. A key that exists on a machine but is not a recipient for a given secret is ignored without error (and never triggers a passphrase prompt, because age matches the recipient's public key before touching the private key). This activation-time behavior is distinct from the `agenix` CLI below, where you always pass an identity explicitly with `-i`.
 
 ### Adding a secret
 
-1. Add one entry to `secrets.nix`:
+The updated agenix CLI discovers `agenix-rules.nix` automatically, including
+from subdirectories. Secret paths are relative to the rules file's directory.
+Use `agenix --check` to verify encrypted SSH recipients without decrypting or
+rewriting secrets. No `RULES` or `AGENIX_RULES` override is needed in this repo.
+
+1. Add one entry to `agenix-rules.nix`:
 
    ```nix
    "secrets/example-api-token.age" = {
@@ -354,7 +359,7 @@ At activation, `profiles/private.nix` passes every declared identity to agenix, 
 
 3. Rebuild (`darwin-rebuild switch --flake .#mbp` or `just switch-home mbp-home`).
 
-No other edits are needed: `profiles/private.nix` imports `secrets.nix` and
+No other edits are needed: `profiles/private.nix` imports `agenix-rules.nix` and
 derives `age.secrets` and `home.sessionVariables` automatically, wiring only
 secrets whose `.age` payload exists in the checkout. age secret names are
 derived from the file name, e.g. `secrets/example-api-token.age` becomes
@@ -385,13 +390,13 @@ at `agenix.d`; it is the private generation directory, while
 
 ### Rotating recipients
 
-If recipient keys change, re-encrypt existing secrets (the agenix CLI reads the recipient lists from `secrets.nix`):
+If recipient keys change, re-encrypt existing secrets (the agenix CLI reads the recipient lists from `agenix-rules.nix`):
 
 ```bash
 agenix -r -i ~/.ssh/id_ed25519
 ```
 
-Trade-off to keep in mind: this repo standardizes on SSH keys as age identities (see above) because every machine already has one, but it does mean SSH access and secret decryption share the same credential lifecycle. Keep the keys machine-specific and not broadly reused; rotate the corresponding recipient in `secrets.nix` whenever a machine's key changes.
+Trade-off to keep in mind: this repo standardizes on SSH keys as age identities (see above) because every machine already has one, but it does mean SSH access and secret decryption share the same credential lifecycle. Keep the keys machine-specific and not broadly reused; rotate the corresponding recipient in `agenix-rules.nix` whenever a machine's key changes.
 
 ## Automation scripts
 

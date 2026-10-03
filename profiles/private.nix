@@ -1,6 +1,6 @@
-# Generic agenix wiring: everything is derived from ../secrets.nix, the single
+# Generic agenix wiring: everything is derived from ../agenix-rules.nix, the single
 # source of truth for secrets (see the comment there). To add a secret, edit
-# only ../secrets.nix; this file should not need per-secret changes.
+# only ../agenix-rules.nix; this file should not need per-secret changes.
 # secretsMachine (passed via extraSpecialArgs from lib/hosts.nix) names the
 # entry in ../secrets-machines.nix this host decrypts secrets as. It is
 # declared statically per host because flakes' pure evaluation makes
@@ -15,7 +15,7 @@
 }:
 
 let
-  rules = import ../secrets.nix;
+  rules = import ../agenix-rules.nix;
   machines = import ../secrets-machines.nix;
 
   # age secret names are derived from the file name, keeping the historical
@@ -35,7 +35,7 @@ let
   # activation script runs with `errexit` and decrypts every wired secret, so
   # wiring a non-recipient secret aborts activation midway (before the
   # agenix -> agenix.d/N symlink is created) on machines holding a different
-  # key set. Filtering here keeps the recipient lists in secrets.nix as the
+  # key set. Filtering here keeps the recipient lists in agenix-rules.nix as the
   # single authorization point.
   decryptable = lib.filterAttrs (
     _: rule: builtins.any (k: builtins.elem k localPubKeys) rule.publicKeys
@@ -56,8 +56,8 @@ let
   # key.
   identities = lib.unique (map (m: m.identity) (builtins.attrValues machines));
 
-  # Resolve a secrets.nix `path` (which may be $HOME-relative, to keep
-  # secrets.nix portable across /Users/* and /home/* hosts) to an absolute
+  # Resolve an agenix-rules.nix `path` (which may be $HOME-relative, to keep
+  # agenix-rules.nix portable across /Users/* and /home/* hosts) to an absolute
   # path. agenix's Darwin activation runs from a launchd agent whose CWD is
   # / (read-only on modern macOS), so a bare relative path would make its
   # `mkdir -p`/`ln -sfT` abort under errexit. Absolute paths are passed
@@ -83,7 +83,7 @@ in
     {
       assertion = duplicatedNames == [ ];
       message = ''
-        secrets.nix: this machine can decrypt multiple secrets exporting the
+        agenix-rules.nix: this machine can decrypt multiple secrets exporting the
         same environment variable(s): ${lib.concatStringsSep ", " duplicatedNames}.
         home.sessionVariables would silently pick one; make the recipient
         lists disjoint (or the envVarFile names distinct) so exactly one
@@ -110,7 +110,7 @@ in
   systemd.user.services.agenix.Service.RemainAfterExit =
     lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
 
-  # A `path` field in secrets.nix deploys a secret to a fixed filesystem
+  # A `path` field in agenix-rules.nix deploys a secret to a fixed filesystem
   # location (as a force-symlink) rather than agenix's default runtime dir;
   # resolvePath (defined in the let above) makes that absolute so Darwin's
   # launchd-activated mount script (CWD /) can `mkdir -p`/`ln -sfT` it without

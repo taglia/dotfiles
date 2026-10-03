@@ -2,7 +2,7 @@
 #
 # Each entry maps a machine to:
 #
-#   publicKey  SSH public key used as an age recipient in secrets.nix. This is
+#   publicKey  SSH public key used as an age recipient in agenix-rules.nix. This is
 #              what authorizes the machine to decrypt a secret.
 #
 #   identity   Absolute path of the matching private key on that machine. Used
@@ -12,7 +12,7 @@
 #              running Home Manager activation.
 #
 # Adding a machine = adding one entry here. Adding a secret = one entry in
-# secrets.nix (see the comment there).
+# agenix-rules.nix (see the comment there).
 {
   mbp = {
     publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7IVJHXrOVQvRTdU4WFbIGLTwtsCfGym1Op4qqSZuk+G4X0/Qe6idKNPfHTJu1lqY5O8/Q7+YZ9xoJwjCZ/jDmRrd4dienTKEP31wynFWbyyiIudPE1ms8D7vvSnFQBXcF+44Bymw2iifURmL98lFcjP4rb2+l9Tv1pndMFMu5tfUox1nEkHccB3bcUSFc52rhIu2SMySLXyTSHdcihrJFsqwiYGC5MfoaG0rGOnd1jiUQzt1ipZTBvRsPlbO0wcDKMfJ85eVeszC5PI5DzrQZfS9tiaBSRaSHgxwYaSVdFmOanB9U8LgwhUSG0Gvz3UWt4SRhb+3o9mnveWCQwYiJgK+fv657KgK8HWHWz2G64mbmXB2ABNckMB5UrWLAgWHMuY/FDaZMvGZe/7auxMyNhnB5IDL57KEu6nzQTKVZUYbDJYFNEe/vA891V1XbkxsCwExcu/ZagpFEq4APiqQvKeZvZVIHibKp+AwCmfPn7PxLtID+5/7agu6WIfIqLZ8= taglia@MacBook-Pro-2.local";

@@ -28,15 +28,11 @@
     nixvim = {
       url = "github:nix-community/nixvim/nixos-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
-      # Share agenix's nix-systems node instead of locking a duplicate copy.
-      inputs.systems.follows = "agenix/systems";
     };
 
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-      inputs.darwin.follows = "nix-darwin";
     };
 
     nix-index-database = {
