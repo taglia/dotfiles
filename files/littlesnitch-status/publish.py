@@ -16,6 +16,7 @@ STATE_DIR = Path("/var/run/dotfiles-littlesnitch")
 def probe(user):
     values = {}
     errors = []
+    failures = {}
     cli_disabled = False
     for key in ("activeSilentMode", "networkFilterEnabled"):
         try:
@@ -48,10 +49,22 @@ def probe(user):
                         "allow access via terminal",
                     )
                 )
+            if isinstance(error, subprocess.TimeoutExpired):
+                failure = {"kind": "timeout", "seconds": 5}
+            elif isinstance(error, subprocess.CalledProcessError):
+                failure = {"kind": "exit", "code": error.returncode}
+            elif isinstance(error, OSError):
+                failure = {"kind": "os_error", "errno": error.errno}
+            elif isinstance(error, ValueError):
+                failure = {"kind": "parse_failure"}
+            else:
+                failure = {"kind": "subprocess_error"}
+            failures[key] = failure
             errors.append(key)
     return {
         "version": 1,
         "checked_at": int(time.time()),
+        "failures": failures,
         "mode": values.get("activeSilentMode"),
         "filter_enabled": values.get("networkFilterEnabled"),
         "error": "Could not read: " + ", ".join(errors) if errors else None,

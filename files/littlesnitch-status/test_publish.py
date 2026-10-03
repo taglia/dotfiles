@@ -55,6 +55,27 @@ class PublisherTests(unittest.TestCase):
             self.assertIsNone(result["filter_enabled"])
             self.assertNotIn("private", json.dumps(result))
 
+    def test_failure_diagnostics_do_not_leak_raw_output(self):
+        cases = [
+            (subprocess.TimeoutExpired("private command", 5), {"kind": "timeout", "seconds": 5}),
+            (subprocess.CalledProcessError(14, "private command", output="private output"),
+             {"kind": "exit", "code": 14}),
+            (PermissionError(13, "private path"), {"kind": "os_error", "errno": 13}),
+        ]
+        for error, expected in cases:
+            with self.subTest(expected=expected):
+                with patch.object(publish.subprocess, "run", side_effect=error):
+                    result = publish.probe("taglia")
+                self.assertEqual(result["failures"], {
+                    "activeSilentMode": expected, "networkFilterEnabled": expected,
+                })
+                self.assertNotIn("private", json.dumps(result))
+        for invalid in ("not JSON", '"0"', "3"):
+            self.assertEqual(self.probe(mode=invalid)["failures"], {
+                "activeSilentMode": {"kind": "parse_failure"},
+            })
+        self.assertEqual(self.probe()["failures"], {})
+
     def test_cli_disabled_is_distinct_from_other_failures(self):
         error = subprocess.CalledProcessError(
             1, publish.CLI,

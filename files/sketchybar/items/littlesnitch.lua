@@ -1,14 +1,15 @@
 -- Immediately after VPN on the left. The root LaunchDaemon publishes only
 -- preferences; this item never invokes sudo or Little Snitch's privileged CLI.
 local utils = require("utils")
+local AMBER = COLORS.mocha_peach -- Match the other indicators' theme warning color.
 local indicator = SBAR.add("item", "littlesnitch", {
   position = "left",
   update_freq = 5,
   updates = true, -- Continue probing when the healthy-state indicator is hidden.
   icon = {
-    string = "􀙥",
+    string = "􀞟",
     font = { family = "SF Pro", style = "Bold", size = 26.0 },
-    color = COLORS.mocha_yellow,
+    color = AMBER,
     padding_left = 8,
     padding_right = 8,
   },
@@ -37,6 +38,31 @@ local help = SBAR.add("item", "littlesnitch.help", {
     padding_right = 14,
   },
 })
+local diagnostics = {}
+for _, key in ipairs({ "activeSilentMode", "networkFilterEnabled" }) do
+  diagnostics[key] = SBAR.add("item", "littlesnitch.diagnostic." .. key, {
+    position = "popup." .. indicator.name,
+    drawing = false,
+    icon = { drawing = false },
+    label = { font = { size = 14.0 }, padding_left = 14, padding_right = 14 },
+  })
+end
+local function describe_failure(failure)
+  if type(failure) ~= "table" then
+    return nil
+  end
+  if failure.kind == "timeout" then
+    return "timed out after 5 seconds"
+  elseif failure.kind == "exit" and type(failure.code) == "number" then
+    return "CLI exit code " .. failure.code
+  elseif failure.kind == "os_error" then
+    return "OS error" .. (type(failure.errno) == "number" and (" (errno " .. failure.errno .. ")") or "")
+  elseif failure.kind == "parse_failure" then
+    return "unexpected output (parsing failure)"
+  elseif failure.kind == "subprocess_error" then
+    return "subprocess failure"
+  end
+end
 local modes = { [0] = "Alert", [1] = "Silent Allow", [2] = "Silent Deny" }
 local pending = false
 local close_popup
@@ -58,6 +84,10 @@ local function update()
       message = "Little Snitch: status stale or invalid — waiting for a fresh check"
     end
     help:set({ drawing = fresh and status.error_kind == "cli_disabled" })
+    for key, row in pairs(diagnostics) do
+      local description = fresh and type(status.failures) == "table" and describe_failure(status.failures[key])
+      row:set({ drawing = not not description, label = { string = description and (key .. ": " .. description) or "" } })
+    end
     if fresh then
       local mode_ok = type(status.mode) == "number" and modes[status.mode] ~= nil
       local filter_ok = type(status.filter_enabled) == "boolean"
@@ -82,7 +112,7 @@ local function update()
     end
     indicator:set({
       drawing = warning or unknown,
-      icon = { color = warning and COLORS.mocha_red or COLORS.mocha_yellow },
+      icon = { color = warning and COLORS.mocha_red or AMBER },
     })
     if not warning and not unknown then
       close_popup()

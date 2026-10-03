@@ -26,12 +26,15 @@ and its root-side publisher in `files/littlesnitch-status/`.
 
 ## Little Snitch warning
 
-Immediately right of VPN: a large red `􀙥` when Silent Allow is selected **or**
+Immediately right of VPN: a large red `􀞟` when Silent Allow is selected **or**
 `networkFilterEnabled` is false. Hidden in Alert or Silent Deny with the filter
 enabled. Amber means the CLI is disabled or status is unavailable, incomplete,
 or older than 60 seconds; it never silently treats a failed probe as protected.
+The warning uses the theme's `mocha_peach`, matching the other warning
+indicators, rather than pale `mocha_yellow`.
 Hover identifies the issue(s); a disabled CLI shows the Security setting to
-change. Click opens Little Snitch. This reports preferences, not an
+change. Failed reads show per-preference diagnostics (timeout, CLI exit code,
+OS errno, or parsing failure), never raw CLI output. Click opens Little Snitch. This reports preferences, not an
 independent verification that the network extension is enforcing rules.
 
 A root LaunchDaemon (`org.nixos.littlesnitch-status`) reads just those two
