@@ -52,7 +52,7 @@ local function describe_failure(failure)
     return nil
   end
   if failure.kind == "timeout" then
-    return "timed out after 5 seconds"
+    return type(failure.seconds) == "number" and ("timed out after " .. failure.seconds .. " seconds") or "timed out"
   elseif failure.kind == "exit" and type(failure.code) == "number" then
     return "CLI exit code " .. failure.code
   elseif failure.kind == "os_error" then

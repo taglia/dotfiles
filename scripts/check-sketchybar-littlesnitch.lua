@@ -95,14 +95,14 @@ assert(not item.config.drawing and not item.config.popup.drawing)
 local failed = status(nil, nil)
 failed.failures = {
   activeSilentMode = { kind = "exit", code = 14 },
-  networkFilterEnabled = { kind = "timeout", seconds = 5 },
+  networkFilterEnabled = { kind = "timeout", seconds = 10 },
 }
 update(failed)
 local mode_row = items["littlesnitch.diagnostic.activeSilentMode"]
 local filter_row = items["littlesnitch.diagnostic.networkFilterEnabled"]
 assert(mode_row.config.drawing and mode_row.config.label.string == "activeSilentMode: CLI exit code 14")
 assert(
-  filter_row.config.drawing and filter_row.config.label.string == "networkFilterEnabled: timed out after 5 seconds"
+  filter_row.config.drawing and filter_row.config.label.string == "networkFilterEnabled: timed out after 10 seconds"
 )
 failed.failures.activeSilentMode = { kind = "parse_failure" }
 failed.failures.networkFilterEnabled = { kind = "os_error", errno = 13 }

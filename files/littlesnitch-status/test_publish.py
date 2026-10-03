@@ -21,7 +21,7 @@ class PublisherTests(unittest.TestCase):
         for call in run.call_args_list:
             self.assertEqual(call.args[0][:3], [publish.CLI, "--user", "taglia"])
             self.assertEqual(call.args[0][3], "read-preference")
-            self.assertEqual(call.kwargs["timeout"], 5)
+            self.assertEqual(call.kwargs["timeout"], 10)
         return result
 
     def test_all_preference_combinations(self):
@@ -46,7 +46,7 @@ class PublisherTests(unittest.TestCase):
     def test_errors_are_bounded_and_sanitized(self):
         for error in (
             FileNotFoundError("private path"),
-            subprocess.TimeoutExpired("private command", 5),
+            subprocess.TimeoutExpired("private command", 10),
             subprocess.CalledProcessError(1, "private command", output="private output"),
         ):
             with patch.object(publish.subprocess, "run", side_effect=error):
@@ -57,7 +57,7 @@ class PublisherTests(unittest.TestCase):
 
     def test_failure_diagnostics_do_not_leak_raw_output(self):
         cases = [
-            (subprocess.TimeoutExpired("private command", 5), {"kind": "timeout", "seconds": 5}),
+            (subprocess.TimeoutExpired("private command", 10), {"kind": "timeout", "seconds": 10}),
             (subprocess.CalledProcessError(14, "private command", output="private output"),
              {"kind": "exit", "code": 14}),
             (PermissionError(13, "private path"), {"kind": "os_error", "errno": 13}),

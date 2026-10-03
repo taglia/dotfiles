@@ -11,6 +11,7 @@ import time
 
 CLI = "/Applications/Little Snitch.app/Contents/Components/littlesnitch"
 STATE_DIR = Path("/var/run/dotfiles-littlesnitch")
+READ_TIMEOUT = 10
 
 
 def probe(user):
@@ -24,7 +25,7 @@ def probe(user):
                 [CLI, "--user", user, "read-preference", key],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=READ_TIMEOUT,
                 check=True,
             )
             value = json.loads(result.stdout)
@@ -50,7 +51,7 @@ def probe(user):
                     )
                 )
             if isinstance(error, subprocess.TimeoutExpired):
-                failure = {"kind": "timeout", "seconds": 5}
+                failure = {"kind": "timeout", "seconds": READ_TIMEOUT}
             elif isinstance(error, subprocess.CalledProcessError):
                 failure = {"kind": "exit", "code": error.returncode}
             elif isinstance(error, OSError):
