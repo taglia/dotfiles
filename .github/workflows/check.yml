@@ -53,6 +53,12 @@ jobs:
       - name: Log maintenance tests
         run: nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/log-maintenance -v
 
+      - name: Little Snitch publisher tests
+        run: nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/littlesnitch-status -v
+
+      - name: Little Snitch indicator tests
+        run: nix shell --inputs-from . nixpkgs#lua --command lua scripts/check-sketchybar-littlesnitch.lua
+
       - name: StyLua check
         run: nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar
 

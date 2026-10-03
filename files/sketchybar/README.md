@@ -21,8 +21,35 @@ The only Nix-side references to it are:
   using the absolute nix store path to `sketchybar` (aerospace's launchd daemon
   does not see the Home Manager user PATH).
 
-Everything SketchyBar-related lives here, in those two modules, or in the
-private `modules/home/sketchybar/` packaging directory.
+The Little Snitch warning also uses `modules/darwin/littlesnitch-status.nix`
+and its root-side publisher in `files/littlesnitch-status/`.
+
+## Little Snitch warning
+
+Immediately right of VPN: a large red `􀙥` when Silent Allow is selected **or**
+`networkFilterEnabled` is false. Hidden in Alert or Silent Deny with the filter
+enabled. Amber means the CLI is disabled or status is unavailable, incomplete,
+or older than 60 seconds; it never silently treats a failed probe as protected.
+Hover identifies the issue(s); a disabled CLI shows the Security setting to
+change. Click opens Little Snitch. This reports preferences, not an
+independent verification that the network extension is enforcing rules.
+
+A root LaunchDaemon (`org.nixos.littlesnitch-status`) reads just those two
+preferences for the configured desktop user every 15 seconds, with a 5-second
+timeout per command. Little Snitch's **Allow access via Terminal** must be
+enabled. It atomically writes root-owned, world-readable
+`/var/run/dotfiles-littlesnitch/status.json` (no rules, traffic, or secrets).
+SketchyBar reads it every 5 seconds without sudo. The daemon has no writable
+helper or passwordless-sudo grant. Apply a Darwin switch to install the daemon
+and the updated bar config. Allow about 20 seconds for preference changes to
+reach the indicator; stale status after sleep is amber until refreshed.
+
+Tests (no privileged CLI calls):
+
+```sh
+nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/littlesnitch-status -v
+nix shell --inputs-from . nixpkgs#lua --command lua scripts/check-sketchybar-littlesnitch.lua
+```
 
 ## Origin
 
@@ -37,7 +64,8 @@ area): opaque near-black background, pure-white text, and a bright focused
 workspace pill.
 - **Left** (left → right): AeroSpace workspaces (`items/spaces.lua`), network
   (`items/network.lua`), upload/download bandwidth (`items/bandwidth.lua`),
-  VPN (`items/vpn.lua`). Workspaces 1–9 highlight the focused workspace;
+  VPN (`items/vpn.lua`), Little Snitch warning (`items/littlesnitch.lua`).
+  Workspaces 1–9 highlight the focused workspace;
   no macOS Spaces or `rift`. Clicking bandwidth opens Little Snitch Network Monitor.
 - **Right** (left → right): backup indicators when visible (CCC, Time Machine),
   frontmost app (`items/front_app.lua`), CPU → RAM → disk (`items/resources.lua`),

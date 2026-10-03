@@ -110,6 +110,7 @@ let
         ../modules/darwin/desktop.nix
         ../modules/darwin/homebrew.nix
         ../modules/darwin/input.nix
+        ../modules/darwin/littlesnitch-status.nix
         ../modules/darwin/packages.nix
         ../modules/darwin/system.nix
 

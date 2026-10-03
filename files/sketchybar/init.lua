@@ -8,6 +8,7 @@ require("items.spaces")
 require("items.network")
 require("items.bandwidth")
 require("items.vpn")
+require("items.littlesnitch") -- Warning immediately to the right of VPN.
 
 -- Right Side (Order: Right -> Left)
 require("items.calendar")
