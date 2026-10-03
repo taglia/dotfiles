@@ -56,9 +56,9 @@ in
 
       key-mapping.preset = "qwerty";
 
-      # Requires AeroSpace >= 0.21. Mouse-driven monitor changes don't warp
-      # the pointer back: monitor-lazy-center is a no-op on that monitor.
-      focus-follows-mouse.enabled = true;
+      # Disabled: AeroSpace's hover focusing steals focus from transient
+      # popups (FineTune, Rhino selectors). Keep keyboard-driven mouse warping.
+      focus-follows-mouse.enabled = false;
       on-focused-monitor-changed = [ "move-mouse monitor-lazy-center" ];
 
       automatically-unhide-macos-hidden-apps = false;
