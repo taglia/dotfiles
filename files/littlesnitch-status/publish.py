@@ -11,7 +11,7 @@ import time
 
 CLI = "/Applications/Little Snitch.app/Contents/Components/littlesnitch"
 STATE_DIR = Path("/var/run/dotfiles-littlesnitch")
-READ_TIMEOUT = 10
+READ_TIMEOUT = 30
 
 
 def probe(user):

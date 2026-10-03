@@ -29,7 +29,7 @@ and its root-side publisher in `files/littlesnitch-status/`.
 Immediately right of VPN: a large red `􀞟` when Silent Allow is selected **or**
 `networkFilterEnabled` is false. Hidden in Alert or Silent Deny with the filter
 enabled. Amber means the CLI is disabled or status is unavailable, incomplete,
-or older than 60 seconds; it never silently treats a failed probe as protected.
+or older than 120 seconds; it never silently treats a failed probe as protected.
 The warning uses the theme's `mocha_peach`, matching the other warning
 indicators, rather than pale `mocha_yellow`.
 Hover identifies the issue(s); a disabled CLI shows the Security setting to
@@ -38,7 +38,7 @@ OS errno, or parsing failure), never raw CLI output. Click opens Little Snitch. 
 independent verification that the network extension is enforcing rules.
 
 A root LaunchDaemon (`org.nixos.littlesnitch-status`) reads just those two
-preferences for the configured desktop user every 15 seconds, with a 10-second
+preferences for the configured desktop user every 15 seconds, with a 30-second
 timeout per command. It uses `launchctl asuser` with the user's runtime-resolved
 UID to enter their bootstrap/audit session while retaining root privileges.
 Launchd does not overlap runs if a probe outlasts the interval. Little Snitch's **Allow access via Terminal** must be
@@ -46,8 +46,9 @@ enabled. It atomically writes root-owned, world-readable
 `/var/run/dotfiles-littlesnitch/status.json` (no rules, traffic, or secrets).
 SketchyBar reads it every 5 seconds without sudo. The daemon has no writable
 helper or passwordless-sudo grant. Apply a Darwin switch to install the daemon
-and the updated bar config. Allow roughly 30–40 seconds for preference changes to
-reach the indicator when reads are slow; stale status after sleep is amber until refreshed.
+and the updated bar config. The two sequential reads can take up to 60 seconds per probe, so allow
+roughly 1–2 minutes for preference changes to reach the indicator when reads
+are slow; stale status after sleep is amber until refreshed.
 
 Tests (no privileged CLI calls):
 

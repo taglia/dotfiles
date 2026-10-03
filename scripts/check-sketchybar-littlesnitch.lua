@@ -2,6 +2,9 @@
 local result, code = nil, 1
 local items, commands = {}, {}
 local now = os.time()
+os.time = function()
+  return now
+end
 COLORS = { mocha_red = "red", mocha_yellow = "yellow", mocha_peach = "theme-amber" }
 package.loaded.utils = {
   hover_popup = function(parent)
@@ -66,7 +69,11 @@ for _, bad in ipairs({ "garbage", {}, { version = 2, checked_at = now } }) do
   update(bad)
   assert(item.config.drawing and item.config.icon.color == COLORS.mocha_peach)
 end
-for _, timestamp in ipairs({ now - 120, now + 120 }) do
+local boundary = status(0, true)
+boundary.checked_at = now - 120
+update(boundary)
+assert(not item.config.drawing)
+for _, timestamp in ipairs({ now - 121, now + 120 }) do
   local value = status(0, true)
   value.checked_at = timestamp
   update(value)
@@ -95,21 +102,21 @@ assert(not item.config.drawing and not item.config.popup.drawing)
 local failed = status(nil, nil)
 failed.failures = {
   activeSilentMode = { kind = "exit", code = 14 },
-  networkFilterEnabled = { kind = "timeout", seconds = 10 },
+  networkFilterEnabled = { kind = "timeout", seconds = 30 },
 }
 update(failed)
 local mode_row = items["littlesnitch.diagnostic.activeSilentMode"]
 local filter_row = items["littlesnitch.diagnostic.networkFilterEnabled"]
 assert(mode_row.config.drawing and mode_row.config.label.string == "activeSilentMode: CLI exit code 14")
 assert(
-  filter_row.config.drawing and filter_row.config.label.string == "networkFilterEnabled: timed out after 10 seconds"
+  filter_row.config.drawing and filter_row.config.label.string == "networkFilterEnabled: timed out after 30 seconds"
 )
 failed.failures.activeSilentMode = { kind = "parse_failure" }
 failed.failures.networkFilterEnabled = { kind = "os_error", errno = 13 }
 update(failed)
 assert(mode_row.config.label.string:find("parsing failure", 1, true))
 assert(filter_row.config.label.string:find("errno 13", 1, true))
-failed.checked_at = now - 120
+failed.checked_at = now - 121
 update(failed)
 assert(not mode_row.config.drawing and not filter_row.config.drawing)
 update(status(0, true))

@@ -78,7 +78,7 @@ local function update()
       and status.version == 1
       and type(status.checked_at) == "number"
       and status.checked_at <= os.time()
-      and os.time() - status.checked_at <= 60
+      and os.time() - status.checked_at <= 120
     local warning, unknown, message = false, true, "Little Snitch: status unavailable — check the status service"
     if code == 0 and type(status) == "table" and not fresh then
       message = "Little Snitch: status stale or invalid — waiting for a fresh check"
