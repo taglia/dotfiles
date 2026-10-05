@@ -25,8 +25,10 @@ in
     UserName = "root";
     RunAtLoad = true;
     StartInterval = 15;
-    ProcessType = "Background";
-    LowPriorityIO = true;
+    # Background scheduling can stall the CLI's preference reads indefinitely.
+    # Standard/default still throttles CPU and I/O; Interactive removes those
+    # limits so the probe runs like the successful foreground CLI invocation.
+    ProcessType = "Interactive";
     # No KeepAlive: this is a bounded one-shot probe, retried on the interval.
   };
 }

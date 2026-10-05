@@ -41,7 +41,9 @@ A root LaunchDaemon (`org.nixos.littlesnitch-status`) reads just those two
 preferences for the configured desktop user every 15 seconds, with a 30-second
 timeout per command. It uses `launchctl asuser` with the user's runtime-resolved
 UID to enter their bootstrap/audit session while retaining root privileges.
-Launchd does not overlap runs if a probe outlasts the interval. Little Snitch's **Allow access via Terminal** must be
+Launchd does not overlap runs if a probe outlasts the interval. The publisher
+uses the unthrottled `Interactive` process class, with no low-priority I/O:
+background scheduling made CLI reads stall despite foreground reads succeeding. Little Snitch's **Allow access via Terminal** must be
 enabled. It atomically writes root-owned, world-readable
 `/var/run/dotfiles-littlesnitch/status.json` (no rules, traffic, or secrets).
 SketchyBar reads it every 5 seconds without sudo. The daemon has no writable
