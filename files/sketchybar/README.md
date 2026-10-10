@@ -37,6 +37,14 @@ change. Failed reads show per-preference diagnostics (timeout, CLI exit code,
 OS errno, or parsing failure), never raw CLI output. Click opens Little Snitch. This reports preferences, not an
 independent verification that the network extension is enforcing rules.
 
+The daemon starts through macOS's `/bin/sh` and waits for `/nix/store` before
+executing the publisher, avoiding a spawn failure before the Nix volume mounts
+at boot. To retry the installed daemon manually from an admin terminal:
+
+```sh
+sudo launchctl kickstart -k system/org.nixos.littlesnitch-status
+```
+
 A root LaunchDaemon (`org.nixos.littlesnitch-status`) reads just those two
 preferences for the configured desktop user every 15 seconds, with a 30-second
 timeout per command. It uses `launchctl asuser` with the user's runtime-resolved

@@ -21,7 +21,13 @@ in
   # /var/run/dotfiles-littlesnitch/status.json. No sudo grant or writable helper.
   # Little Snitch's "Allow access via Terminal" must be enabled separately.
   launchd.daemons.littlesnitch-status.serviceConfig = {
-    ProgramArguments = [ "${publisher}" ];
+    # Launchd may start this before the Nix volume is mounted. The first
+    # executable must live on the system volume, not in /nix/store.
+    ProgramArguments = [
+      "/bin/sh"
+      "-c"
+      "/bin/wait4path /nix/store && exec ${publisher}"
+    ];
     UserName = "root";
     RunAtLoad = true;
     StartInterval = 15;
