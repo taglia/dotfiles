@@ -35,20 +35,20 @@ jobs:
       # Cheap lints first, so a failure in the heavy eval/build steps below
       # can never mask their results.
       - name: Shellcheck scripts
-        run: find scripts files -name '*.sh' -type f -print0 | xargs -0 nix shell --inputs-from . nixpkgs#shellcheck --command shellcheck
+        run: nix shell --inputs-from . nixpkgs#shellcheck --command bash scripts/check-lint.sh shellcheck
 
       - name: nixfmt check
         run: nix fmt -- --check
 
       - name: deadnix
-        run: nix shell --inputs-from . nixpkgs#deadnix --command deadnix --fail .
+        run: nix shell --inputs-from . nixpkgs#deadnix --command bash scripts/check-lint.sh deadnix
 
       - name: statix
         # statix from unstable: the stable-channel statix (0-unstable-2026-05-14)
         # is not on cache.nixos.org for darwin and fails its own insta snapshot
         # tests when built from source; unstable's 0.5.8-unstable-2026-07-17 is
         # cached and newer. Revert to nixpkgs#statix once stable catches up.
-        run: nix shell --inputs-from . nixpkgs-unstable#statix --command statix check .
+        run: nix shell --inputs-from . nixpkgs-unstable#statix --command bash scripts/check-lint.sh statix
 
       - name: Log maintenance tests
         run: nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/log-maintenance -v
@@ -60,10 +60,10 @@ jobs:
         run: nix shell --inputs-from . nixpkgs#lua --command lua scripts/check-sketchybar-littlesnitch.lua
 
       - name: StyLua check
-        run: nix shell --inputs-from . nixpkgs#stylua --command stylua --check files/sketchybar
+        run: nix shell --inputs-from . nixpkgs#stylua --command bash scripts/check-lint.sh stylua
 
       - name: Prettier check
-        run: nix shell --inputs-from . nixpkgs#prettier --command prettier --check "files/**/*.ts"
+        run: nix shell --inputs-from . nixpkgs#prettier --command bash scripts/check-lint.sh prettier
 
       - name: Supervised agent and Answer section tests (local mocks; no API keys)
         run: nix shell --inputs-from . nixpkgs-unstable#nodejs nixpkgs#typescript --command bash scripts/check-agent-async.sh

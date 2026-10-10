@@ -127,7 +127,10 @@
         in
         pkgs.writeShellApplication {
           name = "nixfmt-dotfiles";
-          runtimeInputs = [ pkgs.nixfmt ];
+          runtimeInputs = [
+            pkgs.git
+            pkgs.nixfmt
+          ];
           text = ''
             # `nix fmt -- --check` runs `nixfmt --check`; plain `nix fmt`
             # formats in place. With explicit file/dir arguments nixfmt
@@ -142,7 +145,17 @@
               exec nixfmt $check "$@"
             fi
 
-            find . -path ./.git -prune -o -name '*.nix' -type f -print0 | xargs -0 nixfmt $check
+            # Include tracked and non-ignored untracked files, but skip deleted files.
+            files=()
+            while IFS= read -r -d "" file; do
+              if [ -f "$file" ]; then
+                files+=("$file")
+              fi
+            done < <(git ls-files --cached --others --exclude-standard -z -- '*.nix')
+
+            if [ "''${#files[@]}" -gt 0 ]; then
+              nixfmt $check -- "''${files[@]}"
+            fi
           '';
         }
       );
