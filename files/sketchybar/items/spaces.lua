@@ -23,7 +23,7 @@ local WORKSPACE_ICONS = {
   ["2"] = "󰇮", -- mail
   ["3"] = "󰇮", -- mail
   ["4"] = "󰭹", -- chat
-  ["5"] = "", -- terminal
+  ["5"] = "􀪏", -- terminal (SF Symbols)
   ["6"] = "􀢆", -- 3d apps
   ["7"] = "􀑪", -- music
   ["8"] = "󰈔", -- file
@@ -71,7 +71,7 @@ for _, sid in ipairs(WORKSPACES) do
     label = {
       drawing = false,
       width = 0,
-      font = { family = "Hack Nerd Font", style = "Bold", size = 17.0 },
+      font = { family = sid == "5" and "SF Pro" or "Hack Nerd Font", style = "Bold", size = 17.0 },
       padding_left = 0,
       padding_right = 9,
     },
