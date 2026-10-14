@@ -72,7 +72,7 @@ for _, sid in ipairs(WORKSPACES) do
       drawing = false,
       width = 0,
       font = { family = sid == "5" and "SF Pro" or "Hack Nerd Font", style = "Bold", size = 17.0 },
-      padding_left = 0,
+      padding_left = -3,
       padding_right = 9,
     },
     background = {
