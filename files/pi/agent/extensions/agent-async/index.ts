@@ -12,6 +12,7 @@ import { truncateToWidth } from "@earendil-works/pi-tui";
 import { Registry, bounded, pending, type Task } from "./registry.ts";
 import { startWorker } from "./runner.ts";
 import { writablePath } from "./paths.ts";
+import { hasKnownPricing } from "./pricing.ts";
 
 const directory = dirname(fileURLToPath(import.meta.url));
 const short = (id: string) => id.slice(0, 8);
@@ -245,7 +246,7 @@ export default function (pi: ExtensionAPI) {
             context_window: m.contextWindow,
             reasoning: m.reasoning,
             input: m.input,
-            price_per_million_tokens: Object.values(m.cost ?? {}).some((v) => v > 0)
+            price_per_million_tokens: hasKnownPricing(m.cost)
               ? m.cost
               : "unknown / subscription / local; do not assume free",
             unsupported,

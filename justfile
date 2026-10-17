@@ -28,16 +28,20 @@ switch-ec2-x86-vm:
 switch-home target:
     nh home switch . -c {{target}}
 
-# Mirrors .github/workflows/check.yml, except CI also runs an eval-only pass
-# for all systems first (--no-build --all-systems).
+# Mirrors .github/workflows/check.yml, except CI also evaluates non-native systems.
+# Run cheap checks before the native Nix build, matching CI.
 check:
-    nix flake check
     nix fmt -- --check
     nix shell --inputs-from . nixpkgs#shellcheck --command bash scripts/check-lint.sh shellcheck
     nix shell --inputs-from . nixpkgs#deadnix --command bash scripts/check-lint.sh deadnix
     nix shell --inputs-from . nixpkgs-unstable#statix --command bash scripts/check-lint.sh statix
     nix shell --inputs-from . nixpkgs#stylua --command bash scripts/check-lint.sh stylua
     nix shell --inputs-from . nixpkgs#prettier --command bash scripts/check-lint.sh prettier
+    nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/log-maintenance -v
+    nix shell --inputs-from . nixpkgs#python3 --command python3 -B -m unittest discover -s files/littlesnitch-status -v
+    nix shell --inputs-from . nixpkgs#lua --command lua scripts/check-sketchybar-littlesnitch.lua
+    nix shell --inputs-from . nixpkgs-unstable#nodejs nixpkgs#typescript --command bash scripts/check-agent-async.sh
+    nix flake check
 
 gc *args:
     scripts/gc.sh {{args}}
