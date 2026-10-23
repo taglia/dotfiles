@@ -24,6 +24,39 @@ The only Nix-side references to it are:
 The Little Snitch warning also uses `modules/darwin/littlesnitch-status.nix`
 and its root-side publisher in `files/littlesnitch-status/`.
 
+## Bluetooth indicator
+
+Immediately left of CPU (`items/bluetooth.lua`). Hover lists actual macOS
+Bluetooth connections, using the same styling and close-on-leave behavior as
+CPU/RAM popups. Queries run on hover and every 10 seconds while open, with no
+idle polling. AirBuddy 3 optionally supplies battery details; enable
+**General → Security → Enable AppleScript for automation**. If scripting fails,
+macOS battery readings are used where available. Nearby Apple mobile devices
+are not counted just because AirBuddy marks them connected.
+
+Click closes the hover popup and attempts an Accessibility `AXPress` on
+AirBuddyHelper's native menu-bar status item, tested live with AirBuddy 3.0.3. Grant
+Accessibility to the responsible caller in **System Settings → Privacy &
+Security → Accessibility** (SketchyBar for bar clicks; the terminal app for
+manual testing), and allow Automation prompts if shown. Keep AirBuddy's native
+icon enabled and **Click Menu Bar icon to → Show list of devices** selected.
+Failures are logged; there is no silent Dashboard fallback. No hotkey is used:
+AirBuddy's documented Dashboard shortcut and `show devices` / `show dashboard`
+commands open a different UI.
+
+Manual checks after installing the config:
+
+```sh
+osascript files/sketchybar/helpers/airbuddy-batteries.applescript
+osascript files/sketchybar/helpers/airbuddy-menu.applescript
+```
+
+Mock popup tests (no GUI interaction):
+
+```sh
+nix shell --inputs-from . nixpkgs#lua --command lua scripts/check-sketchybar-bluetooth.lua
+```
+
 ## Little Snitch warning
 
 Immediately right of VPN: a large red `􀞟` when Silent Allow is selected **or**
@@ -84,7 +117,8 @@ workspace pill.
   Workspaces 1–9 highlight the focused workspace;
   no macOS Spaces or `rift`. Clicking bandwidth opens Little Snitch Network Monitor.
 - **Right** (left → right): backup indicators when visible (CCC, Time Machine),
-  frontmost app (`items/front_app.lua`), CPU → RAM → disk (`items/resources.lua`),
+  frontmost app (`items/front_app.lua`), Bluetooth (`items/bluetooth.lua`),
+  CPU → RAM → disk (`items/resources.lua`),
   battery (`items/battery.lua`), volume (`items/volume.lua`), and calendar
   (`items/calendar.lua`). The front-app icon uses `app.<bundle-id>` to avoid
   ambiguous app-name matches; hover describes the quit action in a popup.

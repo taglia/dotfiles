@@ -15,6 +15,7 @@ require("items.calendar")
 require("items.volume")
 require("items.battery")
 require("items.resources") -- Creates disk -> RAM -> CPU; on screen: CPU -> RAM -> disk.
+require("items.bluetooth") -- Immediately left of CPU.
 require("items.front_app")
 -- Backup indicators (Time Machine, CCC) are required LAST on the right so
 -- they are the leftmost right-side items (left of the front-app icon) when
