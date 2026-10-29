@@ -17,6 +17,7 @@
 
   programs.atuin = {
     enable = true;
+    package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.atuin;
 
     settings = {
       auto_sync = lib.mkDefault false;
