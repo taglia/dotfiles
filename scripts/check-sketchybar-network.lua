@@ -1,6 +1,7 @@
 -- Run from the repository root: lua scripts/check-sketchybar-network.lua
 package.path = "files/sketchybar/?.lua;" .. package.path
-COLORS = { mocha_overlay_1 = "gray", mocha_text = "white" }
+COLORS = { mocha_overlay_1 = "gray", mocha_text = "white", mocha_red = "red" }
+local vpn_out = "status\tdisconnected\nname\tDisconnected\n"
 local items, commands, popup_rows = {}, {}, {}
 local public_out, public_code = "203.0.113.7\n", 0
 local public_requests, public_callback, defer_public = 0, nil, false
@@ -54,6 +55,8 @@ SBAR = {
       else
         callback(public_out, public_code)
       end
+    elseif command:find("vpn-status.sh", 1, true) then
+      callback(vpn_out)
     elseif callback then
       callback(result)
     end
@@ -63,19 +66,39 @@ dofile("files/sketchybar/items/network.lua")
 local network, ssid = items.network, items["network.ssid"]
 local wifi_detail, wired_detail = items["network.detail.wifi"], items["network.detail.wired"]
 local public_detail = items["network.detail.public"]
-assert(table.concat(popup_rows, ",") == "network.detail.wifi,network.detail.wired,network.detail.public")
+assert(
+  table.concat(popup_rows, ",")
+    == "network.detail.wifi,network.detail.wired,network.detail.public,network.detail.vpn.1,network.detail.vpn.2,network.detail.vpn.3"
+)
+local vpn = items["network.vpn"]
+assert(not items.vpn)
+assert(vpn.config.label.width == ssid.config.label.width)
+assert(vpn.config.label.align == "right")
+assert(vpn.config.label.padding_left + vpn.config.label.padding_right < vpn.config.label.width)
+assert(vpn.config.label.string == "􀎥" and vpn.config.label.color == "red")
+vpn_out = "status\tconnected\nname\tTailscale\ntailscale\tRunning\nexit\tNone\n"
+vpn.callbacks.routine()
+assert(vpn.config.label.string == "􀎡" and vpn.config.label.color == "white")
+assert(items["network.detail.vpn.1"].config.label.string == "VPN: Tailscale")
+assert(items["network.detail.vpn.2"].config.label.string == "Tailscale: Running")
+assert(items["network.detail.vpn.3"].config.label.string == "Exit node: None")
+vpn_out = "status\tdisconnected\nname\tDisconnected\n"
+vpn.callbacks.system_woke()
+assert(vpn.config.label.string == "􀎥" and vpn.config.label.color == "red")
+assert(not items["network.detail.vpn.2"].config.drawing)
+assert(not items["network.detail.vpn.3"].config.drawing)
 assert(public_requests == 0) -- No external request at startup or while hidden.
 assert(wifi_detail.config.position == "popup.network" and wired_detail.config.position == "popup.network")
 assert(wifi_detail.config.label.string == "Wi-Fi: Home — 192.168.1.20 [192.168.1.1]")
 assert(wired_detail.config.label.string == "Wired: Disconnected")
-assert(commands[1] == "sketchybar-network-status")
+assert(commands[2] == "sketchybar-network-status")
 local function update(value)
   result = value
   network.callbacks.routine()
 end
 assert(ssid.config.label.string == "Home")
-assert(network.config.label.string == "􀙇  󰈂")
-for _, item in ipairs({ network, ssid }) do
+assert(network.config.label.string == "􀙇 󰈂")
+for _, item in ipairs({ network, ssid, vpn }) do
   assert(not item.callbacks["mouse.exited.global"])
   item.callbacks["mouse.entered"]()
   assert(network.config.popup.drawing)
@@ -94,7 +117,7 @@ for _, fixture in ipairs({
   assert(ssid.config.label.string == fixture[2], ssid.config.label.string)
   assert(wifi_detail.config.label.string == "Wi-Fi: " .. fixture[1] .. " — No IP [Gateway unavailable]")
   assert(wired_detail.config.label.string == "Wired: Speed unavailable — No IP [Gateway unavailable]")
-  assert(network.config.label.string == "􀙇  󰈁")
+  assert(network.config.label.string == "􀙇 󰈁")
 end
 update({
   status = "connected",
@@ -123,13 +146,13 @@ for _, wired in ipairs({ false, true }) do
   update({ status = "disconnected", wired = wired })
   assert(ssid.config.label.string == "")
   assert(wifi_detail.config.label.string == "Wi-Fi: Disconnected")
-  assert(network.config.label.string == "􀙈  " .. (wired and "󰈁" or "󰈂"))
+  assert(network.config.label.string == "􀙈 " .. (wired and "󰈁" or "󰈂"))
 end
 update({ status = "connected", ssid = "", reason = "Permission required", wired = true })
 assert(ssid.config.label.string == "Unknown")
 assert(wifi_detail.config.label.string == "Wi-Fi: Permission required — No IP [Gateway unavailable]")
 assert(wired_detail.config.label.string == "Wired: Speed unavailable — No IP [Gateway unavailable]")
-assert(network.config.label.string == "􀙇  󰈁")
+assert(network.config.label.string == "􀙇 󰈁")
 update("not json")
 assert(ssid.config.label.string == "Unknown")
 assert(wifi_detail.config.label.string:match("Wi%-Fi status unavailable"))

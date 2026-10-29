@@ -1,4 +1,4 @@
--- Immediately after VPN on the left. The root LaunchDaemon publishes only
+-- Immediately after bandwidth on the left. The root LaunchDaemon publishes only
 -- preferences; this item never invokes sudo or Little Snitch's privileged CLI.
 local utils = require("utils")
 local AMBER = COLORS.mocha_peach -- Match the other indicators' theme warning color.

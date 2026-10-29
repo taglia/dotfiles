@@ -50,7 +50,7 @@ SBAR.default(default_item)
 -- auto-enables background.drawing, and within a single table the key order
 -- is pairs() order (random), so an inline drawing=false could be applied
 -- before color and get re-enabled. Items opt in to a visible background
--- themselves (e.g. the VPN pill).
+-- themselves (e.g. workspace indicators).
 SBAR.default({ background = { drawing = false } })
 -- Add Bar
 -- nix adaptation: explicitly enable drawing. Under the Home Manager wrapper

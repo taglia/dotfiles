@@ -7,8 +7,7 @@ SBAR.begin_config() -- Pauses redraw for faster loading
 require("items.spaces")
 require("items.network")
 require("items.bandwidth")
-require("items.vpn")
-require("items.littlesnitch") -- Warning immediately to the right of VPN.
+require("items.littlesnitch") -- Warning immediately to the right of bandwidth.
 
 -- Right Side (Order: Right -> Left)
 require("items.calendar")

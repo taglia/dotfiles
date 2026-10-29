@@ -9,27 +9,14 @@ local network = SBAR.add("item", "network", {
   update_freq = 30,
   icon = { drawing = false },
   label = {
-    string = "􀙇  󰈂",
+    string = "􀙇 󰈂",
     font = { family = "Hack Nerd Font", style = "Regular", size = 16.0 },
     align = "center",
-    width = width,
+    width = 64,
     padding_left = 4,
     padding_right = 4,
   },
   popup = { align = "center" },
-})
-local name = SBAR.add("item", "network.ssid", {
-  position = "left",
-  y_offset = -8,
-  icon = { drawing = false },
-  label = {
-    string = "…",
-    font = { family = "Hack Nerd Font", style = "Regular", size = 11.0 },
-    align = "center",
-    width = width,
-    padding_left = 4,
-    padding_right = 4,
-  },
 })
 local details = {}
 local titles = { wifi = "Wi-Fi", wired = "Wired", public = "Public IP" }
@@ -46,6 +33,21 @@ for _, kind in ipairs({ "wifi", "wired", "public" }) do
     },
   })
 end
+
+local vpn = require("items.vpn")(network)
+local name = SBAR.add("item", "network.ssid", {
+  position = "left",
+  y_offset = -8,
+  icon = { drawing = false },
+  label = {
+    string = "…",
+    font = { family = "Hack Nerd Font", style = "Regular", size = 11.0 },
+    align = "center",
+    width = width,
+    padding_left = 4,
+    padding_right = 4,
+  },
+})
 
 -- Keep external lookups separate from local interface/SSID probes. Only fetch
 -- while the popup is open, at most once per minute (including failed requests).
@@ -169,7 +171,7 @@ local function update()
     local wired = result.wired == true
     network:set({
       label = {
-        string = (disconnected and "􀙈" or "􀙇") .. "  " .. (wired and "󰈁" or "󰈂"),
+        string = (disconnected and "􀙈" or "􀙇") .. " " .. (wired and "󰈁" or "󰈂"),
         color = disconnected and not wired and COLORS.mocha_overlay_1 or COLORS.mocha_text,
       },
     })
@@ -180,13 +182,14 @@ local function update()
   end)
 end
 
-utils.hover_popup(network, { network, name }, function(open)
+utils.hover_popup(network, { network, name, vpn.item }, function(open)
   popup_open = open
   if open then
+    vpn.update()
     update_public_ip()
   end
 end)
-for _, item in ipairs({ network, name }) do
+for _, item in ipairs({ network, name, vpn.item }) do
   item:subscribe("mouse.clicked", function()
     SBAR.exec("open 'x-apple.systempreferences:com.apple.preference.network'")
   end)

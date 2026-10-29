@@ -59,7 +59,7 @@ nix shell --inputs-from . nixpkgs#lua --command lua scripts/check-sketchybar-blu
 
 ## Little Snitch warning
 
-Immediately right of VPN: a large red `􀞟` when Silent Allow is selected **or**
+Immediately right of bandwidth: a large red `􀞟` when Silent Allow is selected **or**
 `networkFilterEnabled` is false. Hidden in Alert or Silent Deny with the filter
 enabled. Amber means the CLI is disabled or status is unavailable, incomplete,
 or older than 120 seconds; it never silently treats a failed probe as protected.
@@ -113,7 +113,7 @@ area): opaque near-black background, pure-white text, and a bright focused
 workspace pill.
 - **Left** (left → right): AeroSpace workspaces (`items/spaces.lua`), network
   (`items/network.lua`), upload/download bandwidth (`items/bandwidth.lua`),
-  VPN (`items/vpn.lua`), Little Snitch warning (`items/littlesnitch.lua`).
+  Little Snitch warning (`items/littlesnitch.lua`).
   Workspaces 1–9 highlight the focused workspace;
   no macOS Spaces or `rift`. Clicking bandwidth opens Little Snitch Network Monitor.
 - **Right** (left → right): backup indicators when visible (CCC, Time Machine),
@@ -140,7 +140,7 @@ Layout/bandwidth regression check: `lua scripts/check-sketchybar-layout.lua`.
 
 ## Hover popups and click actions
 
-Hover over a workspace, CPU, memory, network, VPN, either calendar row, the
+Hover over a workspace, CPU, memory, network, either calendar row, the
 front-app icon, or a visible backup indicator to open its details popup. Hover information never
 expands an in-bar label or replaces an icon. Every popup closes immediately when
 the pointer leaves its bar item, including moving down toward the popup itself.
@@ -152,7 +152,6 @@ inside their popups; finishing a backup also closes a popup if its icon is hidde
 - **Workspace click:** switches to that AeroSpace workspace, as before.
 - **CPU / memory click:** opens Activity Monitor.
 - **Disk click:** opens Disk Utility.
-- **VPN click:** opens the Tailscale GUI app (not its CLI).
 - **Calendar:** hover for the world-clock popup; click either time or date to
   open The Clock.
 - **Front app click:** quits the focused app, retaining the system-app denylist;
@@ -190,10 +189,11 @@ mocked AeroSpace responses without changing workspaces or opening applications.
 
 ## Network indicator
 
-`items/network.lua` sits between workspaces and bandwidth on the left. The top row contains Wi-Fi and
-wired-link icons, independently crossed out when disconnected. The bottom row
+`items/network.lua` sits between workspaces and bandwidth on the left. The top row contains tightly spaced Wi-Fi, wired-link, and VPN icons within the original widget width.
+Wi-Fi and wired-link icons are independently crossed out when disconnected.
+VPN uses `􀎡` in the normal text color when connected, or red `􀎥` when disconnected. The bottom row
 shows the SSID (first 10 Unicode code points plus `…` for longer names). Hover
-over either row for a three-row popup; click either row to open macOS Network Settings.
+over either row (including the VPN symbol) for connection details; click either row to open macOS Network Settings.
 The popup shows the full SSID on the Wi-Fi row and adapter-reported link speed on
 the wired row, each followed by its local IPv4 address and gateway in brackets:
 
@@ -201,7 +201,14 @@ the wired row, each followed by its local IPv4 address and gateway in brackets:
 Wi-Fi: Full SSID — 192.168.1.20 [192.168.1.1]
 Wired: 2.5 Gbps — 192.168.2.20 [192.168.2.1]
 Public IP: 203.0.113.7
+VPN: Tailscale
+Tailscale: Running
+Exit node: None
 ```
+
+VPN details appear at the bottom; Tailscale and exit-node rows are shown only when
+reported by the existing VPN helper. VPN status refreshes every 60 seconds, on
+wake, Wi-Fi changes, and hover.
 
 Disconnected links say `Disconnected`. Active links without IPv4 say `No IP`;
 missing gateways or link speeds say `Gateway unavailable` or `Speed unavailable`.
@@ -449,7 +456,7 @@ Regression checks: `bash scripts/check-timemachine.sh`,
 
 ```
 sketchybarrc        entry point (executable, #!/usr/bin/env lua)
-init.lua            left→right: spaces, network, bandwidth, VPN;
+init.lua            left→right: spaces, network (including VPN), bandwidth;
                     right, left→right: CCC/Time Machine (when visible), front_app,
                     CPU, RAM, disk, battery, volume, calendar
 globals.lua         SBAR / COLORS / DEFAULT_ITEM globals
@@ -462,8 +469,8 @@ items/resources.lua right-side CPU + RAM + disk usage group
 items/bandwidth.lua left-side upload/download rates (click = Little Snitch)
 items/calendar.lua  local time/date + world-clock popup (8 zones;
                     DST probe: helpers/next-dst-change.sh)
-items/vpn.lua       VPN status indicator (probe: helpers/vpn-status.sh)
-items/network.lua   stacked Wi-Fi + wired icons / SSID (helpers/network-status.sh)
+items/vpn.lua       embedded network VPN symbol/details (helpers/vpn-status.sh)
+items/network.lua   stacked Wi-Fi + wired + VPN icons / SSID (helpers/network-status.sh)
 items/front_app.lua frontmost-app icon (hover = app/quit popup, click = quit)
 items/*.lua         battery, volume
 ```

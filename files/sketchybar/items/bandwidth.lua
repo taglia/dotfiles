@@ -1,4 +1,4 @@
--- Network bandwidth: two stacked upload/download rows, on the left after VPN.
+-- Network bandwidth: two stacked upload/download rows, on the left after network.
 -- Kept separate from the CPU/RAM/disk group so init.lua controls their placement.
 local bandwidth_up = SBAR.add("item", "bandwidth.up", {
   position = "left",
