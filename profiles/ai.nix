@@ -14,13 +14,10 @@ let
   pkgs-unstable = import inputs.nixpkgs-unstable {
     system = pkgs.stdenv.hostPlatform.system;
 
-    # crush is FSL-1.1-MIT: unfree per nixpkgs (non-compete clause) but
-    # redistributable, so it must be opted into here like claude-code.
     config.allowUnfreePredicate =
       pkg:
       builtins.elem (lib.getName pkg) [
         "claude-code"
-        "crush"
       ];
   };
 
@@ -92,14 +89,11 @@ in
     ../modules/home/claude-code.nix
     ../modules/home/opencode.nix
     ../modules/home/pi.nix
-    ../modules/home/crush.nix
   ];
 
-  # Makes the configured unstable instance above available to the imported
-  # modules as an ordinary module argument (crush.nix takes `pkgs-unstable`),
-  # keeping it a real module instead of a hand-applied function. `piNodejs`
-  # is passed the same way so pi.nix cannot drift to a different runtime.
-  _module.args = { inherit pkgs-unstable piNodejs; };
+  # Passes the shared Node runtime to pi.nix as an ordinary module argument,
+  # so it cannot drift to a different runtime than the one used here.
+  _module.args = { inherit piNodejs; };
 
   # `services.ollama` installs the `ollama` package itself and runs
   # `ollama serve` as a managed background service: a user LaunchAgent
@@ -125,15 +119,14 @@ in
     pkgs.rtk
     # claude-code is also a Bun executable, but upstream already builds it with
     # Bun 1.4.4 (checked on 2.1.303 via the embedded `bun/1.4.4` string), so
-    # no override is needed. codex, crush, nono and ollama are Rust/Go and do
-    # not link the Brotli C library.
+    # no override is needed. codex, nono and ollama are Rust/Go and do not
+    # link the Brotli C library.
     pkgs-unstable.claude-code
     pkgs-unstable.codex
     opencode
-    # crush is installed via the wrapper in modules/home/crush.nix, which
-    # references the real binary by absolute store path and shadows it in
-    # PATH to block unreviewed project-local config. nono is installed for
-    # manual sandboxing (see crush.nix); the wrapper does not invoke it.
+    # nono sandboxes Pi on demand (`pi-sandbox` alias in pi.nix). Crush was
+    # removed on 2026-10-31: its FSL license is unfree, so Hydra never caches
+    # it and every unstable bump forced a full Go rebuild on every host.
     pkgs-unstable.nono
     pi-coding-agent
     pi-npm

@@ -73,8 +73,8 @@ let
   # `${XDG_RUNTIME_DIR}/agenix/foo` into `/agenix/foo`.  Give secrets exposed
   # through envVarFile a stable, cross-platform consumer symlink while their
   # decrypted backing files remain in agenix's per-OS runtime directory.
-  # The directory constant is shared with the runtime consumer (crush.nix)
-  # through ../lib/secrets-runtime.nix.
+  # The directory constant lives in ../lib/secrets-runtime.nix so runtime
+  # consumers (tools expanding secrets at startup) can share it.
   secretsRuntime = import ../lib/secrets-runtime.nix;
   envFilePath = name: "${config.home.homeDirectory}/${secretsRuntime.dir}/${name}";
 in

@@ -6,7 +6,6 @@
 #
 # Consumers:
 #   - modules/home/pi.nix        (models.json providers + model metadata)
-#   - modules/home/crush.nix     (crush.json providers + default model pair)
 #   - modules/home/opencode.nix  (opencode.json provider + default model pair)
 #
 # Endpoints are pinned here on purpose (see the consumers' comments): a
