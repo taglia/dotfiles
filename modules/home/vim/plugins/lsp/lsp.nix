@@ -49,6 +49,18 @@
         };
         marksman = {
           enable = true;
+          # BUILD FIX (2026-10-31): marksman's default runtime is the
+          # source-built dotnet 9, which Hydra has not cached for
+          # aarch64-darwin since the 9.0.22 bump, so it compiled the entire
+          # .NET SDK locally (hours). The prebuilt runtime is cached on all
+          # platforms and functionally identical for marksman. Drop the
+          # override once nixpkgs#dotnetCorePackages.runtime_9_0 substitutes
+          # on aarch64-darwin again (see AGENTS.md, "Pending upstream checks").
+          package = pkgs.marksman.override {
+            dotnetCorePackages = pkgs.dotnetCorePackages // {
+              runtime_9_0 = pkgs.dotnetCorePackages.runtime_9_0-bin;
+            };
+          };
         };
         nil_ls = {
           enable = true;

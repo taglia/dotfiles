@@ -3,6 +3,24 @@
   pkgs,
   ...
 }:
+let
+  # BUILD FIX (2026-10-31): stable's bicep is no longer in the binary cache for
+  # aarch64-darwin and fails to build there: its Grpc.Tools NuGet ships only
+  # x86_64 protoc/grpc_csharp_plugin for macOS ("Bad CPU type in executable"
+  # without Rosetta; NixOS/nixpkgs#565350). Point Grpc.Tools at nixpkgs' own
+  # binaries instead, mirroring the open upstream fix NixOS/nixpkgs#579953.
+  # protobuf_29 matches the Google.Protobuf 3.29 runtime bicep 0.36 depends on.
+  # Drop this override once `nix build nixpkgs#bicep` succeeds (or is cached)
+  # on aarch64-darwin again.
+  bicep = pkgs.bicep.overrideAttrs (prev: {
+    env =
+      (prev.env or { })
+      // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+        PROTOBUF_PROTOC = lib.getExe' pkgs.protobuf_29 "protoc";
+        GRPC_PROTOC_PLUGIN = lib.getExe' pkgs.grpc "grpc_csharp_plugin";
+      };
+  });
+in
 {
   config = {
     extraConfigLuaPre =
@@ -154,7 +172,7 @@
             command = "${lib.getExe pkgs.shellharden}";
           };
           bicep = {
-            command = "${lib.getExe pkgs.bicep}";
+            command = "${lib.getExe bicep}";
           };
         };
       };

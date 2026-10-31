@@ -1,5 +1,10 @@
 [tools]
-node = "24"
+# SECURITY PIN (2026-10-31): mise's Node shim sits ahead of the Nix profile in
+# PATH, so it is the `node`/`npm` that shells and Pi actually run. A bare "24"
+# resolved to 24.18.0, which predates the October 2026 Node security release
+# and the Brotli CVE-2026-111497 fix. Keep this at or above 24.22.1; relax it
+# back to "24" once the fuzzy resolution lands on a patched release anyway.
+node = "24.22.1"
 python = "latest"
 uv = "latest"
 

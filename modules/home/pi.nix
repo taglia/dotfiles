@@ -1,7 +1,9 @@
 {
-  inputs,
   lib,
   pkgs,
+  # Stable-channel Node shared with profiles/ai.nix (see the SECURITY PIN note
+  # there); the same runtime builds Pi, runs Pi and installs its extensions.
+  piNodejs,
   ...
 }:
 
@@ -10,7 +12,7 @@ let
   aiProviders = import ../../lib/ai-providers.nix;
 
   # Keep Pi's selection and thinking controls local; shared model facts and
-  # pricing come exclusively from the catalog used by Crush and OpenCode.
+  # pricing come exclusively from the catalog shared with OpenCode.
   ollamaCloudIds = [
     "minimax-m3"
     "kimi-k2.7-code"
@@ -81,8 +83,7 @@ let
 
   minimalWebSource = ../../files/pi/agent/extensions/minimal-web;
   settingsSource = ../../files/pi/agent/settings.json;
-  piPackageManagerNodejs =
-    inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.nodejs;
+  piPackageManagerNodejs = piNodejs;
 
   catppuccin = import ../../lib/catppuccin.nix;
   inherit (catppuccin) palette;
@@ -263,13 +264,14 @@ in
     fi
   '';
 
-  # pi-coding-agent ships its own bundled Node runtime, but at runtime it
-  # shells out to a bare `npm` (see the `pi-vim` install into
+  # pi-coding-agent's wrapper execs a fixed Node from the store, but at runtime
+  # it also shells out to a bare `npm` (see the `pi-vim` install into
   # ~/.pi/agent/npm) and relies on `npm` being on PATH. Provide nodejs here so
   # `npm`/`node` resolve wherever this profile (and thus pi-coding-agent) is
   # active. On hosts that manage Node via mise, mise's shims stay ahead of the
   # Nix profile in PATH, so this only fills the gap on hosts without a
-  # mise-installed Node (e.g. a fresh VM).
+  # mise-installed Node (e.g. a fresh VM); the mise-managed Node is pinned to a
+  # patched release in files/mise/config.toml for the same reason.
   home.packages = [ piPackageManagerNodejs ];
 
   # pi contacts pi.dev at startup to look for a newer pi release and shows a
