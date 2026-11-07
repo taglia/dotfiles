@@ -35,11 +35,25 @@ sync.
   set `piNodejs = pkgs-unstable.nodejs` and drop the `pi-coding-agent`
   override. Also relax `node = "24.22.1"` in `files/mise/config.toml` to `"24"`
   once mise's fuzzy resolution picks a patched release on its own.
-- **OpenCode built with Bun 1.4.4** (`profiles/ai.nix` `bun-fixed`): Bun < 1.4.4
-  embeds the vulnerable Brotli. Remove `bun-fixed` and go back to plain
-  `pkgs-unstable.opencode` once `nix eval --inputs-from . nixpkgs-unstable#bun.version`
-  is >= 1.4.4 (bump tracked in
-  [NixOS/nixpkgs#574334](https://github.com/NixOS/nixpkgs/pull/574334)).
+- **Pi 1.5.0 missing `@earendil-works/pi-schema`** (`profiles/ai.nix`
+  `pi-coding-agent` `overrideAttrs`): nixpkgs' postInstall does not copy the
+  new `packages/schema` workspace into `node_modules`, so pi-ai and every
+  extension fail to load (nixpkgs issue
+  [#583791](https://github.com/NixOS/nixpkgs/issues/583791), fix in
+  [PR 582756](https://github.com/NixOS/nixpkgs/pull/582756)). The override
+  copies it in and disables itself once upstream's `postInstall` mentions
+  `pi-schema`; remove the `overrideAttrs` block once
+  `nix eval --inputs-from . nixpkgs-unstable#pi-coding-agent.postInstall`
+  contains `pi-schema`.
+- **opencode 2.2.5 node_modules hash** (`profiles/ai.nix` `opencode`
+  `overrideAttrs`): the locked nixos-unstable declares a wrong fixed-output
+  hash for opencode's `node_modules`, so the package fails to build on Linux
+  and Darwin ([#583797](https://github.com/NixOS/nixpkgs/issues/583797)).
+  nixpkgs master fixed it on 2026-11-04 (commit `c399e1b7f`, per-platform
+  hashes); the override applies those hashes only while the broken hash is
+  still declared. Remove it once
+  `nix eval --inputs-from . nixpkgs-unstable#opencode.node_modules.outputHash`
+  no longer prints `sha256-xfOVcw1+waLVNhFDwzOtzxrUSQEogvn88YomydOlhwc=`.
 - **marksman on the binary .NET runtime** (`modules/home/vim/plugins/lsp/lsp.nix`):
   the stable lock's source-built `dotnetCorePackages.runtime_9_0` (9.0.22) is
   not in the binary cache for aarch64-darwin, which made marksman rebuild the

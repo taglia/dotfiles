@@ -3,12 +3,22 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# Nix, not Bash, expands the system interpolation in this expression.
+# Test against the Pi package the AI profile actually installs (profiles/ai.nix
+# overrides nixpkgs' pi-coding-agent: stable Node runtime, packaging fixes),
+# taken from the home configuration for this system. Systems without an AI
+# home configuration fall back to the plain nixpkgs-unstable package.
+# Nix, not Bash, expands the interpolations in this expression.
 # shellcheck disable=SC2016
 pi_package=$(nix build --impure --no-link --print-out-paths --expr '
   let f = builtins.getFlake (toString ./.);
-      pkgs = f.inputs.nixpkgs-unstable.legacyPackages.${builtins.currentSystem};
-  in pkgs.pi-coding-agent')
+      system = builtins.currentSystem;
+      pkgs = f.inputs.nixpkgs-unstable.legacyPackages.${system};
+      lib = pkgs.lib;
+      aiHome = { aarch64-darwin = "mbp"; x86_64-linux = "linux-ai"; }.${system} or null;
+      fromHome = lib.findFirst (p: (p.pname or "") == "pi-coding-agent") null
+        f.homeConfigurations.${aiHome}.config.home.packages;
+  in if aiHome == null then pkgs.pi-coding-agent
+     else assert fromHome != null; fromHome')
 sdk="$pi_package/lib/node_modules/pi-monorepo"
 
 # Typecheck against the actual pinned SDK without npm installs or leaving

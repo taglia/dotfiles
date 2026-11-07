@@ -45,43 +45,48 @@ let
   # Pi's `bin/pi` wrapper execs the Node that buildNpmPackage was given, so
   # swapping it is the only way to run Pi on the patched runtime. This rebuilds
   # the pi npm bundle locally (not Node itself).
-  pi-coding-agent = pkgs-unstable.pi-coding-agent.override {
-    buildNpmPackage = pkgs-unstable.buildNpmPackage.override { nodejs = piNodejs; };
-  };
+  pi-coding-agent =
+    (pkgs-unstable.pi-coding-agent.override {
+      buildNpmPackage = pkgs-unstable.buildNpmPackage.override { nodejs = piNodejs; };
+    }).overrideAttrs
+      (prev: {
+        # PACKAGING FIX (2026-11-07): Pi 1.5.0 added the `packages/schema`
+        # workspace (`@earendil-works/pi-schema`), a runtime dependency of pi-ai.
+        # nixpkgs' postInstall copies the other workspaces into node_modules but
+        # not this one, then deletes its symlink as dangling, so `pi --version`
+        # works while loading pi-ai (every extension, subagents) fails with
+        # ERR_MODULE_NOT_FOUND. Copy it the same way nixpkgs does for the
+        # others. Mirrors NixOS/nixpkgs#582756 and is a no-op once that lands
+        # (see AGENTS.md, "Pending upstream checks").
+        postInstall =
+          prev.postInstall
+          + lib.optionalString (!lib.hasInfix "pi-schema" prev.postInstall) ''
+            cp -r packages/schema \
+              "$out/lib/node_modules/pi-monorepo/node_modules/@earendil-works/pi-schema"
+          '';
+      });
 
-  # SECURITY PIN (2026-10-31): OpenCode is a Bun single-file executable, so it
-  # embeds Bun's copy of Brotli. Bun < 1.4.4 carries the vulnerable Brotli
-  # (CVE-2026-111497); nixpkgs still packages 1.4.2 (bump pending in
-  # NixOS/nixpkgs#574334). Build OpenCode with Bun 1.4.4 until unstable
-  # catches up, then drop `bun-fixed` and use `pkgs-unstable.opencode` again.
-  # `src` and the download URLs read `finalAttrs.version`/`passthru.sources`,
-  # so overriding those two is enough.
-  bun-fixed = pkgs-unstable.bun.overrideAttrs (
-    finalAttrs: _prev: {
-      version = "1.4.4";
-      # Tell mkDerivation the version bump is deliberate (silences its warning).
-      __intentionallyOverridingVersion = true;
-      passthru.sources =
-        let
-          release = "https://github.com/oven-sh/bun/releases/download/bun-v${finalAttrs.version}";
-        in
-        {
-          "aarch64-darwin" = pkgs-unstable.fetchurl {
-            url = "${release}/bun-darwin-aarch64.zip";
-            hash = "sha256-wkDX8My5DCY6hJ/NsJt+5iYw2SE0jtaq/ahrnVd7xRA=";
-          };
-          "aarch64-linux" = pkgs-unstable.fetchurl {
-            url = "${release}/bun-linux-aarch64.zip";
-            hash = "sha256-uqa7NvUdblhWHgK76oJQOKnfRU9nPW13bou/hvjHhQ4=";
-          };
-          "x86_64-linux" = pkgs-unstable.fetchurl {
-            url = "${release}/bun-linux-x64-baseline.zip";
-            hash = "sha256-4ERutVmVdy65iUvrrppr42jZhai5Jx7hJEhvmUbu3XY=";
-          };
+  # PACKAGING FIX (2026-11-07): the locked nixos-unstable's opencode 2.2.5 has a
+  # wrong `node_modules` fixed-output hash, so it fails to build on every
+  # platform (nixpkgs issue #583797). Master already corrected it one day after
+  # the locked revision (commit c399e1b7f, "opencode: fix hash") with
+  # per-platform hashes; the Darwin one was reproduced locally. Apply the same
+  # hashes while the broken one is still what nixpkgs declares; this is a no-op
+  # once the fix reaches the lock (see AGENTS.md, "Pending upstream checks").
+  opencode = pkgs-unstable.opencode.overrideAttrs (
+    prev:
+    lib.optionalAttrs
+      (prev.node_modules.outputHash == "sha256-xfOVcw1+waLVNhFDwzOtzxrUSQEogvn88YomydOlhwc=")
+      {
+        node_modules = prev.node_modules.overrideAttrs {
+          outputHash =
+            if pkgs.stdenv.hostPlatform.isLinux then
+              "sha256-prx9dX7kUvs/E3zopkaPk5LXh3xJAy5sZeum/W8L7cA="
+            else
+              "sha256-dIveiaiPFGSItwLyeMuPDxTE9gpvvnlTCB/+nG24qCc=";
         };
-    }
+      }
   );
-  opencode = pkgs-unstable.opencode.override { bun = bun-fixed; };
 in
 
 {
@@ -117,10 +122,12 @@ in
     # builds cleanly. Move back to unstable once nixos-unstable carries the
     # fix and you want the newer release.
     pkgs.rtk
-    # claude-code is also a Bun executable, but upstream already builds it with
-    # Bun 1.4.4 (checked on 2.1.303 via the embedded `bun/1.4.4` string), so
-    # no override is needed. codex, nono and ollama are Rust/Go and do not
-    # link the Brotli C library.
+    # claude-code and opencode are Bun executables, so they embed Bun's copy of
+    # Brotli (CVE-2026-111497, fixed in Bun 1.4.4). Upstream builds claude-code
+    # with Bun 1.4.4 (checked on 2.1.303 via the embedded `bun/1.4.4` string),
+    # and nixos-unstable builds opencode with its own bun 1.4.4 since
+    # 2026-11-07 (the temporary `bun-fixed` override was dropped then). codex,
+    # nono and ollama are Rust/Go and do not link the Brotli C library.
     pkgs-unstable.claude-code
     pkgs-unstable.codex
     opencode
