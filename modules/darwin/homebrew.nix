@@ -119,7 +119,7 @@ in
       "kitty"
       "knockknock"
       "linearmouse"
-      "lingon-x"
+      "lingon-pro"
       "little-snitch"
       "loopback"
       "menuwhere"

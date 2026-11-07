@@ -135,7 +135,7 @@ Homebrew and Mac App Store apps are declared in `modules/darwin/homebrew.nix`. C
 
 Mac App Store apps require the Mac to be signed into an Apple ID that owns those apps. Keep `homebrew.masApps` complete when cleanup is enabled.
 
-Routine update steps are in [`UPDATE-RUNBOOK.md`](UPDATE-RUNBOOK.md). Normal cask upgrades intentionally omit `--greedy` and `--force`; use the selective monthly recipe for a self-updating or unversioned cask that still needs Homebrew to update it.
+Routine update steps are in [`UPDATE-RUNBOOK.md`](UPDATE-RUNBOOK.md). Normal cask upgrades intentionally omit `--greedy` and `--force`. Homebrew still upgrades a self-updating (`auto_updates`) cask when the installed app bundle is older than the catalog, and skips one the app already updated itself. `just check-brew-greedy` is a diagnostic rather than an upgrade queue; the runbook explains how to read it. All brew recipes refuse to run as anyone but the Homebrew admin user, because the API catalog cache is per user and only the admin can refresh it.
 
 Native Nix packages, fonts, and terminfo installed into the nix-darwin system profile live in `modules/darwin/packages.nix`. macOS system preferences are split by concern: Dock/Finder/Spaces in `modules/darwin/desktop.nix`, keyboard/trackpad/text input in `modules/darwin/input.nix`, and the remaining `system.defaults.*` (power, login window, control center, per-app defaults, environment) in `modules/darwin/system.nix`. AeroSpace and its native-tiling-disabling companion settings live in `modules/darwin/aerospace.nix`.
 
