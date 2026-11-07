@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   catppuccin = import ../../lib/catppuccin.nix;
@@ -99,6 +104,22 @@ in
   home.file.".claude/themes/catppuccin-mocha.json" = {
     source = claudeThemeJson;
     force = true;
+  };
+
+  # Stable launcher for GUI apps that need a fixed path to `claude` (Rhino's
+  # AI integration). GUI apps inherit launchd's environment, not the shell's,
+  # so the nixpkgs wrapper (which derives NODE_EXTRA_CA_CERTS from
+  # NIX_SSL_CERT_FILE) finds no CA bundle and every API call fails with
+  # UNABLE_TO_GET_ISSUER_CERT_LOCALLY. Point it at the system-wide bundle
+  # that nix-darwin/NixOS install, then hand over to the profile binary so
+  # this file never has to change when the store path does.
+  home.file.".local/bin/claude" = {
+    executable = true;
+    text = ''
+      #!/bin/sh
+      export NODE_EXTRA_CA_CERTS="''${NODE_EXTRA_CA_CERTS:-/etc/ssl/certs/ca-certificates.crt}"
+      exec ${config.home.profileDirectory}/bin/claude "$@"
+    '';
   };
 
   # settings.json cannot be a store symlink (Claude Code rewrites it at
