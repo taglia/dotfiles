@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
@@ -47,6 +48,23 @@ let
   # empty one keeps existing (and keeps its SketchyBar slot) instead of being
   # garbage-collected.
   workspaces = map toString (lib.range 1 9);
+
+  # alt-N focuses workspace N; pressing it again on that workspace bounces
+  # back to the previous one (--auto-back-and-forth). alt-shift-N moves the
+  # focused window there without following it.
+  workspaceBindings = lib.listToAttrs (
+    lib.concatMap (ws: [
+      (lib.nameValuePair "alt-${ws}" "workspace --auto-back-and-forth ${ws}")
+      (lib.nameValuePair "alt-shift-${ws}" "move-node-to-workspace ${ws}")
+    ]) workspaces
+  );
+
+  # Directional focus wraps at the workspace edge instead of stopping, and
+  # the pointer follows the newly focused window.
+  focusBinding = dir: [
+    "focus --boundaries-action wrap-around-the-workspace ${dir}"
+    "move-mouse window-lazy-center"
+  ];
 in
 {
   # Disable macOS' native tiling/snapping so AeroSpace is the sole window
@@ -81,6 +99,18 @@ in
       persistent-workspaces = workspaces;
 
       after-startup-command = [ bordersStart ] ++ openAtStartup;
+
+      # PATH for exec-and-forget bindings and callbacks. AeroSpace's own
+      # fallback is Homebrew + system paths only, so Nix-installed tools had
+      # to be called by store path; the Nix profiles come first here.
+      # ${PATH} is expanded by AeroSpace, not Nix.
+      exec.env-vars.PATH = lib.concatStringsSep ":" [
+        "/etc/profiles/per-user/${config.system.primaryUser}/bin"
+        "/run/current-system/sw/bin"
+        "/opt/homebrew/bin"
+        "/opt/homebrew/sbin"
+        "\${PATH}"
+      ];
 
       # Notify SketchyBar on AeroSpace workspace change so the workspace
       # indicator (files/sketchybar/items/spaces.lua) can highlight the
@@ -138,22 +168,10 @@ in
           alt-slash = "layout tiles horizontal vertical";
           alt-comma = "layout accordion horizontal vertical";
 
-          alt-h = [
-            "focus left"
-            "move-mouse window-lazy-center"
-          ];
-          alt-j = [
-            "focus down"
-            "move-mouse window-lazy-center"
-          ];
-          alt-k = [
-            "focus up"
-            "move-mouse window-lazy-center"
-          ];
-          alt-l = [
-            "focus right"
-            "move-mouse window-lazy-center"
-          ];
+          alt-h = focusBinding "left";
+          alt-j = focusBinding "down";
+          alt-k = focusBinding "up";
+          alt-l = focusBinding "right";
 
           alt-f = "fullscreen";
           alt-shift-f = "layout floating tiling";
@@ -163,34 +181,24 @@ in
           alt-shift-k = "move up";
           alt-shift-l = "move right";
 
+          # Swap exchanges the focused window with its neighbour and leaves
+          # the tree alone; `move` (alt-shift) restructures it instead.
+          alt-ctrl-h = "swap left";
+          alt-ctrl-j = "swap down";
+          alt-ctrl-k = "swap up";
+          alt-ctrl-l = "swap right";
+
           alt-shift-minus = "resize smart -50";
           alt-shift-equal = "resize smart +50";
 
-          alt-1 = "workspace 1";
-          alt-2 = "workspace 2";
-          alt-3 = "workspace 3";
-          alt-4 = "workspace 4";
-          alt-5 = "workspace 5";
-          alt-6 = "workspace 6";
-          alt-7 = "workspace 7";
-          alt-8 = "workspace 8";
-          alt-9 = "workspace 9";
-
-          alt-shift-1 = "move-node-to-workspace 1";
-          alt-shift-2 = "move-node-to-workspace 2";
-          alt-shift-3 = "move-node-to-workspace 3";
-          alt-shift-4 = "move-node-to-workspace 4";
-          alt-shift-5 = "move-node-to-workspace 5";
-          alt-shift-6 = "move-node-to-workspace 6";
-          alt-shift-7 = "move-node-to-workspace 7";
-          alt-shift-8 = "move-node-to-workspace 8";
-          alt-shift-9 = "move-node-to-workspace 9";
-
           alt-tab = "workspace-back-and-forth";
+          # No effect on workspaces 1 and 9: move-workspace-to-monitor refuses
+          # force-assigned workspaces (see below).
           alt-shift-tab = "move-workspace-to-monitor --wrap-around next";
 
           alt-shift-semicolon = "mode service";
-        };
+        }
+        // workspaceBindings;
 
         service.binding = {
           esc = [
@@ -209,6 +217,16 @@ in
             "close-all-windows-but-current"
             "mode main"
           ];
+          # Even out the window sizes on the workspace after a few resizes.
+          b = [
+            "balance-sizes"
+            "mode main"
+          ];
+          # Suspend tiling (screen sharing, games). While disabled AeroSpace
+          # intercepts no keys at all, so this only ever turns it off; turn
+          # it back on from the menu bar icon or with `aerospace enable on`,
+          # which also restores the main binding mode.
+          t = "enable toggle";
 
           alt-shift-h = [
             "join-with left"
