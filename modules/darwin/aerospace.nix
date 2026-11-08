@@ -16,6 +16,23 @@ let
   unstable = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
   inherit (import ../../lib/catppuccin.nix) palette;
   bordersStart = "exec-and-forget ${pkgs.jankyborders}/bin/borders style=round active_color=0xff${palette.yellow} inactive_color=0xff${palette.crust} width=5.0 blacklist=\"iPhone Mirroring\"";
+
+  # Apps opened when AeroSpace starts, i.e. at login, so their windows exist
+  # once the on-window-detected rules below are active. Deliberately short:
+  # every extra app slows login down. The rest is launched on demand by the
+  # Raycast script command in files/raycast/launch-secondary-apps.sh.
+  # `open -g` does not bring the app to the foreground and is a no-op when it
+  # is already running, so an AeroSpace restart (e.g. after darwin-rebuild
+  # switch) neither relaunches the apps nor steals focus. after-login-command
+  # would be the natural home, but it is deprecated since AeroSpace 0.19
+  # (https://github.com/nikitabobko/AeroSpace/issues/1482) and never fires
+  # under nix-darwin's launchd agent anyway.
+  startupApps = [
+    "Obsidian"
+    "Ghostty"
+    "Orion"
+  ];
+  openAtStartup = map (app: "exec-and-forget open -g -a '${app}'") startupApps;
 in
 {
   # Disable macOS' native tiling/snapping so AeroSpace is the sole window
@@ -34,8 +51,7 @@ in
     package = unstable.aerospace;
 
     settings = {
-      after-login-command = [ ];
-      after-startup-command = [ bordersStart ];
+      after-startup-command = [ bordersStart ] ++ openAtStartup;
 
       # Notify SketchyBar on AeroSpace workspace change so the workspace
       # indicator (files/sketchybar/items/spaces.lua) can highlight the

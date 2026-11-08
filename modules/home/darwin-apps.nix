@@ -29,6 +29,16 @@ in
     force = true;
   };
 
+  # Raycast script commands (https://github.com/raycast/script-commands). The
+  # directory must be registered once in Raycast > Settings > Extensions >
+  # Script Commands > Add Directories; Raycast then picks up every script in
+  # it. Scripts need the executable bit, which xdg.configFile sets here.
+  xdg.configFile."raycast/scripts/launch-secondary-apps.sh" = {
+    source = ../../files/raycast/launch-secondary-apps.sh;
+    executable = true;
+    force = true;
+  };
+
   home.activation.configureDarwinAppDefaults = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     /usr/bin/defaults write com.superultra.Homerow auto-switch-input-source-id -string com.apple.keylayout.ABC
     /usr/bin/defaults write com.superultra.Homerow disabled-bundle-paths -array \
