@@ -7,11 +7,14 @@
 --
 -- `aerospace.toml` (modules/darwin/aerospace.nix) runs
 --   <sketchybar> --trigger aerospace_focus_change
--- from on-focus-changed (window and workspace changes) and from the two
--- floating toggles (alt-shift-f, service-mode f), since toggling floating does
--- not change focus. On every event we RE-QUERY the focused window's layout,
--- the source of truth. With no focused window (empty workspace) list-windows
--- prints nothing and the pill hides. `aerospace` is on the wrapper's PATH via
+-- from on-focus-changed (window and workspace changes), from the two floating
+-- toggles (alt-shift-f, service-mode f), since toggling floating does not
+-- change focus, and from every on-window-detected rule that floats an app.
+-- On every event we RE-QUERY the focused window's layout, the source of
+-- truth, twice: immediately and again shortly after, because for a new window
+-- the focus event precedes the on-window-detected rules that may float it.
+-- With no focused window (empty workspace) list-windows prints nothing and
+-- the pill hides. `aerospace` is on the wrapper's PATH via
 -- programs.sketchybar.extraPackages.
 
 SBAR.add("event", "aerospace_focus_change")
@@ -47,6 +50,8 @@ local floating = SBAR.add("item", "aerospace_floating", {
 })
 
 local QUERY = "aerospace list-windows --focused --format '%{window-layout}'"
+-- Seconds to wait before the second query (sleep inside the async exec).
+local RECHECK_DELAY = 0.4
 
 local function update(out, code)
   local layout = (code == 0 and type(out) == "string") and out:gsub("%s+", "") or ""
@@ -55,6 +60,7 @@ end
 
 floating:subscribe("aerospace_focus_change", function()
   SBAR.exec(QUERY, update)
+  SBAR.exec("sleep " .. RECHECK_DELAY .. "; " .. QUERY, update)
 end)
 
 -- Best-effort initial state at load.

@@ -58,6 +58,14 @@ let
     (sketchybarTrigger "aerospace_focus_change")
   ];
 
+  # on-window-detected action for apps that should float, telling the bar
+  # afterwards: on-focus-changed fires for the new window before this rule
+  # has run, so items/floating.lua would otherwise still see it as tiled.
+  floatAndNotify = [
+    "layout floating"
+    (sketchybarTrigger "aerospace_focus_change")
+  ];
+
   # The workspaces bound to alt-N below. Also declared persistent, so an
   # empty one keeps existing (and keeps its SketchyBar slot) instead of being
   # garbage-collected.
@@ -349,23 +357,23 @@ in
         }
         {
           "if".app-id = "com.apple.MobileSMS"; # Messages
-          run = "layout floating";
+          run = floatAndNotify;
         }
         {
           "if".app-id = "com.agiletortoise.Drafts-OSX";
-          run = "layout floating";
+          run = floatAndNotify;
         }
         {
           "if".app-id = "org.whispersystems.signal-desktop";
-          run = "layout floating";
+          run = floatAndNotify;
         }
         {
           "if".app-name-regex-substring = "iPhone Mirroring";
-          run = "layout floating";
+          run = floatAndNotify;
         }
         {
           "if".app-id = "com.apple.ActivityMonitor";
-          run = "layout floating";
+          run = floatAndNotify;
         }
         {
           "if".app-id = "com.mitchellh.ghostty";
@@ -384,11 +392,11 @@ in
         }
         {
           "if".app-id = "com.1password.1password";
-          run = "layout floating";
+          run = floatAndNotify;
         }
         {
           "if".app-id = "com.protonmail.bridge";
-          run = "layout floating";
+          run = floatAndNotify;
         }
         {
           "if".workspace = "1";
