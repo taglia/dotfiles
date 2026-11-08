@@ -230,9 +230,11 @@ in
             "mode main"
           ];
           # Suspend tiling (screen sharing, games). While disabled AeroSpace
-          # intercepts no keys at all, so this only ever turns it off; turn
-          # it back on from the menu bar icon or with `aerospace enable on`,
-          # which also restores the main binding mode.
+          # intercepts no keys at all, so this only ever turns it off. The
+          # way back is the red "TILING OFF" pill SketchyBar shows meanwhile
+          # (files/sketchybar/items/mode.lua): clicking it runs `aerospace
+          # enable on`, which also restores the main binding mode. The menu
+          # bar icon and the CLI work too.
           t = "enable toggle";
 
           alt-shift-h = [
