@@ -204,8 +204,19 @@ in
       # workspace (e.g. Mail -> ws 2 -> ws 2 becomes accordion) without stealing
       # focus (no --focus-follows-window needed).
       on-window-detected = [
+        # Orion
         {
           "if".app-id = "com.kagi.kagimacOS";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 1";
+        }
+        {
+          "if".app-id = "com.devon-technologies.think";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 1";
+        }
+        {
+          "if".app-id = "md.obsidian";
           check-further-callbacks = true;
           run = "move-node-to-workspace 1";
         }
