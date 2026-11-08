@@ -122,6 +122,13 @@ in
         "${unstable.sketchybar}/bin/sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE"
       ];
 
+      # Notify SketchyBar on binding-mode change so items/mode.lua can show the
+      # service mode. The callback receives no variable with the new mode;
+      # mode.lua re-queries `aerospace list-modes --current`.
+      on-mode-changed = [
+        "exec-and-forget ${unstable.sketchybar}/bin/sketchybar --trigger aerospace_mode_change"
+      ];
+
       enable-normalization-flatten-containers = true;
       enable-normalization-opposite-orientation-for-nested-containers = true;
 

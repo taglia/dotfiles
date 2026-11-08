@@ -5,6 +5,7 @@ SBAR.begin_config() -- Pauses redraw for faster loading
 -- Left Side (Order: Left -> Right)
 -- AeroSpace triggers aerospace_workspace_change; see modules/darwin/aerospace.nix.
 require("items.spaces")
+require("items.mode") -- AeroSpace binding-mode pill; triggered by aerospace_mode_change.
 require("items.network")
 require("items.bandwidth")
 require("items.littlesnitch") -- Warning immediately to the right of bandwidth.
