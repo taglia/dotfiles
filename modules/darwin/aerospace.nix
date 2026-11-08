@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 # JankyBorders is started together with AeroSpace below via
 # `after-startup-command`. `borders <args>` starts the daemon on first call and
@@ -37,6 +42,11 @@ let
     "Ferdium"
   ];
   openAtStartup = map (app: "exec-and-forget open -g -a '${app}'") startupApps;
+
+  # The workspaces bound to alt-N below. Also declared persistent, so an
+  # empty one keeps existing (and keeps its SketchyBar slot) instead of being
+  # garbage-collected.
+  workspaces = map toString (lib.range 1 9);
 in
 {
   # Disable macOS' native tiling/snapping so AeroSpace is the sole window
@@ -50,11 +60,26 @@ in
     EnableStandardClickToShowDesktop = false;
   };
 
+  # Mission Control previews one group per app rather than one per window;
+  # with a workspace full of tiles the per-window thumbnails are too small to
+  # tell apart (recommended in the AeroSpace guide).
+  system.defaults.dock.expose-group-apps = true;
+
+  # Move a window by ctrl-cmd-dragging anywhere inside it, not only on its
+  # title bar (AeroSpace goodies). Had been set by hand on the mbp; declared
+  # here so it survives a reinstall.
+  system.defaults.NSGlobalDomain.NSWindowShouldDragOnGesture = true;
+
   services.aerospace = {
     enable = true;
     package = unstable.aerospace;
 
     settings = {
+      # Version 2 makes persistent-workspaces explicit; version 1 inferred it
+      # from the keybindings and reload-config warns about it since 0.21.
+      config-version = 2;
+      persistent-workspaces = workspaces;
+
       after-startup-command = [ bordersStart ] ++ openAtStartup;
 
       # Notify SketchyBar on AeroSpace workspace change so the workspace
@@ -265,6 +290,12 @@ in
           check-further-callbacks = true;
           run = "move-node-to-workspace 6";
         }
+        # Rhino 8 and the Rhino 9 beta are separate bundles.
+        {
+          "if".app-id = "com.mcneel.rhinoceros.8";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 6";
+        }
         {
           "if".app-id = "com.mcneel.rhinoceros.9";
           check-further-callbacks = true;
@@ -276,7 +307,7 @@ in
           run = "move-node-to-workspace 7";
         }
         {
-          "if".app-name-regex-substring = "Messages";
+          "if".app-id = "com.apple.MobileSMS"; # Messages
           run = "layout floating";
         }
         {
@@ -284,11 +315,7 @@ in
           run = "layout floating";
         }
         {
-          "if".app-name-regex-substring = "Signal";
-          run = "layout floating";
-        }
-        {
-          "if".app-name-regex-substring = "Threema";
+          "if".app-id = "org.whispersystems.signal-desktop";
           run = "layout floating";
         }
         {
