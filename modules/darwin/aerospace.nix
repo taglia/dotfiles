@@ -44,6 +44,20 @@ let
   ];
   openAtStartup = map (app: "exec-and-forget open -g -a '${app}'") startupApps;
 
+  # SketchyBar event trigger for AeroSpace callbacks and bindings. Absolute
+  # store path: callbacks run with AeroSpace's exec PATH, which has the Nix
+  # profiles only since exec.env-vars below, and the bar's own package is the
+  # one to notify anyway.
+  sketchybarTrigger =
+    event: "exec-and-forget ${unstable.sketchybar}/bin/sketchybar --trigger ${event}";
+
+  # Toggle floating for the focused window and tell the bar: toggling does not
+  # change focus, so on-focus-changed alone would miss it (items/floating.lua).
+  toggleFloating = [
+    "layout floating tiling"
+    (sketchybarTrigger "aerospace_focus_change")
+  ];
+
   # The workspaces bound to alt-N below. Also declared persistent, so an
   # empty one keeps existing (and keeps its SketchyBar slot) instead of being
   # garbage-collected.
@@ -125,9 +139,12 @@ in
       # Notify SketchyBar on binding-mode change so items/mode.lua can show the
       # service mode. The callback receives no variable with the new mode;
       # mode.lua re-queries `aerospace list-modes --current`.
-      on-mode-changed = [
-        "exec-and-forget ${unstable.sketchybar}/bin/sketchybar --trigger aerospace_mode_change"
-      ];
+      on-mode-changed = [ (sketchybarTrigger "aerospace_mode_change") ];
+
+      # Notify SketchyBar on focus change so items/floating.lua can flag a
+      # floating focused window. Fires on window and workspace changes; the
+      # floating toggles below fire it explicitly.
+      on-focus-changed = [ (sketchybarTrigger "aerospace_focus_change") ];
 
       enable-normalization-flatten-containers = true;
       enable-normalization-opposite-orientation-for-nested-containers = true;
@@ -181,7 +198,7 @@ in
           alt-l = focusBinding "right";
 
           alt-f = "fullscreen";
-          alt-shift-f = "layout floating tiling";
+          alt-shift-f = toggleFloating;
 
           alt-shift-h = "move left";
           alt-shift-j = "move down";
@@ -216,10 +233,7 @@ in
             "flatten-workspace-tree"
             "mode main"
           ];
-          f = [
-            "layout floating tiling"
-            "mode main"
-          ];
+          f = toggleFloating ++ [ "mode main" ];
           backspace = [
             "close-all-windows-but-current"
             "mode main"
