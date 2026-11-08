@@ -18,9 +18,9 @@ let
   bordersStart = "exec-and-forget ${pkgs.jankyborders}/bin/borders style=round active_color=0xff${palette.yellow} inactive_color=0xff${palette.crust} width=5.0 blacklist=\"iPhone Mirroring\"";
 
   # Apps opened when AeroSpace starts, i.e. at login, so their windows exist
-  # once the on-window-detected rules below are active. Deliberately short:
-  # every extra app slows login down. The rest is launched on demand by the
-  # Raycast script command in files/raycast/launch-secondary-apps.sh.
+  # once the on-window-detected rules below are active. Names as the bundle
+  # appears in /Applications, without ".app". Every extra app slows login
+  # down, so keep this to the apps that are wanted every day.
   # `open -g` does not bring the app to the foreground and is a no-op when it
   # is already running, so an AeroSpace restart (e.g. after darwin-rebuild
   # switch) neither relaunches the apps nor steals focus. after-login-command
@@ -31,6 +31,10 @@ let
     "Obsidian"
     "Ghostty"
     "Orion"
+    "Mail"
+    "Fantastical"
+    "OmniFocus"
+    "Ferdium"
   ];
   openAtStartup = map (app: "exec-and-forget open -g -a '${app}'") startupApps;
 in
