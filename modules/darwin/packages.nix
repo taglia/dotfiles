@@ -54,6 +54,19 @@
     e2fsprogs
     qemu
 
+    # Eternal Terminal client (`et`). Deliberately a system package, not a
+    # Home Manager one: et's `etterminal` must come from the same build as the
+    # `etserver` daemon it talks to (their IPC has no version handshake and
+    # changed in 7.1.0, MisterTea/EternalTerminal#911), so the terminal side
+    # belongs to whoever runs the daemon. A Home Manager copy shadowed the
+    # distro etterminal on the Debian `dev` VM (~/.nix-profile/bin precedes
+    # /usr/bin) and every session died with "Session terminated". NixOS hosts
+    # get all three binaries from services.eternal-terminal
+    # (modules/nixos/base.nix); Debian hosts from the upstream apt repo. The
+    # client<->server wire protocol is still version 6 across 6.2.x and 7.x,
+    # so this client connects to either.
+    eternal-terminal
+
     # Small CLI that sets the desktop wallpaper per-display reliably. Used by
     # the activation script and LaunchAgent in `modules/darwin/desktop.nix`;
     # also kept on PATH for manual `desktoppr` invocations. AppleScript's

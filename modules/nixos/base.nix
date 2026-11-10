@@ -44,7 +44,11 @@
   # exactly as over plain SSH while still surviving sleep/roaming. The client
   # bootstraps auth over regular SSH (so Tailscale SSH keeps working); the
   # session itself runs on TCP 2022, which this module does NOT open for us —
-  # remember the same port in any cloud security group.
+  # remember the same port in any cloud security group. This also puts `et`,
+  # `etterminal` and `etserver` on the system path; the home profile
+  # deliberately does not install eternal-terminal (see the note in
+  # modules/darwin/packages.nix), so the etterminal a client starts always
+  # matches the running daemon.
   services.eternal-terminal.enable = true;
   networking.firewall.allowedTCPPorts = [ 2022 ];
 

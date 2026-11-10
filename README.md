@@ -94,6 +94,12 @@ There are also two NixOS hosts:
 
 Each target always includes the base profile. The Linux or macOS profile is selected from the target system in `lib/hosts.nix`, and the `ai` / `private` suffixes add those extra profile layers.
 
+Eternal Terminal (`et`) is a system package, not part of the Home Manager
+targets: nix-darwin installs the client on `mbp`, the NixOS hosts get it from
+`services.eternal-terminal`, and Debian hosts use the upstream apt package, so
+the `etterminal` a client starts always matches the running `etserver` (see
+`modules/darwin/packages.nix`).
+
 If you're not sure, start with:
 
 - MacBook Pro, nix-darwin: `darwinConfigurations.mbp`
