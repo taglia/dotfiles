@@ -23,6 +23,20 @@ blocks the commit on failure — don't bypass it with `--no-verify`; fix the
 finding instead. When editing the checks, keep the hook and `check.yml` in
 sync.
 
+## Network access from the agent shell
+
+Use Apple's `/usr/bin/curl` (and `gh api`, which is authenticated) for the
+weekly update checks and any other outbound request. Little Snitch keys its
+rules on code identity; the Nix-built `curl` on PATH and mise's `python3` are
+ad-hoc signed with no Team ID, so Little Snitch falls back to the store path
+and every update that changes that path turns them into a new, unapproved
+program whose connections hang until the user clicks Allow (observed
+2026-11-14). Apple's curl is Apple-signed with a stable identity, so one allow
+rule survives Nix updates. Do not fetch with Python's `urllib`; shell out to
+`/usr/bin/curl` and parse the result instead. A hang or HTTP 000 means a
+pending Little Snitch prompt, not a policy block: tell the user and retry once
+they have approved it.
+
 ## Pending upstream checks
 
 - **Node.js 24.22.3 (November 2026 security release) not in either channel**
