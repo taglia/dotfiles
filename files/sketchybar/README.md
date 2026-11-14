@@ -28,10 +28,14 @@ and its root-side publisher in `files/littlesnitch-status/`.
 
 Immediately left of CPU (`items/bluetooth.lua`). Hover lists actual macOS
 Bluetooth connections, using the same styling and close-on-leave behavior as
-CPU/RAM popups. Queries run on hover and every 10 seconds while open, with no
-idle polling. AirBuddy 3 optionally supplies battery details; enable
-**General → Security → Enable AppleScript for automation**. If scripting fails,
-macOS battery readings are used where available. Nearby Apple mobile devices
+CPU/RAM popups. Each row has the device name on the left and its remaining
+charge right-aligned; a device with no reading spans the full row. Queries run
+on hover and every 10 seconds while open, with no idle polling. Battery
+sources, first match wins: AirBuddy 3 when **General → Security → Enable
+AppleScript for automation** is on (buds/case split, `+` while charging); the
+IO registry via `helpers/bluetooth-batteries.sh` for HID devices such as the
+Magic Keyboard/Trackpad/Mouse, which `system_profiler` does not report; and
+`system_profiler`'s own levels (audio devices). Nearby Apple mobile devices
 are not counted just because AirBuddy marks them connected.
 
 Click closes the hover popup and attempts an Accessibility `AXPress` on
