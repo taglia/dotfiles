@@ -17,9 +17,17 @@
 -- re-enabling. AeroSpace passes no variable with the new mode to that
 -- callback, so on every event we RE-QUERY `aerospace list-modes --current`
 -- (the source of truth, also robust to a missed event). While disabled the
--- server rejects every command but `enable` with exit code 2, which is how
--- the disabled state is detected: `list-modes --current` would otherwise
--- report "main". `aerospace` is on the wrapper's PATH via
+-- server rejects every command but `enable` with exit code 2 (server.swift,
+-- EXIT_CODE_TWO), which is how the disabled state is detected:
+-- `list-modes --current` would otherwise report "main". Any other failure
+-- means the server is not reachable (AeroSpace still starting, waiting for
+-- its Accessibility grant, or gone): a yellow "NO AEROSPACE" pill says so,
+-- and the probe repeats every few seconds until it answers, because no
+-- mode-change event will come while nothing is running. At login that pill
+-- normally lasts a few seconds; if it stays, AeroSpace needs attention (its
+-- Accessibility grant is lost whenever the Nix store path changes). Without
+-- the retry a probe failing at login mislabelled the whole session as
+-- "TILING OFF" (2026-11-14). `aerospace` is on the wrapper's PATH via
 -- programs.sketchybar.extraPackages.
 
 local MODES = {
@@ -28,6 +36,7 @@ local MODES = {
 -- Any mode without an entry above.
 local FALLBACK_ICON = "󰌌" -- nf-md-keyboard
 local DISABLED = { icon = "󰏤", label = "TILING OFF" } -- nf-md-pause
+local UNREACHABLE = { icon = "󰀦", label = "NO AEROSPACE" } -- nf-md-alert
 
 SBAR.add("event", "aerospace_mode_change")
 
@@ -48,8 +57,9 @@ local mode = SBAR.add("item", "aerospace_mode", {
     padding_left = 0,
     padding_right = 10,
   },
-  -- Same pill geometry as the focused workspace (items/spaces.lua), in peach
-  -- so the two cannot be confused.
+  -- Same pill geometry as the focused workspace (items/spaces.lua). Colour
+  -- says which state: peach = binding mode, red = tiling off, yellow =
+  -- AeroSpace unreachable.
   background = {
     color = COLORS.mocha_peach,
     border_color = COLORS.mocha_peach,
@@ -60,14 +70,35 @@ local mode = SBAR.add("item", "aerospace_mode", {
   },
 })
 
+-- Hidden item whose routine event re-probes while the last probe failed.
+local RETRY_SECONDS = 5
+local retry = SBAR.add("item", "aerospace_mode.retry", {
+  drawing = false,
+  updates = false,
+  update_freq = RETRY_SECONDS,
+})
+
 local function update(out, code)
-  if code ~= 0 then
+  retry:set({ updates = code ~= 0 })
+  if code == 2 then
     mode:set({
       drawing = true,
       icon = { string = DISABLED.icon },
       label = { string = DISABLED.label },
       background = { color = COLORS.mocha_red, border_color = COLORS.mocha_red },
       click_script = "aerospace enable on",
+    })
+    return
+  end
+  if code ~= 0 then
+    -- Server unreachable: not the same as tiling switched off, so a distinct
+    -- colour and no re-enable click; the ticker keeps probing.
+    mode:set({
+      drawing = true,
+      icon = { string = UNREACHABLE.icon },
+      label = { string = UNREACHABLE.label },
+      background = { color = COLORS.mocha_yellow, border_color = COLORS.mocha_yellow },
+      click_script = "",
     })
     return
   end
@@ -86,9 +117,12 @@ local function update(out, code)
   })
 end
 
-mode:subscribe("aerospace_mode_change", function()
+local function probe()
   SBAR.exec("aerospace list-modes --current", update)
-end)
+end
 
--- Best-effort initial state at load.
-SBAR.exec("aerospace list-modes --current", update)
+mode:subscribe("aerospace_mode_change", probe)
+retry:subscribe("routine", probe)
+
+-- Initial state at load; retried by the ticker until AeroSpace answers.
+probe()
