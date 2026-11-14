@@ -46,6 +46,14 @@ in
     extraConfig = builtins.readFile ../../files/tmux/tmux.conf + ''
       run-shell ${cpuScript}
       run-shell ${catppuccinScript}
+      # catppuccin sets message-style and message-command-style with
+      # align=centre, which centres the command prompt (prefix-:, rename
+      # session/window) in the status line: every keystroke re-centres the
+      # text, so the cursor hops around the top bar. Keep the plugin's colours
+      # and only switch the alignment to left, where the prompt and its cursor
+      # stay put. Must run after catppuccin, which would overwrite it.
+      set -gF message-style "#{s/align=centre/align=left/:message-style}"
+      set -gF message-command-style "#{s/align=centre/align=left/:message-command-style}"
       run-shell ${continuumScript}
     '';
   };
