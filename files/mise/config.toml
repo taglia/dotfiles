@@ -1,10 +1,14 @@
 [tools]
-# SECURITY PIN (2026-10-31): mise's Node shim sits ahead of the Nix profile in
-# PATH, so it is the `node`/`npm` that shells and Pi actually run. A bare "24"
-# resolved to 24.18.0, which predates the October 2026 Node security release
-# and the Brotli CVE-2026-111497 fix. Keep this at or above 24.22.1; relax it
-# back to "24" once the fuzzy resolution lands on a patched release anyway.
-node = "24.22.1"
+# SECURITY PIN (2026-10-31, bumped 2026-11-14): mise's Node shim sits ahead of
+# the Nix profile in PATH, so it is the `node`/`npm` that shells and Pi
+# actually run. 24.22.3 is the November 2026 Node security release (16 CVEs,
+# 7 high); nixpkgs does not have it yet. A bare "24" would resolve to 24.22.2
+# today under `minimum_release_age` below, and combined with the exception
+# there it would track every new Node release, so pin exactly. Relax this
+# back to "24" and drop the `minimum_release_age_excludes` entry once the
+# fuzzy resolution lands on a patched release anyway (24.22.3 clears the
+# 10-day gate on 2026-11-21).
+node = "24.22.3"
 python = "latest"
 uv = "latest"
 
@@ -16,3 +20,7 @@ idiomatic_version_file_enable_tools = ["python"]
 # Delay fuzzy tool-version resolution so newly published runtimes and tools
 # have a ten-day observation window before mise will select them.
 minimum_release_age = "10d"
+# Exact-pin exception for the Node security release above: the gate otherwise
+# hides 24.22.3 even when it is requested by exact version. The pin is exact,
+# so this widens nothing else; remove it together with the pin.
+minimum_release_age_excludes = ["node"]

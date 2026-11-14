@@ -34,10 +34,11 @@ sync.
   channel, so there is nothing to pin to yet. Each weekly update, check
   `nix eval --inputs-from . nixpkgs-unstable#nodejs.version` and
   `...#nodejs.version` (stable); prefer whichever channel reaches >= 24.22.3
-  first and repoint `piNodejs` if that is stable. mise still pins
-  `node = "24.22.1"` in `files/mise/config.toml`; it installs from nodejs.org,
-  so it can move to `"24.22.3"` (or back to the fuzzy `"24"`) independently of
-  nixpkgs.
+  first and repoint `piNodejs` if that is stable. mise already pins
+  `node = "24.22.3"` in `files/mise/config.toml` (installs from nodejs.org)
+  with a `minimum_release_age_excludes = ["node"]` exception, because the
+  10-day gate hides 24.22.3 until 2026-11-21 even for an exact pin; after that
+  date relax the pin to `"24"` and drop the exception.
 - **marksman on the binary .NET runtime** (`modules/home/vim/plugins/lsp/lsp.nix`):
   the stable lock's source-built `dotnetCorePackages.runtime_9_0` (9.0.22) is
   not in the binary cache for aarch64-darwin, which made marksman rebuild the
