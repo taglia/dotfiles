@@ -37,6 +37,32 @@ rule survives Nix updates. Do not fetch with Python's `urllib`; shell out to
 pending Little Snitch prompt, not a policy block: tell the user and retry once
 they have approved it.
 
+## Stable channel currency
+
+Every weekly update review must also say whether the flake is behind on the
+NixOS stable release. The four stable inputs in `flake.nix` are pinned to a
+release branch by name (`nixpkgs/nixos-<YY.MM>`,
+`home-manager/release-<YY.MM>`, `nix-darwin/nix-darwin-<YY.MM>`,
+`nixvim/nixos-<YY.MM>`), so a new release never arrives through
+`nix flake update`; it has to be a deliberate edit. Check, with `gh api`:
+
+- whether `NixOS/nixpkgs` has a `release-<next>` / `nixos-<next>` branch
+  (`<next>` is the following May or November, e.g. 26.05 → 26.11 → 27.05), and
+  whether `https://channels.nixos.org/nixos-<next>` redirects (`/usr/bin/curl -I`)
+  instead of returning 404;
+- the "NixOS <next> – Release schedule" issue in nixpkgs for the branch-off
+  and release dates (search `repo:NixOS/nixpkgs is:issue "<next>" release in:title`);
+- whether `nix-community/home-manager` (`release-<next>`),
+  `nix-darwin/nix-darwin` (`nix-darwin-<next>`) and `nix-community/nixvim`
+  (`nixos-<next>`) have their matching branches yet.
+
+Report one of: not branched yet (give the scheduled dates), beta channel out
+but some inputs lack a branch (name them), or released with all four branches
+available. In the last case propose the channel bump as its own commit,
+separate from the weekly lock update, and remind that the old release is
+supported for about one month after the new one ships. Do not bump the
+channel inside a weekly update without the user's go-ahead.
+
 ## Pending upstream checks
 
 - **Node.js 24.22.3 (November 2026 security release) not in either channel**
