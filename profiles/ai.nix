@@ -22,14 +22,20 @@ let
   };
 
   # One Node runtime for everything Pi-related: the Pi package, the pi-npm
-  # wrapper and the `node`/`npm` that pi.nix puts on PATH. It tracks the
-  # unstable channel like Pi itself. (From 2026-10-31 to 2026-11-14 this was
-  # pinned to stable `pkgs.nodejs` while unstable lagged on the October 2026
-  # Node security release and Brotli CVE-2026-111497; unstable has carried
-  # Node 24.22.2 / Brotli 1.2.1 since.) The November 2026 Node security release
-  # (24.22.3) is not in either channel yet; see AGENTS.md, "Pending upstream
-  # checks".
-  piNodejs = pkgs-unstable.nodejs;
+  # wrapper and the `node`/`npm` that pi.nix puts on PATH. It normally tracks
+  # the unstable channel like Pi itself.
+  #
+  # SECURITY PIN (2026-11-21): the November 2026 Node security release
+  # (24.22.3; 16 CVEs, 7 high) reached nixos-26.05 first, while nixos-unstable
+  # is still on 24.22.2, so use stable `pkgs.nodejs` until unstable catches
+  # up. The condition turns itself off; once it has, reduce this back to
+  # `pkgs-unstable.nodejs` (see AGENTS.md, "Pending upstream checks"). The
+  # same pin was needed from 2026-10-31 to 2026-11-14 for the October release.
+  piNodejs =
+    if lib.versionOlder pkgs-unstable.nodejs.version "24.22.3" then
+      pkgs.nodejs
+    else
+      pkgs-unstable.nodejs;
 
   # Keep Pi's package-manager Node runtime aligned with the Node runtime used
   # by the Pi package (both are `piNodejs`). This avoids PATH-dependent npm
@@ -43,8 +49,9 @@ let
 
   # Pi's `bin/pi` wrapper execs the Node that buildNpmPackage was given, so
   # pass `piNodejs` explicitly: Pi then runs on the same runtime as pi-npm even
-  # if `piNodejs` is pinned to another channel again. While `piNodejs` is
-  # unstable's own nodejs this yields the unmodified, cached nixpkgs package.
+  # while `piNodejs` is pinned to another channel (Pi is then built locally).
+  # While `piNodejs` is unstable's own nodejs this yields the unmodified,
+  # cached nixpkgs package.
   pi-coding-agent = pkgs-unstable.pi-coding-agent.override {
     buildNpmPackage = pkgs-unstable.buildNpmPackage.override { nodejs = piNodejs; };
   };

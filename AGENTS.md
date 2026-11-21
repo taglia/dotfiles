@@ -77,20 +77,16 @@ channel inside a weekly update without the user's go-ahead.
   >= 2.54.1; when it is, delete `lib/patched-git.nix` and its two callers. It
   covers only the `git` on PATH: packages that depend on Git (the `nix fmt`
   wrapper, Neovim plugins, fetchers) keep the channel's build.
-- **Node.js 24.22.3 (November 2026 security release) not in either channel**
-  (`profiles/ai.nix` `piNodejs`, consumed by `modules/home/pi.nix`): Pi,
-  `pi-npm` and the Node in `home.packages` run `pkgs-unstable.nodejs`
-  (24.22.2). The 2026-11-11 release fixes 16 CVEs (7 high, all in the
-  HTTP/2, HTTPS and TLS _server_ code paths); nixpkgs has it only on
-  `staging-next-26.05` / `staging` (PRs 586812, 586806), not on master or any
-  channel, so there is nothing to pin to yet. Each weekly update, check
-  `nix eval --inputs-from . nixpkgs-unstable#nodejs.version` and
-  `...#nodejs.version` (stable); prefer whichever channel reaches >= 24.22.3
-  first and repoint `piNodejs` if that is stable. mise already pins
-  `node = "24.22.3"` in `files/mise/config.toml` (installs from nodejs.org)
-  with a `minimum_release_age_excludes = ["node"]` exception, because the
-  10-day gate hides 24.22.3 until 2026-11-21 even for an exact pin; after that
-  date relax the pin to `"24"` and drop the exception.
+- **Pi's Node.js pinned to stable for 24.22.3** (`profiles/ai.nix` `piNodejs`,
+  consumed by `modules/home/pi.nix`): the 2026-11-10 Node security release
+  (16 CVEs, 7 high, all in the HTTP/2, HTTPS and TLS _server_ code paths)
+  reached nixos-26.05 on 2026-11-20, while nixos-unstable is still on 24.22.2
+  (its bump, PR 586806, is on `staging`). `piNodejs` therefore selects stable
+  `pkgs.nodejs` for Pi, `pi-npm` and the Node in `home.packages`, and Pi is
+  built locally against it. The pin turns itself off once
+  `nix eval --inputs-from . nixpkgs-unstable#nodejs.version` is >= 24.22.3;
+  when it is, reduce `piNodejs` back to plain `pkgs-unstable.nodejs` and drop
+  this entry.
 - **marksman on the binary .NET runtime** (`modules/home/vim/plugins/lsp/lsp.nix`):
   the stable lock's source-built `dotnetCorePackages.runtime_9_0` (9.0.22) is
   not in the binary cache for aarch64-darwin, which made marksman rebuild the
