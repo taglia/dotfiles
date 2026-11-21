@@ -65,6 +65,18 @@ channel inside a weekly update without the user's go-ahead.
 
 ## Pending upstream checks
 
+- **Git 2.54.1 built locally** (`lib/patched-git.nix`, used by
+  `programs.git.package` in `modules/home/dev.nix` and by
+  `environment.systemPackages` in `modules/nixos/base.nix`): nixos-26.05 ships
+  Git 2.54.0, which is missing the 2026-11-10 security release (six CVEs;
+  CVE-2026-111760 is code execution on a recursive clone of a malicious
+  repository). The bump ([PR 586429](https://github.com/NixOS/nixpkgs/pull/586429))
+  sits in `staging-26.05` with no `staging-next-26.05` iteration open, and
+  unstable's 2.56.0 is affected too (2.56.1 is on `staging-next`). The override
+  disables itself once `nix eval --inputs-from . nixpkgs#git.version` is
+  >= 2.54.1; when it is, delete `lib/patched-git.nix` and its two callers. It
+  covers only the `git` on PATH: packages that depend on Git (the `nix fmt`
+  wrapper, Neovim plugins, fetchers) keep the channel's build.
 - **Node.js 24.22.3 (November 2026 security release) not in either channel**
   (`profiles/ai.nix` `piNodejs`, consumed by `modules/home/pi.nix`): Pi,
   `pi-npm` and the Node in `home.packages` run `pkgs-unstable.nodejs`

@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  pkgs,
   user,
   ...
 }:
@@ -41,6 +42,8 @@ in
 
   programs.git = {
     enable = true;
+    # Git 2.54.1 until the channel carries it; see lib/patched-git.nix.
+    package = import ../../lib/patched-git.nix pkgs;
 
     settings.user.name = user.githubUsername;
     settings.user.email = user.email;

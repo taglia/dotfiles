@@ -52,9 +52,11 @@
   services.eternal-terminal.enable = true;
   networking.firewall.allowedTCPPorts = [ 2022 ];
 
-  environment.systemPackages = with pkgs; [
-    git # needed by `nixos-rebuild --flake` against a git tree
-    ghostty.terminfo
+  environment.systemPackages = [
+    # Needed by `nixos-rebuild --flake` against a git tree. Git 2.54.1 until
+    # the channel carries it; see lib/patched-git.nix.
+    (import ../../lib/patched-git.nix pkgs)
+    pkgs.ghostty.terminfo
   ];
 
   # Locale and time. Override per-host if a machine lives elsewhere.
