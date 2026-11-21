@@ -87,20 +87,6 @@ channel inside a weekly update without the user's go-ahead.
   `nix eval --inputs-from . nixpkgs-unstable#nodejs.version` is >= 24.22.3;
   when it is, reduce `piNodejs` back to plain `pkgs-unstable.nodejs` and drop
   this entry.
-- **marksman on the binary .NET runtime** (`modules/home/vim/plugins/lsp/lsp.nix`):
-  the stable lock's source-built `dotnetCorePackages.runtime_9_0` (9.0.22) is
-  not in the binary cache for aarch64-darwin, which made marksman rebuild the
-  whole .NET SDK locally (hours). Its `package` swaps in `runtime_9_0-bin`.
-  Remove the override once
-  `nix build --inputs-from . nixpkgs#dotnetCorePackages.runtime_9_0` substitutes
-  on aarch64-darwin again.
-- **bicep protoc override on Darwin** (`modules/home/vim/plugins/lsp/conform.nix`):
-  stable's bicep fails to build on aarch64-darwin (Grpc.Tools ships x86_64-only
-  protoc; [NixOS/nixpkgs#565350](https://github.com/NixOS/nixpkgs/issues/565350),
-  fix in [PR 579953](https://github.com/NixOS/nixpkgs/pull/579953)) and is not
-  in the binary cache. Remove the `overrideAttrs` once
-  `nix build --inputs-from . nixpkgs#bicep` succeeds or substitutes on
-  aarch64-darwin without it.
 - **markdown-table-wrap.nvim is a stopgap** (`modules/home/vim/plugins/misc.nix`):
   it wraps cells of markdown tables wider than the window because
   render-markdown.nvim cannot reflow them. If render-markdown gains native
