@@ -17,10 +17,22 @@ let
   # invoked by the activation hook in modules/darwin/desktop.nix, whose
   # LaunchAgent re-applies the pinned image after reboots and display changes.
   wallpaperSwitch = (import ../../lib/wallpaper.nix).mkSwitchScript pkgs;
+
+  # `usbclean VOLUME` (no argument lists the candidates): strip macOS metadata (.DS_Store, ._*, .Spotlight-V100,
+  # .Trashes, .fseventsd, ...) from an external volume and eject it. Replaces
+  # the USBclean app, which has no Homebrew cask. No runtimeInputs: the script
+  # calls the system's diskutil/find/plutil by absolute path.
+  usbclean = pkgs.writeShellApplication {
+    name = "usbclean";
+    text = builtins.readFile ../../files/usbclean/usbclean.sh;
+  };
 in
 
 {
-  home.packages = [ wallpaperSwitch ];
+  home.packages = [
+    usbclean
+    wallpaperSwitch
+  ];
 
   home.shellAliases.wallpaper = "wallpaper-switch";
 
