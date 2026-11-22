@@ -171,6 +171,7 @@ in
       "Drafts" = 1435957248;
       "Due" = 524373870;
       "Endurance" = 1590043284;
+      "Flighty" = 1358823008;
       "GarageBand" = 682658836;
       "Hush" = 1544743900;
       "iA Writer" = 775737590;
