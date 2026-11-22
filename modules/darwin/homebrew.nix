@@ -129,6 +129,7 @@ in
       "murus"
       "obsidian"
       "onlyoffice"
+      "orcaslicer"
       "orion"
       "pacifist"
       "permute"
