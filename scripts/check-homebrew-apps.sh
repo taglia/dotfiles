@@ -29,11 +29,19 @@ brew_owned_apps="$tmp_dir/brew-owned-apps"
 mas_apps="$tmp_dir/mas-apps"
 app_bundles="$tmp_dir/app-bundles"
 cask_index_json="$tmp_dir/cask-index.json"
+cask_app_versions="$tmp_dir/cask-app-versions"
+version_drift="$tmp_dir/version-drift"
+: > "$cask_app_versions"
 
 cd "$repo_root"
 nix eval ".#darwinConfigurations.${host}.config.homebrew.brewfile" --raw > "$brewfile"
 
-sed -nE 's/^[[:space:]]*cask[[:space:]]+"([^"]+)".*/\1/p' "$brewfile" | sort -u > "$declared_casks"
+# Tap-qualified declarations ("user/tap/token") are reduced to the bare token,
+# which is what `brew list --cask -1` prints; comparing the raw strings reports
+# such a cask as both "declared not installed" and "installed not declared".
+sed -nE 's/^[[:space:]]*cask[[:space:]]+"([^"]+)".*/\1/p' "$brewfile" |
+  sed 's:.*/::' |
+  sort -u > "$declared_casks"
 brew list --cask -1 2>/dev/null | sort -u > "$installed_casks"
 
 normalize_path() {
@@ -179,7 +187,12 @@ payload_app_install_targets() {
                 source = Array(artifact["app"]).first
                 target = artifact["target"] || File.join("/Applications", File.basename(source))
                 target = target.sub(/\A~/, ENV.fetch("HOME"))
-                puts ["app", File.expand_path(target).sub(%r{/+\z}, "")].join("\t")
+                target = File.expand_path(target).sub(%r{/+\z}, "")
+                puts ["app", target].join("\t")
+                if cask["installed"]
+                  auto_updates = cask["auto_updates"] ? "yes" : "no"
+                  puts ["version", cask["token"], cask["installed"], auto_updates, target].join("\t")
+                end
               end
 
               Array(artifact["uninstall"]).each do |uninstall|
@@ -199,10 +212,11 @@ payload_app_install_targets() {
             end
           end
         ' |
-        while IFS=$'\t' read -r artifact_type artifact_value; do
+        while IFS=$'\t' read -r artifact_type artifact_value artifact_rest; do
           case "$artifact_type" in
             app) printf '%s\n' "$artifact_value" ;;
             pkgutil) package_receipt_apps "$artifact_value" ;;
+            version) printf '%s\t%s\n' "$artifact_value" "$artifact_rest" >> "$cask_app_versions" ;;
           esac
         done
       payload_app_install_targets "$cask"
@@ -317,6 +331,59 @@ if [[ -s "$unmanaged_apps" ]]; then
   fi
 fi
 
+# Homebrew's record of a cask (the Caskroom version) against the bundle that is
+# actually in /Applications. A bundle OLDER than the record is never legitimate
+# (seen with a stale cached download of an unversioned URL: brew recorded the
+# new version and reinstalled the old app). A NEWER bundle is a self-update and
+# harmless for `auto_updates` casks, so it is listed without counting as a
+# finding. Both come from local state, so a stale API catalog does not matter.
+ruby -e '
+  def plist_value(app, key)
+    out = IO.popen(["/usr/bin/plutil", "-extract", key, "raw", "-o", "-", File.join(app, "Contents", "Info.plist")], err: File::NULL, &:read)
+    $?.success? ? out.strip : nil
+  end
+
+  def parse(version)
+    Gem::Version.new(version)
+  rescue ArgumentError
+    nil
+  end
+
+  ARGF.each_line(chomp: true) do |line|
+    token, recorded, auto_updates, app = line.split("\t", 4)
+    next unless app && File.directory?(app)
+
+    short = plist_value(app, "CFBundleShortVersionString")
+    build = plist_value(app, "CFBundleVersion")
+    next if short.nil? || short.empty?
+
+    # Cask versions are "<short>[,<build>]", but some casks put the build
+    # number first or only; any component matching either bundle field is fine.
+    components = recorded.split(",")
+    next if components.include?(short) || (build && components.include?(build))
+
+    # Formatting-only differences: a leading "v" in the bundle ("v2.0.12"), a
+    # packaging suffix on the cask ("5.0.9-2"), or trailing zeros ("2.3.0").
+    short = short.sub(/\Av(?=\d)/, "")
+    next if components.first.start_with?("#{short}-", "#{short}_", "#{short}+")
+
+    bundle_version = parse(short)
+    recorded_version = parse(components.first)
+    next if bundle_version && bundle_version == recorded_version
+
+    kind =
+      if bundle_version.nil? || recorded_version.nil?
+        "differs"
+      elsif bundle_version < recorded_version
+        "older"
+      else
+        "newer"
+      end
+
+    puts [kind, token, recorded, short, auto_updates, app].join("\t")
+  end
+' "$cask_app_versions" | sort -u > "$version_drift"
+
 has_findings=0
 
 echo "Homebrew app compliance report for darwinConfiguration '${host}'"
@@ -394,6 +461,45 @@ if [[ -s "$unmanaged_apps" ]]; then
     sed 's/^/  - /' "$unmanaged_apps"
   fi
   echo
+fi
+
+if [[ -s "$version_drift" ]]; then
+  ruby -e '
+    older = []
+    differs = []
+    newer = []
+
+    ARGF.each_line(chomp: true) do |line|
+      kind, token, recorded, short, auto_updates, app = line.split("\t", 6)
+      entry = "  - #{token}: Homebrew records #{recorded}, #{app} is #{short}"
+
+      case kind
+      when "older" then older << entry
+      when "newer" then (auto_updates == "yes" ? newer : differs) << entry
+      else differs << entry
+      end
+    end
+
+    unless older.empty?
+      puts "App bundles older than the version Homebrew records (force a fresh download with brew fetch --cask --force, then reinstall):"
+      puts older
+      puts
+    end
+
+    unless differs.empty?
+      puts "App bundles whose version differs from the Homebrew record:"
+      puts differs
+      puts
+    end
+
+    unless newer.empty?
+      puts "Self-updated apps ahead of the Homebrew record (auto_updates casks; informational):"
+      puts newer
+      puts
+    end
+
+    exit(older.empty? && differs.empty? ? 0 : 3)
+  ' "$version_drift" || has_findings=1
 fi
 
 if [[ "$has_findings" -eq 0 ]]; then
