@@ -87,6 +87,23 @@ channel inside a weekly update without the user's go-ahead.
   `nix eval --inputs-from . nixpkgs-unstable#nodejs.version` is >= 24.22.3;
   when it is, reduce `piNodejs` back to plain `pkgs-unstable.nodejs` and drop
   this entry.
+- **snacks.nvim patched for tmux `extended-keys always`**
+  (`modules/home/vim/plugins/snacks.nix`, `plugins.snacks.package`): Snacks'
+  image terminal detection only applies its tmux workaround when
+  `extended-keys` is `on`, while `files/tmux/tmux.conf` sets `always`. Unpatched,
+  the first picker that previews a Markdown file sends an XTVERSION probe whose
+  reply leaks into the prompt as keystrokes and pastes the clipboard there. The
+  override applies the one-line fix from
+  [folke/snacks.nvim#2790](https://github.com/folke/snacks.nvim/pull/2790) with
+  `substituteInPlace --replace-fail`, so the build fails with "pattern ... not
+  found" in `lua/snacks/image/terminal.lua` once upstream changes that line.
+  When it does, do not adjust the pattern blindly: read the new upstream code
+  and, if it handles `always` (or no longer probes inside tmux), delete the
+  `package` override, its comment, the now-unused `pkgs` argument, and this
+  entry. If upstream changed the line without fixing `always`, rewrite the
+  substitution against the new code. Disabling the feature
+  (`plugins.snacks.settings.image.enabled = false`) is the fallback that needs
+  no patch.
 - **markdown-table-wrap.nvim is a stopgap** (`modules/home/vim/plugins/misc.nix`):
   it wraps cells of markdown tables wider than the window because
   render-markdown.nvim cannot reflow them. If render-markdown gains native

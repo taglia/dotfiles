@@ -1,3 +1,4 @@
+{ pkgs, ... }:
 {
   extraConfigLuaPre =
     # lua
@@ -7,6 +8,24 @@
 
   plugins.snacks = {
     enable = true;
+
+    # Snacks probes the terminal the first time a picker previews a Markdown
+    # file. Inside tmux with extended-keys enabled the XTVERSION reply is not
+    # captured by Neovim and leaks into the picker prompt as keystrokes:
+    # <Esc>P pastes the clipboard and the rest ("ostty 1.4.0") is typed after
+    # it. Upstream's workaround (folke/snacks.nvim#2332) asks tmux for the
+    # terminal name instead, but only when extended-keys is "on";
+    # files/tmux/tmux.conf sets "always". This is the one-line fix from
+    # folke/snacks.nvim#2790, still unmerged. --replace-fail breaks the build
+    # as soon as upstream touches that line; see "Pending upstream checks" in
+    # AGENTS.md for what to do then.
+    package = pkgs.vimPlugins.snacks-nvim.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace lua/snacks/image/terminal.lua \
+          --replace-fail 'vim.trim(out):find(" on$")' \
+                         '(vim.trim(out):find(" on$") or vim.trim(out):find(" always$"))'
+      '';
+    });
 
     settings = {
       bigfile.enabled = true;
