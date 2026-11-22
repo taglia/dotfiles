@@ -339,6 +339,11 @@ in
           check-further-callbacks = true;
           run = "move-node-to-workspace 6";
         }
+        {
+          "if".app-id = "com.orcaslicer.OrcaSlicer";
+          check-further-callbacks = true;
+          run = "move-node-to-workspace 6";
+        }
         # Rhino 8 and the Rhino 9 beta are separate bundles.
         {
           "if".app-id = "com.mcneel.rhinoceros.8";
