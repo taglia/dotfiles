@@ -167,6 +167,7 @@ in
       "About by PCalc" = 1613982997;
       "Actions For Obsidian" = 1659667937;
       "AutoMounter" = 1160435653;
+      "Bitwarden" = 1352778147;
       "Blackmagic Disk Speed Test" = 425264550;
       "Drafts" = 1435957248;
       "Due" = 524373870;
