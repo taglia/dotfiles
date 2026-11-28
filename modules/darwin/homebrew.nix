@@ -138,7 +138,6 @@ in
       "qflipper"
       "raspberry-pi-imager"
       "raycast"
-      "rhino-app"
       {
         name = "kitknox/rootshell/rootshell"; # fully-qualified => trust applies to this cask only
       }

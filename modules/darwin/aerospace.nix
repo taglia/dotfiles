@@ -344,14 +344,8 @@ in
           check-further-callbacks = true;
           run = "move-node-to-workspace 6";
         }
-        # Rhino 8 and the Rhino 9 beta are separate bundles.
         {
-          "if".app-id = "com.mcneel.rhinoceros.8";
-          check-further-callbacks = true;
-          run = "move-node-to-workspace 6";
-        }
-        {
-          "if".app-id = "com.mcneel.rhinoceros.9";
+          "if".app-id = "com.mcneel.rhinoceros.9"; # Rhino 9, release and betas
           check-further-callbacks = true;
           run = "move-node-to-workspace 6";
         }
