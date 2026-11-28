@@ -71,12 +71,12 @@ let
   # garbage-collected.
   workspaces = map toString (lib.range 1 9);
 
-  # alt-N focuses workspace N; pressing it again on that workspace bounces
-  # back to the previous one (--auto-back-and-forth). alt-shift-N moves the
-  # focused window there without following it.
+  # alt-N focuses workspace N; pressing it again on that workspace does
+  # nothing (alt-tab is the way back to the previous one). alt-shift-N moves
+  # the focused window there without following it.
   workspaceBindings = lib.listToAttrs (
     lib.concatMap (ws: [
-      (lib.nameValuePair "alt-${ws}" "workspace --auto-back-and-forth ${ws}")
+      (lib.nameValuePair "alt-${ws}" "workspace ${ws}")
       (lib.nameValuePair "alt-shift-${ws}" "move-node-to-workspace ${ws}")
     ]) workspaces
   );
