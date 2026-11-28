@@ -113,9 +113,18 @@ local function update_dst()
 end
 
 -- 4. UPDATE LOCAL TIME/DATE
+-- Returns true when the displayed minute changed. Called every second (see
+-- the subscription below), so it only talks to SketchyBar on a change.
+local shown_time, shown_date
 local function update_calendar()
-  cal_date:set({ label = { string = os.date("%a %b %d"):upper() } })
-  cal_time:set({ label = { string = os.date("%H:%M") } })
+  local time, date = os.date("%H:%M"), os.date("%a %b %d"):upper()
+  if time == shown_time and date == shown_date then
+    return false
+  end
+  shown_time, shown_date = time, date
+  cal_date:set({ label = { string = date } })
+  cal_time:set({ label = { string = time } })
+  return true
 end
 
 local function day_offset_label(day_key)
@@ -180,13 +189,18 @@ end
 
 -- 6. SUBSCRIPTIONS
 local popup_open = false
+-- Tick every second so the minute rolls over on time. SketchyBar's routine
+-- timer is a free-running 1s tick that counts up to update_freq: it is not
+-- aligned to the wall clock and loses ticks whenever the bar's main loop is
+-- busy, so a 30s poll showed each new minute 0-30s late (and later still
+-- after lost ticks). The per-second callback is an in-process os.date
+-- comparison; the bar and the popup are only touched when the minute changes.
 cal_time:subscribe({ "routine", "system_woke" }, function()
-  update_calendar()
-  if popup_open then
+  if update_calendar() and popup_open then
     build_popup()
   end
 end)
-cal_time:set({ update_freq = 30 })
+cal_time:set({ update_freq = 1 })
 
 local close_popup = utils.hover_popup(cal_time, { cal_time, cal_date }, function(open)
   popup_open = open
